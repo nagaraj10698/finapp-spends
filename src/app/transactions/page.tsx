@@ -10,7 +10,7 @@ export default function TransactionsPage() {
     const [processedTransactions, setProcessedTransactions] = useState<ProcessTransactionsOutput['transactions']>([]);
 
     const handleTransactionsProcessed = (data: ProcessTransactionsOutput) => {
-        setProcessedTransactions(data.transactions);
+        setProcessedTransactions(prev => [...prev, ...data.transactions]);
     };
 
     return (

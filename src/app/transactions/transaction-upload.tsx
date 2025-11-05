@@ -75,6 +75,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
         const updatedFiles = [newFile, ...uploadedFiles];
         setUploadedFiles(updatedFiles);
         localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
+        setFile(null); // Clear the file after processing
       } else {
         setError(response.error ?? 'An unknown error occurred.');
       }

@@ -78,7 +78,7 @@ export const columns: ColumnDef<Transaction>[] = [
         maximumFractionDigits: 2,
       }).format(amount);
 
-      return <div className="text-right font-medium pr-4 flex items-center justify-end gap-1"><DhiramSymbol />{formatted}</div>;
+      return <div className={`text-right font-medium pr-4 flex items-center justify-end gap-1 ${amount < 0 ? 'text-red-500' : 'text-green-500'}`}><DhiramSymbol />{formatted}</div>;
     },
   },
   {

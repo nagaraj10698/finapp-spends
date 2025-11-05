@@ -137,7 +137,7 @@ export function getTotals(allTransactions: Transaction[] | null) {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const savings = income + expenses; // expenses is negative
-  return { income, expenses: Math.abs(expenses), savings };
+  return { income, expenses, savings };
 }
 
 export function getSpendingByCategory(allTransactions: Transaction[] | null) {
@@ -147,8 +147,7 @@ export function getSpendingByCategory(allTransactions: Transaction[] | null) {
   const allExpenses = allTransactions.filter(t => t.type === 'expense');
   
   allExpenses.forEach(t => {
-    const absAmount = Math.abs(t.amount);
-    spendingMap.set(t.category, (spendingMap.get(t.category) || 0) + absAmount);
+    spendingMap.set(t.category, (spendingMap.get(t.category) || 0) + t.amount);
   });
   return Array.from(spendingMap.entries()).map(([name, total]) => ({ name, total }));
 }
@@ -166,8 +165,7 @@ export function getBudgets(budgets: Budget[], allTransactions: Transaction[] | n
     });
 
     currentMonthExpenses.forEach(t => {
-        const absAmount = Math.abs(t.amount);
-        spendingThisMonth.set(t.category, (spendingThisMonth.get(t.category) || 0) + absAmount);
+        spendingThisMonth.set(t.category, (spendingThisMonth.get(t.category) || 0) + t.amount);
     });
 
 
@@ -175,8 +173,7 @@ export function getBudgets(budgets: Budget[], allTransactions: Transaction[] | n
         const spent = spendingThisMonth.get(budget.name) || 0;
         return {
           ...budget,
-          spent,
+          spent: Math.abs(spent),
         };
       });
 }
-

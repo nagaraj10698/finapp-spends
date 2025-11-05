@@ -41,7 +41,6 @@ import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Switch } from '@/components/ui/switch';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Transaction, Category } from '@/lib/types';
 
 
@@ -53,7 +52,7 @@ const formSchema = z
     date: z.date(),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
-    attachment: z.instanceof(File).optional(),
+    bill: z.any().optional(),
   })
   .refine(
     (data) => {
@@ -70,10 +69,9 @@ const formSchema = z
 
 export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
-  const { firestore, user, firebaseApp } = useFirebase();
+  const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
   const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
@@ -91,7 +89,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const isRecurring = form.watch('isRecurring');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !user || !firebaseApp) {
+    if (!firestore || !user) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -100,56 +98,32 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
         return;
     }
     
-    setIsSubmitting(true);
+    const expenseCollection = collection(firestore, 'users', user.uid, 'transactions');
+    const newExpenseRef = doc(expenseCollection);
 
-    try {
-      const expenseCollection = collection(firestore, 'users', user.uid, 'transactions');
-      const newExpenseRef = doc(expenseCollection);
+    const newExpense: Omit<Transaction, 'id'> = {
+        description: values.description,
+        amount: -Math.abs(values.amount), // ensure it's negative
+        category: values.category,
+        date: values.date,
+        isRecurring: values.isRecurring,
+        frequency: values.frequency,
+        type: 'expense',
+    };
 
-      const newExpense: Omit<Transaction, 'id'> = {
-          description: values.description,
-          amount: -Math.abs(values.amount), // ensure it's negative
-          category: values.category,
-          date: values.date,
-          isRecurring: values.isRecurring,
-          type: 'expense',
-      };
+    await setDoc(newExpenseRef, newExpense);
 
-      if (values.isRecurring && values.frequency) {
-        newExpense.frequency = values.frequency;
-      }
-
-      if (values.attachment) {
-          const storage = getStorage(firebaseApp);
-          const storageRef = ref(storage, `user_uploads/${user.uid}/${newExpenseRef.id}/${values.attachment.name}`);
-          const snapshot = await uploadBytes(storageRef, values.attachment);
-          newExpense.fileURL = await getDownloadURL(snapshot.ref);
-          newExpense.fileName = values.attachment.name;
-      }
-
-      await setDoc(newExpenseRef, newExpense);
-
-      toast({
-        title: 'Expense Added',
-        description: (
-          <span className="flex items-center gap-1">
-            {values.description} for <DhiramSymbol />
-            {values.amount} has been added.
-          </span>
-        ),
-      });
-      form.reset();
-      setOpen(false);
-    } catch (error) {
-        console.error("Error adding expense:", error);
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to add expense. Please try again."
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
+    toast({
+      title: 'Expense Added',
+      description: (
+        <span className="flex items-center gap-1">
+          {values.description} for <DhiramSymbol />
+          {values.amount} has been added.
+        </span>
+      ),
+    });
+    form.reset();
+    setOpen(false);
   }
   
   const expenseCategories = categories?.filter(c => c.type === 'expense');
@@ -270,18 +244,12 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             />
              <FormField
               control={form.control}
-              name="attachment"
+              name="bill"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Attachment</FormLabel>
+                  <FormLabel>Upload Bill/Receipt</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="file" 
-                      accept="image/*,.pdf,.xls,.xlsx"
-                      onChange={(e) => {
-                        field.onChange(e.target.files ? e.target.files[0] : undefined);
-                      }}
-                    />
+                    <Input type="file" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -336,9 +304,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
               />
             )}
             <DialogFooter>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save changes"}
-              </Button>
+              <Button type="submit">Save changes</Button>
             </DialogFooter>
           </form>
         </Form>

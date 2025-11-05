@@ -2,8 +2,9 @@
 'use server';
 
 import { getSpendingInsights, type SpendingInsightsInput } from "@/ai/flows/spending-insights";
-import { processTransactions, type ProcessTransactionsInput } from "@/ai/flows/process-transactions";
+import { processTransactions } from "@/ai/flows/process-transactions";
 import { categories, getBudgets, getMockExpenses, getMockIncome, getTotals } from "@/lib/data";
+import type { ProcessTransactionsInput } from "@/lib/types";
 
 export async function getSpendingInsightsAction() {
   try {

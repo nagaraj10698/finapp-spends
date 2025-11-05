@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UploadCloud, File, X, Loader2 } from 'lucide-react';
 import { processTransactionsAction } from '../actions';
-import type { ProcessTransactionsOutput } from '@/ai/flows/process-transactions';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { DataTable } from './data-table';
 import { columns } from './columns';
+import type { ProcessTransactionsOutput } from '@/lib/types';
 
 export default function TransactionUpload() {
   const [file, setFile] = useState<File | null>(null);

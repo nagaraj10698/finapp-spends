@@ -66,12 +66,13 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
 
                 // Add file to fileUploads collection
                 const fileUploadRef = doc(collection(firestore, 'users', user.uid, 'fileUploads'));
-                batch.set(fileUploadRef, {
+                const newFile: Omit<UploadedFile, 'id'> = {
                     name: file.name,
                     uploadDate: serverTimestamp(),
                     fileSize: file.size,
                     fileType: file.type,
-                });
+                }
+                batch.set(fileUploadRef, newFile);
 
                 // Add transactions to transactions subcollection
                 response.data.transactions.forEach(t => {

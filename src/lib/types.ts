@@ -40,7 +40,7 @@ export interface Income {
 export interface UploadedFile {
   id: string;
   name: string;
-  uploadDate: string | Date;
+  uploadDate: Date | Timestamp;
   fileSize: number;
   fileType: string;
 }

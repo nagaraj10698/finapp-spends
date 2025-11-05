@@ -41,14 +41,28 @@ import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
-const formSchema = z.object({
-  description: z.string().min(2, 'Description must be at least 2 characters.'),
-  amount: z.coerce.number().positive('Amount must be positive.'),
-  category: z.string().min(1, 'Please select a category.'),
-  date: z.date(),
-  isRecurring: z.boolean(),
-  bill: z.any().optional(),
-});
+const formSchema = z
+  .object({
+    description: z.string().min(2, 'Description must be at least 2 characters.'),
+    amount: z.coerce.number().positive('Amount must be positive.'),
+    category: z.string().min(1, 'Please select a category.'),
+    date: z.date(),
+    isRecurring: z.boolean(),
+    frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
+    bill: z.any().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.isRecurring && !data.frequency) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: 'Please select a frequency for recurring expenses.',
+      path: ['frequency'],
+    }
+  );
 
 export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
@@ -62,6 +76,8 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
       isRecurring: false,
     },
   });
+
+  const isRecurring = form.watch('isRecurring');
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     console.log(values);
@@ -221,6 +237,34 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                 </FormItem>
               )}
             />
+            {isRecurring && (
+              <FormField
+                control={form.control}
+                name="frequency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Frequency</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a frequency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <DialogFooter>
               <Button type="submit">Save changes</Button>
             </DialogFooter>

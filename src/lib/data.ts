@@ -31,8 +31,9 @@ export const defaultCategories: Omit<Category, 'id'>[] = [
     { name: 'Groceries', icon: 'ShoppingBag', color: 'text-emerald-500', type: 'expense' },
     { name: 'Transport', icon: 'Car', color: 'text-blue-500', type: 'expense' },
     { name: 'Health & Fitness', icon: 'HeartPulse', color: 'text-red-500', type: 'expense' },
-    { name: 'Medical & wellness', icon: 'Stethoscope', color: 'text-red-600', type: 'expense' },
-    { name: 'Entertainment & Shopping', icon: 'Film', color: 'text-purple-500', type: 'expense' },
+    { name: 'Medical & Wellness', icon: 'Stethoscope', color: 'text-red-600', type: 'expense' },
+    { name: 'Entertainment', icon: 'Film', color: 'text-purple-500', type: 'expense' },
+    { name: 'Shopping', icon: 'Shirt', color: 'text-pink-500', type: 'expense' },
     { name: 'Miscellaneous', icon: 'Shapes', color: 'text-gray-500', type: 'expense' },
     // Income
     { name: 'Salary', icon: 'Wallet', color: 'text-green-500', type: 'income' },

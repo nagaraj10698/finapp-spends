@@ -27,9 +27,10 @@ import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDa
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, MinusCircle, PlusCircle, TrendingUp } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 type ForecastPeriod = 'daily' | 'weekly' | 'monthly';
 
@@ -62,7 +63,7 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (dateRange?.from && dateRange?.to) {
-          const days = differenceInDays(dateRange.to, dateRange.from);
+          const days = differenceInDays(dateRange.to, dateRange.to);
            if (days <= 31) {
             setPeriod('daily');
           } else if (days <= 90) {
@@ -93,7 +94,7 @@ export default function DashboardPage() {
         if (!allTransactions) return [];
         return allTransactions.filter(t => {
             const transactionDate = t.date instanceof Date ? t.date : (t.date as any).toDate();
-            if (dateRange?.from && dateRange?.to) {
+            if (dateRange?.from && dateRange.to) {
                 return transactionDate >= dateRange.from && transactionDate <= dateRange.to;
             }
             return true;
@@ -186,6 +187,30 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <OverviewCards totals={totals} />
       </div>
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Link href="/income">
+            <Card className="hover:bg-accent hover:text-accent-foreground transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Add Income</CardTitle>
+                    <PlusCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">Log a new source of income.</p>
+                </CardContent>
+            </Card>
+        </Link>
+        <Link href="/expenses">
+            <Card className="hover:bg-accent hover:text-accent-foreground transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Add Expense</CardTitle>
+                    <MinusCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">Record a new expense or payment.</p>
+                </CardContent>
+            </Card>
+        </Link>
+       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -231,5 +256,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

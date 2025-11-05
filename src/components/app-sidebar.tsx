@@ -13,6 +13,7 @@ import {
   MinusCircle,
   TrendingUp,
   ArrowRightLeft,
+  FileText,
 } from 'lucide-react';
 import {
   SidebarContent,
@@ -34,6 +35,7 @@ const menuItems = [
   { href: '/income', label: 'Income', icon: TrendingUp },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
   { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
+  { href: '/documents', label: 'Documents', icon: FileText },
   { href: '/insights', label: 'Insights', icon: FilePieChart },
 ];
 

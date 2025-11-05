@@ -12,16 +12,16 @@ import { cn } from '@/lib/utils';
 import { Check, Circle } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { updateTransactionStatus } from '../actions';
 import type { Transaction } from '@/lib/types';
+import { doc, updateDoc } from 'firebase/firestore';
 
 
 export default function StatusDropdown({ transaction }: { transaction: Transaction }) {
-    const { user } = useFirebase();
+    const { user, firestore } = useFirebase();
     const { toast } = useToast();
   
     const handleStatusChange = async (status: 'Paid' | 'Un-paid') => {
-      if (!user) {
+      if (!user || !firestore) {
          toast({
           variant: "destructive",
           title: "Authentication Error",
@@ -30,18 +30,21 @@ export default function StatusDropdown({ transaction }: { transaction: Transacti
         return
       };
       
-      const result = await updateTransactionStatus(transaction.id, status, user.uid);
-      if (result.success) {
+      const transactionRef = doc(firestore, 'users', user.uid, 'transactions', transaction.id);
+
+      try {
+        await updateDoc(transactionRef, { status: status });
         toast({
           title: "Status Updated",
           description: `Transaction status changed to ${status}.`,
         });
-      } else {
-        toast({
+      } catch (error) {
+         toast({
           variant: "destructive",
           title: "Update Failed",
-          description: result.error,
+          description: "Could not update transaction status.",
         });
+        console.error("Error updating status:", error);
       }
     };
   

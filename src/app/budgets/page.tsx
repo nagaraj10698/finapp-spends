@@ -16,9 +16,21 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
 type ForecastPeriod = 'weekly' | 'monthly';
+
+const PRESET_RANGES = [
+    { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
+    { label: 'Last 7 days', getRange: () => ({ from: addDays(new Date(), -6), to: new Date() }) },
+    { label: 'Last 30 days', getRange: () => ({ from: addDays(new Date(), -29), to: new Date() }) },
+    { label: 'This Month', getRange: () => ({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) }) },
+    { label: 'Last Month', getRange: () => {
+        const lastMonth = subMonths(new Date(), 1);
+        return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
+    }},
+];
+
 
 export default function BudgetsPage() {
   const { firestore, user } = useFirebase();
@@ -32,8 +44,8 @@ export default function BudgetsPage() {
 
   const [period, setPeriod] = useState<ForecastPeriod>('monthly');
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: addDays(new Date(), 30),
+    from: startOfMonth(new Date()),
+    to: endOfMonth(addMonths(new Date(), 2)),
   });
 
   const processedBudgets = useMemo(() => {
@@ -93,15 +105,27 @@ export default function BudgetsPage() {
                             )}
                         </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={dateRange?.from}
-                            selected={dateRange}
-                            onSelect={setDateRange}
-                            numberOfMonths={2}
-                        />
+                        <PopoverContent className="w-auto p-0 flex" align="end">
+                            <div className="flex flex-col space-y-2 p-3 border-r">
+                                {PRESET_RANGES.map(({label, getRange}) => (
+                                     <Button 
+                                        key={label}
+                                        variant="ghost" 
+                                        className="justify-start" 
+                                        onClick={() => setDateRange(getRange())}
+                                    >
+                                        {label}
+                                    </Button>
+                                ))}
+                            </div>
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={dateRange?.from}
+                                selected={dateRange}
+                                onSelect={setDateRange}
+                                numberOfMonths={2}
+                            />
                         </PopoverContent>
                     </Popover>
                 </div>

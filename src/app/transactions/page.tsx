@@ -103,7 +103,7 @@ export default function TransactionsPage() {
         <div className="flex items-center justify-between">
             <h1 className="font-headline text-2xl font-semibold">All Transactions</h1>
             <AddTransactionDialog>
-                <Button>
+                <Button className="mt-4">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Transaction
                 </Button>

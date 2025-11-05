@@ -114,7 +114,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center">
         <h1 className="font-headline text-2xl font-semibold">Dashboard</h1>
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-2 mt-4'>
             <AddIncomeDialog>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />

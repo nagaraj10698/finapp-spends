@@ -21,7 +21,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Income } from './types';
-import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore } from 'date-fns';
+import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
@@ -78,7 +78,7 @@ function toDate(date: Date | Timestamp): Date {
 }
 
 
-export function getRecentTransactions(allTransactions: Transaction[], count: number): Transaction[] {
+export function getRecentTransactions(allTransactions: Transaction[] | null, count: number): Transaction[] {
   if (!allTransactions) return [];
   return [...allTransactions]
     .map(t => ({...t, date: toDate(t.date)}))
@@ -86,7 +86,7 @@ export function getRecentTransactions(allTransactions: Transaction[], count: num
     .slice(0, count);
 }
 
-export function getUpcomingBills(allTransactions: Transaction[], dateRange?: DateRange): Transaction[] {
+export function getUpcomingBills(allTransactions: Transaction[] | null, dateRange?: DateRange): Transaction[] {
     if (!allTransactions) return [];
     
     const today = new Date();
@@ -176,7 +176,7 @@ export function getBudgets(budgets: Budget[], allTransactions: Transaction[] | n
 
 export function getBudgetForecast(
   allTransactions: Transaction[] | null,
-  period: 'daily' | 'weekly' | 'monthly',
+  period: 'daily' | 'monthly',
   dateRange?: DateRange
 ) {
   if (!allTransactions) return [];
@@ -196,9 +196,6 @@ export function getBudgetForecast(
 
   if (period === 'daily') {
       periods = eachDayOfInterval(range).map(d => ({start: d, end: d}));
-      formatString = 'dd MMM';
-  } else if (period === 'weekly') {
-      periods = eachWeekOfInterval(range, { weekStartsOn: 1 }).map(d => ({start: d, end: endOfWeek(d, { weekStartsOn: 1 })}));
       formatString = 'dd MMM';
   } else { // monthly
       periods = eachMonthOfInterval(range).map(d => ({start: d, end: endOfMonth(d)}));
@@ -264,5 +261,3 @@ export function getBudgetForecast(
 
   return forecastData;
 }
-
-    

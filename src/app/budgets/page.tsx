@@ -12,10 +12,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDays } from 'date-fns';
+import { format, addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDays, isSameMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';
 
-type ForecastPeriod = 'daily' | 'weekly' | 'monthly';
+type ForecastPeriod = 'daily' | 'monthly';
 
 const PRESET_RANGES = [
     { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
@@ -44,11 +44,8 @@ export default function BudgetsPage() {
 
   useEffect(() => {
     if (dateRange?.from && dateRange?.to) {
-      const days = differenceInDays(dateRange.to, dateRange.from);
-       if (days <= 31) {
+      if (isSameMonth(dateRange.from, dateRange.to)) {
         setPeriod('daily');
-      } else if (days <= 90) {
-        setPeriod('weekly');
       } else {
         setPeriod('monthly');
       }

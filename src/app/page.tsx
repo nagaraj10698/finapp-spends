@@ -23,7 +23,7 @@ import type { Transaction, Budget, Category } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import BudgetForecastChart from '@/app/budgets/budget-forecast-chart';
-import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDays, format } from 'date-fns';
+import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDays, format, isSameMonth } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ import Link from 'next/link';
 import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
 import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
 
-type ForecastPeriod = 'daily' | 'weekly' | 'monthly';
+type ForecastPeriod = 'daily' | 'monthly';
 
 const PRESET_RANGES = [
     { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
@@ -65,11 +65,8 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (dateRange?.from && dateRange?.to) {
-          const days = differenceInDays(dateRange.to, dateRange.to);
-           if (days <= 31) {
+          if (isSameMonth(dateRange.from, dateRange.to)) {
             setPeriod('daily');
-          } else if (days <= 90) {
-            setPeriod('weekly');
           } else {
             setPeriod('monthly');
           }
@@ -91,15 +88,13 @@ export default function DashboardPage() {
         setActivePreset(label);
     }
     
-    // Memoize derived data to prevent re-computation on every render
     const filteredTransactions = useMemo(() => {
         if (!allTransactions) return [];
+        if (!dateRange?.from || !dateRange.to) return allTransactions;
+    
         return allTransactions.filter(t => {
-            const transactionDate = t.date instanceof Date ? t.date : (t.date as any).toDate();
-            if (dateRange?.from && dateRange.to) {
-                return transactionDate >= dateRange.from && transactionDate <= dateRange.to;
-            }
-            return true;
+            const transactionDate = (t.date as any).toDate ? (t.date as any).toDate() : new Date(t.date as any);
+            return transactionDate >= dateRange.from! && transactionDate <= dateRange.to!;
         });
     }, [allTransactions, dateRange]);
 
@@ -110,8 +105,8 @@ export default function DashboardPage() {
     const upcomingBills = useMemo(() => getUpcomingBills(allTransactions, dateRange), [allTransactions, dateRange]);
 
     const budgetForecastData = useMemo(() => {
-        return getBudgetForecast(allTransactions, 'monthly', {from: startOfMonth(new Date()), to: endOfMonth(new Date())});
-    }, [allTransactions]);
+        return getBudgetForecast(allTransactions, period, dateRange);
+    }, [allTransactions, period, dateRange]);
 
 
     if (transactionsLoading || categoriesLoading) {
@@ -214,7 +209,7 @@ export default function DashboardPage() {
             <CardHeader>
                 <CardTitle className="font-headline">Budget Forecast</CardTitle>
                 <CardDescription>
-                Your expense forecast for this month.
+                Your expense forecast for the selected period.
                 </CardDescription>
             </CardHeader>
             <CardContent>

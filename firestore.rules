@@ -72,7 +72,7 @@ service cloud.firestore {
     match /users/{userId}/transactions/{transactionId} {
       allow get: if isSignedIn() && isOwner(userId);
       allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && isValidTransaction(request.resource.data);
       allow update: if isSignedIn() && isOwner(userId);
       allow delete: if isSignedIn() && isOwner(userId);
     }
@@ -136,7 +136,7 @@ service cloud.firestore {
     match /users/{userId}/fileUploads/{fileUploadId} {
       allow get: if isSignedIn() && isOwner(userId);
       allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && isValidFileUpload(request.resource.data);
       allow update: if isSignedIn() && isOwner(userId);
       allow delete: if isSignedIn() && isOwner(userId);
     }
@@ -149,6 +149,21 @@ service cloud.firestore {
 
   function isOwner(userId) {
     return request.auth.uid == userId;
+  }
+  
+  function isValidTransaction(data) {
+    return data.description is string &&
+           data.amount is number &&
+           data.date is timestamp &&
+           data.category is string &&
+           data.type is string && (data.type == 'income' || data.type == 'expense');
+  }
+
+  function isValidFileUpload(data) {
+      return data.name is string &&
+             data.uploadDate is timestamp &&
+             data.fileSize is number &&
+             data.fileType is string;
   }
 }
     

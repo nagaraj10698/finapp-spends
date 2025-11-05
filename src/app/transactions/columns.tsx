@@ -129,6 +129,36 @@ export const getColumns = (
     },
   },
   {
+    accessorKey: 'amount',
+    header: ({ column }) => (
+      <div className="text-right">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Amount
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    ),
+    cell: ({ row }) => {
+      const amount = parseFloat(row.getValue('amount'));
+      const formatted = formatCurrency(Math.abs(amount));
+
+      return (
+        <div
+          className={cn(
+            'text-right font-medium pr-4 flex items-center justify-end gap-1',
+            amount < 0 ? 'text-red-500' : 'text-green-500'
+          )}
+        >
+          <DhiramSymbol />
+          {formatted}
+        </div>
+      );
+    },
+  },
+  {
     id: 'bill',
     header: 'Bill',
     cell: ({ row }) => {
@@ -171,36 +201,6 @@ export const getColumns = (
                 {billStatus}
             </Badge>
         );
-    },
-  },
-  {
-    accessorKey: 'amount',
-    header: ({ column }) => (
-      <div className="text-right">
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Amount
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-    ),
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue('amount'));
-      const formatted = formatCurrency(Math.abs(amount));
-
-      return (
-        <div
-          className={cn(
-            'text-right font-medium pr-4 flex items-center justify-end gap-1',
-            amount < 0 ? 'text-red-500' : 'text-green-500'
-          )}
-        >
-          <DhiramSymbol />
-          {formatted}
-        </div>
-      );
     },
   },
   {

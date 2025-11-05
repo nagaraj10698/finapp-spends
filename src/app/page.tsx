@@ -55,9 +55,9 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
-            <CardTitle className="font-headline">Spending Overview</CardTitle>
+            <CardTitle className="font-headline">Spent by category</CardTitle>
           </CardHeader>
-          <CardContent className="pl-2">
+          <CardContent>
             <SpendingChart data={spendingByCategory} categories={categories ?? []}/>
           </CardContent>
         </Card>

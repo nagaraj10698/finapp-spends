@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Pie, PieChart, ResponsiveContainer, Legend, Tooltip, Cell } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Tooltip, Cell } from 'recharts';
 import {
   ChartContainer,
   ChartTooltipContent,
@@ -70,8 +71,10 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
+  if (percent * 100 < 5) return null;
+
   return (
-    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" className="text-xs font-bold">
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
@@ -79,34 +82,52 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 
 
 export default function SpendingChart({ data, categories }: SpendingChartProps) {
+  const totalSpent = data.reduce((acc, curr) => acc + curr.total, 0);
+
   return (
-    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-      <ResponsiveContainer width="100%" height={350}>
-        <PieChart>
-          <Tooltip
-            cursor={false}
-            content={<CustomTooltipContent categories={categories} />}
-          />
-          <Pie
-            data={data}
-            dataKey="total"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            innerRadius={80}
-            outerRadius={120}
-            fill="#8884d8"
-            paddingAngle={5}
-            labelLine={false}
-            label={renderCustomizedLabel}
-          >
+    <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-4">
+        <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
+            <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                <Tooltip
+                    cursor={false}
+                    content={<CustomTooltipContent categories={categories} />}
+                />
+                <Pie
+                    data={data}
+                    dataKey="total"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    paddingAngle={2}
+                    labelLine={false}
+                    label={renderCustomizedLabel}
+                >
+                    {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                </Pie>
+                </PieChart>
+            </ResponsiveContainer>
+        </ChartContainer>
+
+        <div className="flex flex-col gap-4 text-sm">
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <div key={entry.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                        <span>{entry.name}</span>
+                    </div>
+                    <div className="font-medium flex items-center gap-1">
+                        <DhiramSymbol className="h-3 w-3" />
+                        {entry.total.toFixed(2)}
+                    </div>
+                </div>
             ))}
-          </Pie>
-          <Legend wrapperStyle={{fontSize: '0.8rem'}} />
-        </PieChart>
-      </ResponsiveContainer>
-    </ChartContainer>
+        </div>
+    </div>
   );
 }

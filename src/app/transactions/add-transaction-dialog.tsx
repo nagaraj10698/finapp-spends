@@ -133,11 +133,14 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
             category: values.category,
             date: values.date,
             isRecurring: values.isRecurring,
-            frequency: values.isRecurring ? values.frequency : undefined,
             type: values.type,
             fileURL,
             fileName,
         };
+        
+        if (values.isRecurring) {
+            newTransaction.frequency = values.frequency;
+        }
 
         await setDoc(newTransactionRef, newTransaction);
 

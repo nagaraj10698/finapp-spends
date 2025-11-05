@@ -123,11 +123,14 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
           category: values.category,
           date: values.date,
           isRecurring: values.isRecurring,
-          frequency: values.isRecurring ? values.frequency : undefined,
           type: 'expense',
           fileURL,
           fileName,
       };
+
+      if (values.isRecurring) {
+        newExpense.frequency = values.frequency;
+      }
 
       await setDoc(newExpenseRef, newExpense);
 

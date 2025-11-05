@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -23,7 +24,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import Logo from './logo';
-import AddExpenseDialog from '@/app/transactions/add-expense-dialog';
+import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
 import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
 import { Button } from '@/components/ui/button';
 

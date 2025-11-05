@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, addMonths, differenceInDays } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, addMonths, differenceInDays, isSameDay } from 'date-fns';
 
 type ForecastPeriod = 'weekly' | 'monthly';
 
@@ -47,13 +47,30 @@ export default function BudgetsPage() {
     from: startOfMonth(new Date()),
     to: endOfMonth(addMonths(new Date(), 2)),
   });
+  const [activePreset, setActivePreset] = useState<string | null>(null);
 
   useEffect(() => {
     if (dateRange?.from && dateRange?.to) {
       const days = differenceInDays(dateRange.to, dateRange.from);
       setPeriod(days > 31 ? 'monthly' : 'weekly');
+
+      // Check if current range matches a preset
+      const matchedPreset = PRESET_RANGES.find(p => {
+        const range = p.getRange();
+        return range.from && range.to && dateRange.from && dateRange.to && isSameDay(range.from, dateRange.from) && isSameDay(range.to, dateRange.to)
+      });
+      setActivePreset(matchedPreset ? matchedPreset.label : 'Custom');
+    } else {
+        setActivePreset(null);
     }
   }, [dateRange]);
+
+  const handlePresetClick = (label: string, getRange?: () => DateRange | undefined) => {
+    if (getRange) {
+        setDateRange(getRange());
+    }
+    setActivePreset(label);
+  }
 
 
   const processedBudgets = useMemo(() => {
@@ -112,17 +129,24 @@ export default function BudgetsPage() {
                         </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 flex" align="end">
-                            <div className="flex flex-col space-y-2 p-3 border-r">
+                            <div className="flex flex-col space-y-1 p-2 border-r">
                                 {PRESET_RANGES.map(({label, getRange}) => (
                                      <Button 
                                         key={label}
-                                        variant="ghost" 
+                                        variant={activePreset === label ? 'default': 'ghost'} 
                                         className="justify-start" 
-                                        onClick={() => setDateRange(getRange())}
+                                        onClick={() => handlePresetClick(label, getRange)}
                                     >
                                         {label}
                                     </Button>
                                 ))}
+                                <Button
+                                    variant={activePreset === 'Custom' ? 'default': 'ghost'}
+                                    className="justify-start"
+                                    onClick={() => handlePresetClick('Custom')}
+                                >
+                                    Custom
+                                </Button>
                             </div>
                             <Calendar
                                 initialFocus

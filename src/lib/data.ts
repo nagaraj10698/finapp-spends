@@ -21,7 +21,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Income } from './types';
-import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
+import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
@@ -173,7 +173,7 @@ export function getBudgets(budgets: Budget[], allTransactions: Transaction[] | n
 
 export function getBudgetForecast(
   allTransactions: Transaction[] | null,
-  period: 'weekly' | 'monthly',
+  period: 'daily' | 'weekly' | 'monthly',
   dateRange?: DateRange
 ) {
   if (!allTransactions) return [];
@@ -184,7 +184,10 @@ export function getBudgetForecast(
   let periods: {start: Date, end: Date}[];
   let formatString: string;
 
-  if (period === 'weekly') {
+  if (period === 'daily') {
+    periods = eachDayOfInterval(range).map(d => ({ start: d, end: d }));
+    formatString = 'dd MMM';
+  } else if (period === 'weekly') {
       periods = eachWeekOfInterval(range, { weekStartsOn: 1 }).map(d => ({start: d, end: endOfWeek(d, { weekStartsOn: 1 })}));
       formatString = 'dd MMM';
   } else { // monthly
@@ -224,7 +227,9 @@ export function getBudgetForecast(
       }
     });
 
-    forecastData.push({ name: periodName, unpaid: unpaidForPeriod, upcoming: upcomingForPeriod });
+    if (unpaidForPeriod > 0 || upcomingForPeriod > 0) {
+        forecastData.push({ name: periodName, unpaid: unpaidForPeriod, upcoming: upcomingForPeriod });
+    }
   });
 
   // Add a bucket for all past-due unpaid items if not in custom range

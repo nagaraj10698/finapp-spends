@@ -18,7 +18,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, addMonths, differenceInDays, isSameDay } from 'date-fns';
 
-type ForecastPeriod = 'weekly' | 'monthly';
+type ForecastPeriod = 'daily' | 'weekly' | 'monthly';
 
 const PRESET_RANGES = [
     { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
@@ -53,7 +53,13 @@ export default function BudgetsPage() {
   useEffect(() => {
     if (dateRange?.from && dateRange?.to) {
       const days = differenceInDays(dateRange.to, dateRange.from);
-      setPeriod(days > 31 ? 'monthly' : 'weekly');
+       if (days <= 31) {
+        setPeriod('daily');
+      } else if (days <= 90) {
+        setPeriod('weekly');
+      } else {
+        setPeriod('monthly');
+      }
 
       // Check if current range matches a preset
       const matchedPreset = PRESET_RANGES.find(p => {

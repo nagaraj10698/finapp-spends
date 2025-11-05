@@ -1,11 +1,7 @@
 
 'use client';
 import { useMemo, useState, useEffect } from 'react';
-import { getBudgets, getBudgetForecast } from '@/lib/data';
-import BudgetCard from './budget-card';
-import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
-import AddBudgetDialog from './add-budget-dialog';
+import { getBudgetForecast } from '@/lib/data';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Budget, Transaction, Category } from '@/lib/types';
@@ -16,7 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, addMonths, differenceInDays, isSameDay } from 'date-fns';
+import { format, addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDays } from 'date-fns';
+import { Button } from '@/components/ui/button';
 
 type ForecastPeriod = 'daily' | 'weekly' | 'monthly';
 
@@ -34,18 +31,13 @@ const PRESET_RANGES = [
 
 export default function BudgetsPage() {
   const { firestore, user } = useFirebase();
-  const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
   const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
-  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
-  
-  const { data: budgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
-  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const [period, setPeriod] = useState<ForecastPeriod>('monthly');
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
-    to: endOfMonth(addMonths(new Date(), 2)),
+    to: endOfMonth(new Date()),
   });
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [isDatePopoverOpen, setDatePopoverOpen] = useState(false);
@@ -78,19 +70,13 @@ export default function BudgetsPage() {
     }
     setActivePreset(label);
   }
-
-
-  const processedBudgets = useMemo(() => {
-    if (!budgets) return [];
-    return getBudgets(budgets, transactions);
-  }, [budgets, transactions]);
   
   const forecastData = useMemo(() => {
     return getBudgetForecast(transactions, period, dateRange);
   }, [transactions, period, dateRange]);
 
 
-  if (budgetsLoading || transactionsLoading || categoriesLoading) {
+  if (transactionsLoading) {
     return <div>Loading budgets...</div>;
   }
 
@@ -177,26 +163,6 @@ export default function BudgetsPage() {
             <BudgetForecastChart data={forecastData} />
         </CardContent>
        </Card>
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-            <h2 className="font-headline text-2xl font-semibold">Planned Budgets</h2>
-            <AddBudgetDialog>
-            <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Budget
-            </Button>
-            </AddBudgetDialog>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {processedBudgets.map((budget) => {
-            const category = categories?.find(c => c.name === budget.category);
-            return (
-                <BudgetCard key={budget.id} budget={budget} category={category} />
-            )
-            })}
-        </div>
-       </div>
     </div>
   );
 }

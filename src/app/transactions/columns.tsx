@@ -28,9 +28,6 @@ export const columns: ColumnDef<Transaction>[] = [
     header: 'Category',
     cell: ({ row }) => {
       const categoryName = row.getValue('category') as string;
-      if (categoryName === 'Income') {
-        return <Badge variant="secondary">{categoryName}</Badge>;
-      }
       const category = getCategoryByName(categoryName);
       if (!category) {
         return <Badge variant="secondary">{categoryName}</Badge>;
@@ -75,18 +72,14 @@ export const columns: ColumnDef<Transaction>[] = [
       </div>
     ),
     cell: ({ row }) => {
-      const transaction = row.original;
       const amount = parseFloat(row.getValue('amount'));
-      
-      const isExpense = transaction.type === 'expense' || (transaction.type !== 'income' && amount > 0);
-      const displayAmount = isExpense ? -amount : amount;
 
       const formatted = new Intl.NumberFormat('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-      }).format(displayAmount);
+      }).format(amount);
 
-      return <div className={`text-right font-medium pr-4 flex items-center justify-end gap-1 ${displayAmount < 0 ? 'text-red-500' : 'text-green-500'}`}><DhiramSymbol />{formatted}</div>;
+      return <div className={`text-right font-medium pr-4 flex items-center justify-end gap-1 ${amount < 0 ? 'text-red-500' : 'text-green-500'}`}><DhiramSymbol />{formatted}</div>;
     },
   },
   {

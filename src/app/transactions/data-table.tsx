@@ -58,7 +58,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <div className="flex items-center py-4">
+      <div className="flex items-center justify-between py-4">
         <Input
           placeholder="Filter descriptions..."
           value={
@@ -69,6 +69,9 @@ export function DataTable<TData, TValue>({
           }
           className="max-w-sm"
         />
+        <div className="text-sm text-muted-foreground">
+            Total Transactions: {table.getFilteredRowModel().rows.length}
+        </div>
       </div>
       <div className="rounded-md border">
         <Table>

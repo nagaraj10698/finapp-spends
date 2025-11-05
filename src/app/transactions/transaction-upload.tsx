@@ -11,6 +11,7 @@ import type { ProcessTransactionsOutput } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
 
 interface UploadedFile {
   id: string;
@@ -28,6 +29,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
   const [error, setError] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const storedFiles = localStorage.getItem('uploadedFiles');
@@ -71,6 +73,11 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
       
       if (response.success && response.data) {
         onProcess(response.data);
+        toast({
+          title: "Processing Complete",
+          description: `Successfully processed ${response.data.transactions.length} transactions from ${file.name}.`,
+        });
+
         // Add to historical list
         const newFile: UploadedFile = {
           id: `${file.name}-${new Date().toISOString()}`,

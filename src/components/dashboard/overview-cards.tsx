@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -8,6 +9,7 @@ import { DhiramSymbol } from '../ui/dhiram-symbol';
 import { ArrowUp, ArrowDown, PlusCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import AddIncomeDialog from './add-income-dialog';
+import { cn } from '@/lib/utils';
 
 interface OverviewCardsProps {
   totals: {
@@ -32,7 +34,7 @@ export default function OverviewCards({ totals }: OverviewCardsProps) {
         <CardContent>
           <div className="text-2xl font-bold flex items-center gap-1">
             <DhiramSymbol />
-            {totals.income.toLocaleString()}
+            {totals.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="text-xs text-muted-foreground">+20.1% from last month</p>
         </CardContent>
@@ -43,9 +45,9 @@ export default function OverviewCards({ totals }: OverviewCardsProps) {
           <DhiramSymbol className="text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold flex items-center gap-1">
+          <div className="text-2xl font-bold flex items-center gap-1 text-red-500">
              <DhiramSymbol />
-            {totals.expenses.toLocaleString()}
+            {totals.expenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="text-xs text-muted-foreground">+180.1% from last month</p>
         </CardContent>
@@ -56,8 +58,8 @@ export default function OverviewCards({ totals }: OverviewCardsProps) {
           <ArrowUp className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold flex items-center gap-1">
-            <DhiramSymbol />{totals.savings.toLocaleString()}
+          <div className={cn("text-2xl font-bold flex items-center gap-1", totals.savings < 0 ? "text-red-500" : "text-green-500")}>
+            <DhiramSymbol />{totals.savings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="text-xs text-muted-foreground">+19% from last month</p>
         </CardContent>

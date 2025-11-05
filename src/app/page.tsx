@@ -1,3 +1,5 @@
+'use client';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -15,15 +17,26 @@ import {
   getSpendingByCategory,
   getTotals,
   getUpcomingBills,
+  parseTransactions,
 } from '@/lib/data';
 import UpcomingBills from '@/components/dashboard/upcoming-bills';
+import type { Transaction } from '@/lib/types';
 
 export default function DashboardPage() {
-  const totals = getTotals();
-  const spendingByCategory = getSpendingByCategory();
-  const budgets = getBudgets();
-  const recentTransactions = getRecentTransactions(5);
-  const upcomingBills = getUpcomingBills();
+    const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+
+    useEffect(() => {
+        const storedTransactionsString = localStorage.getItem('processedTransactions');
+        const parsed = parseTransactions(storedTransactionsString);
+        setAllTransactions(parsed);
+    }, []);
+
+    // Memoize derived data to prevent re-computation on every render
+    const totals = getTotals(allTransactions);
+    const spendingByCategory = getSpendingByCategory(allTransactions);
+    const budgets = getBudgets(allTransactions);
+    const recentTransactions = getRecentTransactions(allTransactions, 5);
+    const upcomingBills = getUpcomingBills(allTransactions);
 
   return (
     <div className="flex flex-col gap-4">

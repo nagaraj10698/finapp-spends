@@ -41,7 +41,7 @@ export default function UpcomingBills({ bills }: UpcomingBillsProps) {
                 )}
               </TableCell>
               <TableCell className="text-right flex items-center justify-end gap-1">
-                <DhiramSymbol />{bill.amount.toFixed(2)}
+                <DhiramSymbol />{Math.abs(bill.amount).toFixed(2)}
               </TableCell>
             </TableRow>
           );

@@ -32,6 +32,7 @@ export default function RecentTransactions({
       <TableBody>
         {transactions.map((transaction) => {
           const category = getCategoryByName(transaction.category);
+          const amount = transaction.amount;
           return (
             <TableRow key={transaction.id}>
               <TableCell className="font-medium">
@@ -48,8 +49,8 @@ export default function RecentTransactions({
                   </Badge>
                 )}
               </TableCell>
-              <TableCell className="text-right flex items-center justify-end gap-1">
-                <DhiramSymbol />{transaction.amount.toFixed(2)}
+              <TableCell className={cn("text-right flex items-center justify-end gap-1", amount < 0 ? 'text-red-500' : 'text-green-500')}>
+                <DhiramSymbol />{Math.abs(amount).toFixed(2)}
               </TableCell>
               <TableCell className="hidden sm:table-cell">
                 {transaction.date.toLocaleDateString()}

@@ -11,20 +11,25 @@ import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 interface BudgetForecastChartProps {
   data: {
     name: string;
-    upcoming: number;
-    unpaid: number;
+    open: number;
+    overdue: number;
+    closed: number;
   }[];
 }
 
 const chartConfig = {
-  upcoming: {
-    label: "Upcoming",
+  open: {
+    label: "Open",
     color: "hsl(var(--chart-1))",
   },
-  unpaid: {
-    label: "Unpaid",
+  overdue: {
+    label: "Overdue",
     color: "hsl(var(--chart-2))",
   },
+  closed: {
+      label: "Closed",
+      color: "hsl(var(--chart-3))",
+  }
 };
 
 const CustomLabel = (props: any) => {
@@ -70,11 +75,14 @@ export default function BudgetForecastChart({ data }: BudgetForecastChartProps) 
                 />}
             />
             <Legend />
-            <Line type="monotone" dataKey="upcoming" stroke={chartConfig.upcoming.color} strokeWidth={2} activeDot={{ r: 8 }}>
-                <LabelList dataKey="upcoming" content={<CustomLabel />} />
+            <Line type="monotone" dataKey="open" stroke={chartConfig.open.color} strokeWidth={2} activeDot={{ r: 8 }}>
+                <LabelList dataKey="open" content={<CustomLabel />} />
             </Line>
-            <Line type="monotone" dataKey="unpaid" stroke={chartConfig.unpaid.color} strokeWidth={2} >
-                <LabelList dataKey="unpaid" content={<CustomLabel />} />
+            <Line type="monotone" dataKey="overdue" stroke={chartConfig.overdue.color} strokeWidth={2} >
+                <LabelList dataKey="overdue" content={<CustomLabel />} />
+            </Line>
+             <Line type="monotone" dataKey="closed" stroke={chartConfig.closed.color} strokeWidth={2} >
+                <LabelList dataKey="closed" content={<CustomLabel />} />
             </Line>
         </LineChart>
       </ResponsiveContainer>

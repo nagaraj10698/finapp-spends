@@ -106,7 +106,7 @@ export default function BudgetsPage() {
             <div className='flex justify-between items-start'>
                 <div>
                     <CardTitle>Expense Forecast</CardTitle>
-                    <CardDescription>This chart shows your unpaid and upcoming recurring expenses.</CardDescription>
+                    <CardDescription>This chart shows your open, closed and overdue expenses.</CardDescription>
                 </div>
                 <div className='flex items-center gap-2'>
                     <Popover open={isDatePopoverOpen} onOpenChange={setDatePopoverOpen}>

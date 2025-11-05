@@ -21,7 +21,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Income } from './types';
-import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval } from 'date-fns';
+import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
@@ -177,106 +177,87 @@ export function getBudgetForecast(
   dateRange?: DateRange
 ) {
   if (!allTransactions) return [];
-
-  const today = new Date();
-  const range = dateRange?.from && dateRange.to ? { start: dateRange.from, end: dateRange.to } : { start: startOfMonth(today), end: endOfMonth(addMonths(today, 3)) };
   
-  const forecastData: { name: string; upcoming: number; unpaid: number }[] = [];
-  const unpaidExpenses = allTransactions.filter(t => t.type === 'expense' && t.status === 'Un-paid');
-  const recurringExpenses = allTransactions.filter(t => t.type === 'expense' && t.isRecurring && t.frequency);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
+
+  const range = dateRange?.from && dateRange.to 
+    ? { start: dateRange.from, end: dateRange.to } 
+    : { start: startOfMonth(today), end: endOfMonth(addMonths(today, 3)) };
+  
+  const forecastData: { name: string; open: number; overdue: number; closed: number; }[] = [];
+  const allExpenses = allTransactions.filter(t => t.type === 'expense');
+
+  let periods: {start: Date, end: Date}[];
+  let formatString: string;
 
   if (period === 'daily') {
-    // Show individual items for daily view
-    const dailyItems: { date: Date; type: 'unpaid' | 'upcoming'; amount: number }[] = [];
+      periods = eachDayOfInterval(range).map(d => ({start: d, end: d}));
+      formatString = 'dd MMM';
+  } else if (period === 'weekly') {
+      periods = eachWeekOfInterval(range, { weekStartsOn: 1 }).map(d => ({start: d, end: endOfWeek(d, { weekStartsOn: 1 })}));
+      formatString = 'dd MMM';
+  } else { // monthly
+      periods = eachMonthOfInterval(range).map(d => ({start: d, end: endOfMonth(d)}));
+      formatString = 'MMM yyyy';
+  }
 
-    // Add individual unpaid expenses
-    unpaidExpenses.forEach(t => {
-      const transactionDate = toDate(t.date);
-      if (isWithinInterval(transactionDate, range)) {
-        dailyItems.push({ date: transactionDate, type: 'unpaid', amount: Math.abs(t.amount) });
-      }
-    });
-
-    // Add individual upcoming recurring expenses
-    recurringExpenses.forEach(t => {
-      let nextDate = toDate(t.date);
-      while(nextDate <= range.end) {
-        if (nextDate >= range.start) {
-          dailyItems.push({ date: nextDate, type: 'upcoming', amount: Math.abs(t.amount) });
-        }
-        switch (t.frequency) {
-            case 'weekly': nextDate = addWeeks(nextDate, 1); break;
-            case 'monthly': nextDate = addMonths(nextDate, 1); break;
-            case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
-            case 'yearly': nextDate = addYears(nextDate, 1); break;
-            default: nextDate = addYears(range.end, 1);
-        }
-      }
-    });
-
-    // Sort by date and format for the chart
-    dailyItems.sort((a,b) => a.date.getTime() - b.date.getTime()).forEach(item => {
-        forecastData.push({
-            name: format(item.date, 'dd MMM'),
-            unpaid: item.type === 'unpaid' ? item.amount : 0,
-            upcoming: item.type === 'upcoming' ? item.amount : 0,
-        });
-    });
-
-  } else {
-    // Aggregate for weekly or monthly view
-    let periods: {start: Date, end: Date}[];
-    let formatString: string;
-    
-    if (period === 'weekly') {
-        periods = eachWeekOfInterval(range, { weekStartsOn: 1 }).map(d => ({start: d, end: endOfWeek(d, { weekStartsOn: 1 })}));
-        formatString = 'dd MMM';
-    } else { // monthly
-        periods = eachMonthOfInterval(range).map(d => ({start: d, end: endOfMonth(d)}));
-        formatString = 'MMM yyyy';
-    }
-
-    periods.forEach(interval => {
+  periods.forEach(interval => {
       const periodName = format(interval.start, formatString);
+      let openForPeriod = 0;
+      let overdueForPeriod = 0;
+      let closedForPeriod = 0;
+
+      // Handle one-time expenses
+      allExpenses
+          .filter(t => !t.isRecurring && isWithinInterval(toDate(t.date), interval))
+          .forEach(t => {
+              const amount = Math.abs(t.amount);
+              if (t.status === 'Paid') {
+                  closedForPeriod += amount;
+              } else {
+                  if (isBefore(toDate(t.date), today)) {
+                      overdueForPeriod += amount;
+                  } else {
+                      openForPeriod += amount;
+                  }
+              }
+          });
       
-      const unpaidForPeriod = unpaidExpenses
-        .filter(t => isWithinInterval(toDate(t.date), interval))
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-        
-      let upcomingForPeriod = 0;
-      recurringExpenses.forEach(t => {
-        let nextDate = toDate(t.date);
-        while(nextDate <= interval.end) {
-          if (nextDate >= interval.start) {
-            upcomingForPeriod += Math.abs(t.amount);
-          }
-          switch (t.frequency) {
-              case 'weekly': nextDate = addWeeks(nextDate, 1); break;
-              case 'monthly': nextDate = addMonths(nextDate, 1); break;
-              case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
-              case 'yearly': nextDate = addYears(nextDate, 1); break;
-              default: nextDate = addYears(interval.end, 1);
-          }
-        }
-      });
-
-      if (unpaidForPeriod > 0 || upcomingForPeriod > 0) {
-          forecastData.push({ name: periodName, unpaid: unpaidForPeriod, upcoming: upcomingForPeriod });
+      // Handle recurring expenses
+      allExpenses
+          .filter(t => t.isRecurring && t.frequency)
+          .forEach(t => {
+              let nextDate = toDate(t.date);
+              while(nextDate <= interval.end) {
+                  if (nextDate >= interval.start) {
+                      const amount = Math.abs(t.amount);
+                      // Treat all future recurring items as "open" for forecasting
+                      if (isBefore(nextDate, today)) {
+                        overdueForPeriod += amount;
+                      } else {
+                        openForPeriod += amount;
+                      }
+                  }
+                  switch (t.frequency) {
+                      case 'weekly': nextDate = addWeeks(nextDate, 1); break;
+                      case 'monthly': nextDate = addMonths(nextDate, 1); break;
+                      case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
+                      case 'yearly': nextDate = addYears(nextDate, 1); break;
+                      default: nextDate = addYears(interval.end, 1);
+                  }
+              }
+          });
+      
+      if (openForPeriod > 0 || overdueForPeriod > 0 || closedForPeriod > 0) {
+          forecastData.push({ 
+              name: periodName, 
+              open: openForPeriod, 
+              overdue: overdueForPeriod, 
+              closed: closedForPeriod 
+            });
       }
-    });
-  }
+  });
 
-  // Add a bucket for all past-due unpaid items if not in a custom range with a start date before today
-  if (!dateRange || (dateRange.from && dateRange.from <= today)) {
-    const pastDueStart = dateRange?.from ? dateRange.from : startOfMonth(today);
-    const pastDueUnpaid = unpaidExpenses
-        .filter(t => toDate(t.date) < pastDueStart)
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-
-    if (pastDueUnpaid > 0) {
-        forecastData.unshift({ name: "Past Due", unpaid: pastDueUnpaid, upcoming: 0 });
-    }
-  }
-  
   return forecastData;
 }

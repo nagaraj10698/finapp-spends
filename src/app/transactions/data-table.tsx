@@ -5,12 +5,16 @@ import {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
+  VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  RowSelectionState
 } from '@tanstack/react-table';
 
 import {
@@ -40,6 +44,8 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
+  const [rowSelection, setRowSelection] = React.useState({})
+
 
   const table = useReactTable({
     data,
@@ -50,9 +56,11 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
+      rowSelection,
     },
   });
 
@@ -124,11 +132,9 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
       <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="text-sm text-muted-foreground">
-          Showing {table.getRowModel().rows.length > 0 ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 : 0}
-          -
-          {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} of{' '}
-          {table.getFilteredRowModel().rows.length} transactions
+        <div className="flex-1 text-sm text-muted-foreground">
+          {table.getFilteredSelectedRowModel().rows.length} of{' '}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
 
         <div className="flex items-center space-x-2">

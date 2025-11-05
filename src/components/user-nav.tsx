@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -19,7 +18,6 @@ import { Skeleton } from './ui/skeleton';
 import Link from 'next/link';
 
 export function UserNav() {
-  const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
@@ -53,11 +51,10 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            {(user.photoURL || userAvatar) && (
+            {user.photoURL && (
               <AvatarImage
-                src={user.photoURL ?? userAvatar?.imageUrl}
+                src={user.photoURL}
                 alt="User Avatar"
-                data-ai-hint={userAvatar?.imageHint}
               />
             )}
             <AvatarFallback>{(user.displayName?.[0] || user.email?.[0] || "U")}</AvatarFallback>

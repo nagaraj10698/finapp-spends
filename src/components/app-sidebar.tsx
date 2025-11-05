@@ -32,16 +32,15 @@ import { Button } from '@/components/ui/button';
 
 const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
   { href: '/expenses', label: 'Expenses', icon: Landmark },
   { href: '/income', label: 'Income', icon: TrendingUp },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
-  { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
   { href: '/documents', label: 'Documents', icon: FileText },
   { href: '/insights', label: 'Insights', icon: FilePieChart },
 ];
 
 const bottomMenuItems = [
-  { href: '/settings', label: 'Settings', icon: Settings },
   { href: '/help', label: 'Help', icon: HelpCircle },
 ];
 
@@ -86,6 +85,18 @@ export default function AppSidebar() {
       <SidebarFooter>
         <SidebarSeparator />
         <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/settings'}
+                tooltip={'Settings'}
+              >
+                <Link href={'/settings'}>
+                  <Settings />
+                  <span>{'Settings'}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           {bottomMenuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton

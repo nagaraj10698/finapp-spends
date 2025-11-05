@@ -2,7 +2,8 @@
 'use server';
 
 import { getSpendingInsights, type SpendingInsightsInput } from "@/ai/flows/spending-insights";
-import { getBudgets, getMockExpenses, getTotals } from "@/lib/data";
+import { processTransactions, type ProcessTransactionsInput } from "@/ai/flows/process-transactions";
+import { categories, getBudgets, getMockExpenses, getMockIncome, getTotals } from "@/lib/data";
 
 export async function getSpendingInsightsAction() {
   try {
@@ -32,4 +33,20 @@ export async function getSpendingInsightsAction() {
     console.error(error);
     return { success: false, error: 'Failed to get spending insights.' };
   }
+}
+
+
+export async function processTransactionsAction(fileContent: string) {
+    try {
+        const input: ProcessTransactionsInput = {
+            fileContent,
+            categories: categories.map(c => c.name),
+            incomeCategories: ['Salary', 'Freelance', 'Investment', 'Other Income'],
+        };
+        const result = await processTransactions(input);
+        return { success: true, data: result };
+    } catch (error) {
+        console.error(error);
+        return { success: false, error: 'Failed to process transactions.' };
+    }
 }

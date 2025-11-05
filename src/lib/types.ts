@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { z } from 'zod';
+import type { Timestamp } from 'firebase/firestore';
 
 export interface Category {
   id: string;
@@ -12,7 +13,7 @@ export interface Transaction {
   id: string;
   description: string;
   amount: number;
-  date: Date;
+  date: Date | Timestamp;
   category: string;
   isRecurring?: boolean;
   frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
@@ -36,7 +37,9 @@ export interface Income {
 export interface UploadedFile {
   id: string;
   name: string;
-  uploadDate: string;
+  uploadDate: string | Date;
+  fileSize: number;
+  fileType: string;
 }
 
 const TransactionSchema = z.object({

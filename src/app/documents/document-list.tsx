@@ -1,26 +1,25 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { UploadedFile } from '@/lib/types';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 
 export default function DocumentList() {
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+    const { firestore, user } = useFirebase();
+    const fileUploadsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'fileUploads') : null, [firestore, user]);
+    const { data: uploadedFiles, isLoading } = useCollection<UploadedFile>(fileUploadsCollection);
 
-  useEffect(() => {
-    const storedFiles = localStorage.getItem('uploadedFiles');
-    if (storedFiles) {
-      setUploadedFiles(JSON.parse(storedFiles));
-    }
-  }, []);
+    const [selectedFiles, setSelectedFiles] = React.useState<string[]>([]);
+
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedFiles(uploadedFiles.map(f => f.id));
+      setSelectedFiles(uploadedFiles?.map(f => f.id) ?? []);
     } else {
       setSelectedFiles([]);
     }
@@ -34,10 +33,14 @@ export default function DocumentList() {
     }
   };
 
-  const handleDeleteSelected = () => {
-    const updatedFiles = uploadedFiles.filter(f => !selectedFiles.includes(f.id));
-    setUploadedFiles(updatedFiles);
-    localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
+  const handleDeleteSelected = async () => {
+    if (!user || !firestore || selectedFiles.length === 0) return;
+    const batch = writeBatch(firestore);
+    selectedFiles.forEach(fileId => {
+        const docRef = doc(firestore, 'users', user.uid, 'fileUploads', fileId);
+        batch.delete(docRef);
+    });
+    await batch.commit();
     setSelectedFiles([]);
   };
 
@@ -58,7 +61,7 @@ export default function DocumentList() {
                   <TableRow>
                     <TableHead className="w-[40px]">
                       <Checkbox
-                        checked={uploadedFiles.length > 0 && selectedFiles.length === uploadedFiles.length}
+                        checked={uploadedFiles && uploadedFiles.length > 0 && selectedFiles.length === uploadedFiles.length}
                         onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
                         aria-label="Select all"
                       />
@@ -68,7 +71,14 @@ export default function DocumentList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {uploadedFiles.length > 0 ? (
+                  {isLoading && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-24 text-center">
+                        Loading...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!isLoading && uploadedFiles && uploadedFiles.length > 0 ? (
                     uploadedFiles.map((doc) => (
                       <TableRow key={doc.id}>
                         <TableCell>
@@ -79,15 +89,17 @@ export default function DocumentList() {
                           />
                         </TableCell>
                         <TableCell className="font-medium">{doc.name}</TableCell>
-                        <TableCell>{doc.uploadDate}</TableCell>
+                        <TableCell>{new Date(doc.uploadDate).toLocaleDateString()}</TableCell>
                       </TableRow>
                     ))
                   ) : (
+                    !isLoading && (
                     <TableRow>
                       <TableCell colSpan={3} className="h-24 text-center">
                         No documents uploaded yet.
                       </TableCell>
                     </TableRow>
+                    )
                   )}
                 </TableBody>
               </Table>

@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Income } from './types';
 import { addWeeks, addMonths, addQuarters, addYears, parseISO } from 'date-fns';
+import type { Timestamp } from 'firebase/firestore';
+
 
 export const categories: Category[] = [
   { id: 'cat-1', name: 'Groceries', icon: ShoppingBag, color: 'text-emerald-500' },
@@ -109,22 +111,14 @@ export function getMockExpenses(): Transaction[] {
 
 // --- Functions that operate on live data ---
 
-export function parseTransactions(storedTransactionsString: string | null): Transaction[] {
-    if (!storedTransactionsString) return [];
-    try {
-        return JSON.parse(storedTransactionsString).map((t: any) => ({
-            ...t,
-            date: parseISO(t.date), // Use parseISO from date-fns
-        }));
-    } catch (e) {
-        console.error("Failed to parse transactions from localStorage", e);
-        return [];
-    }
+function toDate(date: Date | Timestamp): Date {
+    return date instanceof Date ? date : (date as Timestamp).toDate();
 }
+
 
 export function getRecentTransactions(allTransactions: Transaction[], count: number): Transaction[] {
   return [...allTransactions]
-    .sort((a,b) => b.date.getTime() - a.date.getTime())
+    .sort((a,b) => toDate(b.date).getTime() - toDate(a.date).getTime())
     .slice(0, count);
 }
 
@@ -135,7 +129,7 @@ export function getUpcomingBills(allTransactions: Transaction[]): Transaction[] 
     const recurring = allTransactions.filter(t => t.isRecurring && t.frequency && t.type === 'expense');
 
     recurring.forEach(t => {
-        let nextDate = new Date(t.date);
+        let nextDate = toDate(t.date);
         // Find the next occurrence after today
         while(nextDate < today) {
              switch (t.frequency) {
@@ -165,7 +159,7 @@ export function getUpcomingBills(allTransactions: Transaction[]): Transaction[] 
             });
         }
     });
-    return upcoming.sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 5);
+    return upcoming.sort((a, b) => toDate(a.date).getTime() - toDate(b.date).getTime()).slice(0, 5);
 }
 
 
@@ -185,7 +179,7 @@ export function getTotals(allTransactions: Transaction[]) {
 export function getSpendingByCategory(allTransactions: Transaction[]) {
   const spendingMap = new Map<string, number>();
   
-  const allExpenses = allTransactions.filter(t => t.amount < 0);
+  const allExpenses = allTransactions.filter(t => t.type === 'expense');
   
   allExpenses.forEach(t => {
     const absAmount = Math.abs(t.amount);
@@ -197,11 +191,12 @@ export function getSpendingByCategory(allTransactions: Transaction[]) {
 export function getBudgets(allTransactions: Transaction[]): Budget[] {
   const today = new Date();
   const spendingThisMonth = new Map<string, number>();
-  const currentMonthExpenses = allTransactions.filter(t => 
-    t.date.getMonth() === today.getMonth() && 
-    t.date.getFullYear() === today.getFullYear() &&
-    t.amount < 0
-  );
+  const currentMonthExpenses = allTransactions.filter(t => {
+    const d = toDate(t.date);
+    return d.getMonth() === today.getMonth() && 
+    d.getFullYear() === today.getFullYear() &&
+    t.type === 'expense'
+  });
 
   currentMonthExpenses.forEach(t => {
       const absAmount = Math.abs(t.amount);

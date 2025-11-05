@@ -6,46 +6,54 @@ import { columns } from './columns';
 import { DataTable } from './data-table';
 import { Transaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { parseISO } from 'date-fns';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 
 export default function TransactionsPage() {
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const { toast } = useToast();
+  const { firestore, user } = useFirebase();
 
-  useEffect(() => {
-    const storedTransactionsString = localStorage.getItem('processedTransactions');
-    if (storedTransactionsString) {
-      try {
-        const storedTransactions = JSON.parse(storedTransactionsString).map((t: any) => ({...t, date: parseISO(t.date)}));
-        const sorted = [...storedTransactions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setAllTransactions(sorted);
-      } catch (e) {
-        console.error("Failed to parse transactions from localStorage", e);
-        setAllTransactions([]);
-      }
-    }
-  }, []);
+  const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
+  const { data: allTransactions, isLoading } = useCollection<Transaction>(transactionsCollection);
 
-  const handleDelete = (transactionsToDelete: Transaction[]) => {
-    const updatedTransactions = allTransactions.filter(
-      (t) => !transactionsToDelete.some(toDelete => toDelete.id === t.id)
-    );
-    setAllTransactions(updatedTransactions);
-    localStorage.setItem('processedTransactions', JSON.stringify(updatedTransactions));
-    toast({
-      title: "Transactions Deleted",
-      description: `${transactionsToDelete.length} transaction(s) have been deleted.`,
+  const handleDelete = async (transactionsToDelete: Transaction[]) => {
+    if (!user || !firestore || transactionsToDelete.length === 0) return;
+
+    const batch = writeBatch(firestore);
+    transactionsToDelete.forEach(transaction => {
+      const docRef = doc(firestore, 'users', user.uid, 'transactions', transaction.id);
+      batch.delete(docRef);
     });
+
+    try {
+      await batch.commit();
+      toast({
+        title: "Transactions Deleted",
+        description: `${transactionsToDelete.length} transaction(s) have been deleted.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error Deleting Transactions",
+        description: "An error occurred while deleting transactions.",
+      });
+      console.error("Error deleting transactions: ", error);
+    }
   };
 
   const tableColumns = useMemo(() => columns, []);
+  const transactionData = useMemo(() => allTransactions?.map(t => ({...t, date: (t.date as any).toDate()})) ?? [], [allTransactions]);
+
+  if (isLoading) {
+    return <div>Loading transactions...</div>;
+  }
 
   return (
     <div className="space-y-4">
        <div className="flex items-center justify-between">
         <h1 className="font-headline text-2xl font-semibold">All Transactions</h1>
        </div>
-      <DataTable columns={tableColumns} data={allTransactions} onDelete={handleDelete} />
+      <DataTable columns={tableColumns} data={transactionData} onDelete={handleDelete} />
     </div>
   );
 }

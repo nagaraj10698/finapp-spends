@@ -8,6 +8,8 @@ import { processTransactionsAction } from '../actions';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { ProcessTransactionsOutput, UploadedFile, Transaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useFirebase } from '@/firebase';
+import { collection, writeBatch, serverTimestamp, doc } from 'firebase/firestore';
 
 interface TransactionUploadProps {
   onProcess: (data: ProcessTransactionsOutput) => void;
@@ -18,6 +20,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { firestore, user } = useFirebase();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -41,15 +44,15 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
   };
 
   const handleUpload = async () => {
-    if (files.length === 0) return;
+    if (files.length === 0 || !firestore || !user) return;
 
     setLoading(true);
     setError(null);
 
-    let allTransactions: ProcessTransactionsOutput['transactions'] = [];
-    const newUploadedFiles: UploadedFile[] = [];
     const errors: string[] = [];
     let totalProcessedCount = 0;
+    
+    const batch = writeBatch(firestore);
 
     for (const file of files) {
         try {
@@ -58,15 +61,31 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
             const response = await processTransactionsAction(formData);
 
             if (response.success && response.data) {
-                allTransactions = [...allTransactions, ...response.data.transactions];
                 totalProcessedCount += response.data.transactions.length;
 
-                const newFile: UploadedFile = {
-                    id: `${file.name}-${new Date().toISOString()}`,
+                // Add file to fileUploads collection
+                const fileUploadRef = doc(collection(firestore, 'users', user.uid, 'fileUploads'));
+                batch.set(fileUploadRef, {
                     name: file.name,
-                    uploadDate: new Date().toLocaleDateString(),
-                };
-                newUploadedFiles.push(newFile);
+                    uploadDate: serverTimestamp(),
+                    fileSize: file.size,
+                    fileType: file.type,
+                });
+
+                // Add transactions to transactions subcollection
+                response.data.transactions.forEach(t => {
+                    const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
+                    const newTx: Omit<Transaction, 'id'> = {
+                        description: t.description,
+                        amount: t.amount,
+                        date: new Date(t.date),
+                        category: t.category,
+                        type: t.amount < 0 ? 'expense' : 'income'
+                    };
+                    batch.set(transactionRef, newTx);
+                });
+                onProcess(response.data);
+
             } else {
                 errors.push(response.error ?? `An unknown error occurred while processing ${file.name}.`);
             }
@@ -74,43 +93,25 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
             errors.push(e.message || `Failed to process ${file.name}.`);
         }
     }
+    
+    try {
+        await batch.commit();
+        if (totalProcessedCount > 0) {
+             toast({
+              title: "Processing Complete",
+              description: `Successfully processed ${totalProcessedCount} transactions from ${files.length} file(s).`
+            });
+        }
+        setFiles([]);
+    } catch(e: any) {
+        errors.push(e.message || 'Failed to save transactions to database.');
+    }
+
 
     if (errors.length > 0) {
       setError(errors.join('\n'));
     }
     
-    if (newUploadedFiles.length > 0) {
-        // Persist uploaded files history
-        const storedFilesString = localStorage.getItem('uploadedFiles');
-        const storedFiles: UploadedFile[] = storedFilesString ? JSON.parse(storedFilesString) : [];
-        const updatedFiles = [...newUploadedFiles, ...storedFiles];
-        localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
-        
-        // Persist processed transactions
-        const storedTransactionsString = localStorage.getItem('processedTransactions');
-        const storedTransactions: Transaction[] = storedTransactionsString ? JSON.parse(storedTransactionsString) : [];
-
-        const newTxs: Transaction[] = allTransactions.map(t => ({
-          id: `txn-${Date.now()}-${Math.random()}`,
-          description: t.description,
-          amount: t.amount,
-          date: new Date(t.date),
-          category: t.category,
-          type: t.amount < 0 ? 'expense' : 'income'
-        }));
-
-        const updatedTransactions = [...newTxs, ...storedTransactions];
-        localStorage.setItem('processedTransactions', JSON.stringify(updatedTransactions));
-
-        toast({
-          title: "Processing Complete",
-          description: `Successfully processed ${totalProcessedCount} transactions from ${newUploadedFiles.length} file(s).`
-        });
-        
-        onProcess({ transactions: allTransactions });
-        setFiles([]);
-    }
-
     setLoading(false);
   };
 
@@ -170,7 +171,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
               </div>
             )}
 
-            <Button onClick={handleUpload} disabled={files.length === 0 || loading}>
+            <Button onClick={handleUpload} disabled={files.length === 0 || loading || !user}>
               {loading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}

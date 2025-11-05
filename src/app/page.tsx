@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -17,19 +17,25 @@ import {
   getSpendingByCategory,
   getTotals,
   getUpcomingBills,
-  parseTransactions,
 } from '@/lib/data';
 import UpcomingBills from '@/components/dashboard/upcoming-bills';
 import type { Transaction } from '@/lib/types';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 export default function DashboardPage() {
-    const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+    const { firestore, user } = useFirebase();
+    const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
+    const { data: transactions, isLoading } = useCollection<Transaction>(transactionsCollection);
 
-    useEffect(() => {
-        const storedTransactionsString = localStorage.getItem('processedTransactions');
-        const parsed = parseTransactions(storedTransactionsString);
-        setAllTransactions(parsed);
-    }, []);
+    const allTransactions = useMemo(() => {
+        if (!transactions) return [];
+        return transactions.map(t => ({
+            ...t,
+            date: (t.date as any).toDate(), // Convert Firestore Timestamp to Date
+        }));
+    }, [transactions]);
+
 
     // Memoize derived data to prevent re-computation on every render
     const totals = getTotals(allTransactions);
@@ -37,6 +43,10 @@ export default function DashboardPage() {
     const budgets = getBudgets(allTransactions);
     const recentTransactions = getRecentTransactions(allTransactions, 5);
     const upcomingBills = getUpcomingBills(allTransactions);
+
+    if (isLoading) {
+        return <div>Loading...</div>
+    }
 
   return (
     <div className="flex flex-col gap-4">

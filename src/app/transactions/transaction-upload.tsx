@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -7,13 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UploadCloud, File, X, Loader2 } from 'lucide-react';
 import { processTransactionsAction } from '../actions';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import type { ProcessTransactionsOutput } from '@/lib/types';
-
-interface UploadedFile {
-  id: string;
-  name: string;
-  uploadDate: string;
-}
+import type { ProcessTransactionsOutput, UploadedFile, Transaction } from '@/lib/types';
 
 interface TransactionUploadProps {
   onProcess: (data: ProcessTransactionsOutput) => void;
@@ -53,7 +46,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
 
     let allTransactions: ProcessTransactionsOutput['transactions'] = [];
     let filesProcessed = 0;
-    const uploadedFileNames: UploadedFile[] = [];
+    const newUploadedFiles: UploadedFile[] = [];
 
     for (const file of files) {
         try {
@@ -65,33 +58,47 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
                 allTransactions = [...allTransactions, ...response.data.transactions];
                 filesProcessed++;
 
-                // Add to historical list
                 const newFile: UploadedFile = {
                     id: `${file.name}-${new Date().toISOString()}`,
                     name: file.name,
                     uploadDate: new Date().toLocaleDateString(),
                 };
-                uploadedFileNames.push(newFile);
+                newUploadedFiles.push(newFile);
             } else {
                 setError(response.error ?? `An unknown error occurred while processing ${file.name}.`);
-                // Stop processing remaining files on first error
                 break; 
             }
         } catch (e: any) {
             setError(e.message || `Failed to process ${file.name}.`);
-            // Stop processing remaining files on first error
             break;
         }
     }
     
     if (filesProcessed > 0) {
+        // Persist uploaded files history
         const storedFilesString = localStorage.getItem('uploadedFiles');
         const storedFiles: UploadedFile[] = storedFilesString ? JSON.parse(storedFilesString) : [];
-        const updatedFiles = [...uploadedFileNames, ...storedFiles];
+        const updatedFiles = [...newUploadedFiles, ...storedFiles];
         localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
+        
+        // Persist processed transactions
+        const storedTransactionsString = localStorage.getItem('processedTransactions');
+        const storedTransactions: Transaction[] = storedTransactionsString ? JSON.parse(storedTransactionsString) : [];
+
+        const newTxs: Transaction[] = allTransactions.map(t => ({
+          id: `txn-${Date.now()}-${Math.random()}`,
+          description: t.description,
+          amount: Math.abs(t.amount),
+          date: new Date(t.date),
+          category: t.category,
+          type: t.amount < 0 ? 'expense' : 'income'
+        }));
+
+        const updatedTransactions = [...newTxs, ...storedTransactions];
+        localStorage.setItem('processedTransactions', JSON.stringify(updatedTransactions));
 
         onProcess({ transactions: allTransactions });
-        setFiles([]); // Clear the files only after all are processed
+        setFiles([]);
     }
 
     setLoading(false);

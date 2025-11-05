@@ -1,4 +1,3 @@
-
 import type { LucideIcon } from "lucide-react";
 import { z } from 'zod';
 
@@ -32,6 +31,12 @@ export interface Income {
   description: string;
   amount: number;
   date: Date;
+}
+
+export interface UploadedFile {
+  id: string;
+  name: string;
+  uploadDate: string;
 }
 
 const TransactionSchema = z.object({

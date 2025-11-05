@@ -5,12 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-
-interface UploadedFile {
-  id: string;
-  name: string;
-  uploadDate: string;
-}
+import type { UploadedFile } from '@/lib/types';
 
 export default function DocumentList() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);

@@ -170,15 +170,12 @@ export function getUpcomingBills(allTransactions: Transaction[]): Transaction[] 
 
 
 export function getTotals(allTransactions: Transaction[]) {
-  const today = new Date();
-  const currentMonthTransactions = allTransactions.filter(t => t.date.getMonth() === today.getMonth() && t.date.getFullYear() === today.getFullYear())
-
-  const income = currentMonthTransactions
-    .filter(t => t.amount > 0)
+  const income = allTransactions
+    .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
-  
-  const expenses = currentMonthTransactions
-    .filter(t => t.amount < 0)
+
+  const expenses = allTransactions
+    .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
 
   const savings = income + expenses; // expenses is negative

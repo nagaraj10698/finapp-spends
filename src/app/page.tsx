@@ -192,8 +192,8 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <OverviewCards totals={totals} />
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
           <CardHeader>
             <CardTitle className="font-headline">Spent by category</CardTitle>
           </CardHeader>
@@ -201,7 +201,7 @@ export default function DashboardPage() {
             <SpendingChart data={spendingByCategory} categories={categories ?? []}/>
           </CardContent>
         </Card>
-        <Card className="lg:col-span-3">
+        <Card>
           <CardHeader>
             <CardTitle className="font-headline">Expense Forecast</CardTitle>
              <CardDescription>
@@ -217,8 +217,12 @@ export default function DashboardPage() {
          <Card className="lg:col-span-3 h-full flex flex-col">
           <CardHeader>
             <CardTitle className="font-headline">Upcoming Bills</CardTitle>
-             <CardDescription>
-              Your upcoming recurring payments.
+             <CardDescription className='flex items-center gap-4'>
+                <span>Your upcoming recurring payments.</span>
+                <div className='flex items-center gap-4 text-xs'>
+                  <span className='flex items-center gap-1.5'><span className='h-2 w-2 rounded-full bg-primary' />Upcoming ({upcomingBills.upcomingCount})</span>
+                  <span className='flex items-center gap-1.5'><span className='h-2 w-2 rounded-full bg-destructive' />Overdue ({upcomingBills.overdueCount})</span>
+                </div>
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow">

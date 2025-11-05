@@ -31,41 +31,6 @@
         "lastName"
       ]
     },
-    "Account": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Account",
-      "type": "object",
-      "description": "Represents a user's bank account or other financial account.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Account entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Account)"
-        },
-        "accountName": {
-          "type": "string",
-          "description": "Name of the account (e.g., Checking, Savings)."
-        },
-        "accountType": {
-          "type": "string",
-          "description": "Type of account (e.g., Bank, Credit Card)."
-        },
-        "balance": {
-          "type": "number",
-          "description": "Current balance of the account."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "accountName",
-        "accountType",
-        "balance"
-      ]
-    },
     "Transaction": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Transaction",
@@ -76,9 +41,9 @@
           "type": "string",
           "description": "Unique identifier for the Transaction entity."
         },
-        "accountId": {
+        "userId": {
           "type": "string",
-          "description": "Reference to Account. (Relationship: Account 1:N Transaction)"
+          "description": "Reference to User. (Relationship: User 1:N Transaction)"
         },
         "categoryId": {
           "type": "string",
@@ -104,7 +69,7 @@
       },
       "required": [
         "id",
-        "accountId",
+        "userId",
         "categoryId",
         "transactionDate",
         "amount",
@@ -307,41 +272,17 @@
         }
       },
       {
-        "path": "/users/{userId}/accounts/{accountId}",
-        "definition": {
-          "entityName": "Account",
-          "schema": {
-            "$ref": "#/backend/entities/Account"
-          },
-          "description": "Stores user's financial accounts. Accessible only by the user themselves.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "accountId",
-              "description": "The unique identifier of the account."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/accounts/{accountId}/transactions/{transactionId}",
+        "path": "/users/{userId}/transactions/{transactionId}",
         "definition": {
           "entityName": "Transaction",
           "schema": {
             "$ref": "#/backend/entities/Transaction"
           },
-          "description": "Stores transactions for a specific account. Accessible only by the user who owns the account.",
+          "description": "Stores transactions for a specific user. Accessible only by the user who owns the account.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier of the user."
-            },
-            {
-              "name": "accountId",
-              "description": "The unique identifier of the account."
             },
             {
               "name": "transactionId",
@@ -431,6 +372,7 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure data isolation and ownership based on the user. Each user has their own collection of accounts, categories, budgets, reminders, and file uploads. Transactions are stored as a subcollection of accounts, ensuring that transactions are always associated with a specific account owned by the user.\n\nThis design ensures Authorization Independence by storing all user-specific data under paths specific to the user's ID.  There are no dependencies on parent documents (no `get()` calls are needed in the rules). The database adheres to the principle that Rules are not Filters (QAPs). Data segregation by path enables secure `list` operations, as rules can simply verify that `request.auth.uid` matches the `userId` in the path. Because data is segregated by user ID, listing accounts, categories, and other entities will only return data for the authenticated user.\n"
+    "reasoning": "The Firestore structure is designed to ensure data isolation and ownership based on the user. Each user has their own collection of transactions, categories, budgets, reminders, and file uploads. Transactions are stored as a subcollection of accounts, ensuring that transactions are always associated with a specific account owned by the user.\n\nThis design ensures Authorization Independence by storing all user-specific data under paths specific to the user's ID.  There are no dependencies on parent documents (no `get()` calls are needed in the rules). The database adheres to the principle that Rules are not Filters (QAPs). Data segregation by path enables secure `list` operations, as rules can simply verify that `request.auth.uid` matches the `userId` in the path. Because data is segregated by user ID, listing accounts, categories, and other entities will only return data for the authenticated user.\n"
   }
 }
+    

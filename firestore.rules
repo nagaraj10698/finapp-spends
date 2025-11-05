@@ -10,8 +10,7 @@
  * The database is structured with user-specific data nested under the `/users/{userId}` path.
  * For example:
  * - /users/{userId} (User profile)
- * - /users/{userId}/accounts/{accountId}
- * - /users/{userId}/accounts/{accountId}/transactions/{transactionId}
+ * - /users/{userId}/transactions/{transactionId}
  * - /users/{userId}/categories/{categoryId}
  * - /users/{userId}/budgets/{budgetId}
  * - /users/{userId}/reminders/{reminderId}
@@ -61,32 +60,16 @@ service cloud.firestore {
       allow update: if isSignedIn() && isOwner(userId);
       allow delete: if isSignedIn() && isOwner(userId);
     }
-
+    
     /**
-     * @description Manages access to user accounts. Only the authenticated user can create, read, update, or delete their own accounts.
-     * @path /users/{userId}/accounts/{accountId}
-     * @allow (create) User with ID 'user123' creates a new account. auth.uid == 'user123'
-     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their account. auth.uid == 'user123'
-     * @deny (get, update, delete) User with ID 'user456' tries to read/update/delete the account of user 'user123'. auth.uid == 'user456'
-     * @principle Enforces document ownership for accounts.
-     */
-    match /users/{userId}/accounts/{accountId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
-    }
-
-    /**
-     * @description Manages access to transactions for a specific account. Only the account owner can create, read, update, or delete transactions.
-     * @path /users/{userId}/accounts/{accountId}/transactions/{transactionId}
-     * @allow (create) User with ID 'user123' creates a transaction for their account. auth.uid == 'user123'
-     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes a transaction for their account. auth.uid == 'user123'
-     * @deny (get, update, delete) User with ID 'user456' tries to read/update/delete a transaction for account owned by user 'user123'. auth.uid == 'user456'
+     * @description Manages access to transactions for a specific user. Only the user can manage their own transactions.
+     * @path /users/{userId}/transactions/{transactionId}
+     * @allow (create) User with ID 'user123' creates a transaction. auth.uid == 'user123'
+     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes a transaction. auth.uid == 'user123'
+     * @deny (get, update, delete) User with ID 'user456' tries to read/update/delete a transaction owned by user 'user123'. auth.uid == 'user456'
      * @principle Enforces document ownership for transactions.
      */
-    match /users/{userId}/accounts/{accountId}/transactions/{transactionId} {
+    match /users/{userId}/transactions/{transactionId} {
       allow get: if isSignedIn() && isOwner(userId);
       allow list: if isSignedIn() && isOwner(userId);
       allow create: if isSignedIn() && isOwner(userId);
@@ -168,3 +151,4 @@ service cloud.firestore {
     return request.auth.uid == userId;
   }
 }
+    

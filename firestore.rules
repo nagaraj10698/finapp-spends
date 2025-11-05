@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Firestore Security Rules for the Spends application.
  *
@@ -30,138 +31,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Prevents listing all users to protect privacy.
-     * @path /users
-     * @allow None - Listing users is not permitted.
-     * @deny list: if false;
-     * @principle Prevents unauthorized access to user information.
-     */
-    match /users {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    /**
-     * @description Manages access to user profiles. Only the authenticated user can read, update, or delete their own profile. A user can create their own profile.
-     * @path /users/{userId}
-     * @allow (create) User with ID 'user123' creates their profile. auth.uid == 'user123'
-     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their profile. auth.uid == 'user123'
-     * @deny (get, update, delete) User with ID 'user456' tries to read/update/delete the profile of user 'user123'. auth.uid == 'user456'
-     * @principle Enforces document ownership for user profiles.
-     */
-    match /users/{userId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
-    }
-    
-    /**
-     * @description Manages access to transactions for a specific user. Only the user can manage their own transactions.
-     * @path /users/{userId}/transactions/{transactionId}
-     * @allow (create) User with ID 'user123' creates a transaction. auth.uid == 'user123'
-     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes a transaction. auth.uid == 'user123'
-     * @deny (get, update, delete) User with ID 'user456' tries to read/update/delete a transaction owned by user 'user123'. auth.uid == 'user456'
-     * @principle Enforces document ownership for transactions.
-     */
-    match /users/{userId}/transactions/{transactionId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && isValidTransaction(request.resource.data);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    /**
-     * @description Manages access to user-defined categories. Only the authenticated user can create, read, update, or delete their own categories.
-     * @path /users/{userId}/categories/{categoryId}
-     * @allow (create) User with ID 'user123' creates a category. auth.uid == 'user123'
-     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their category. auth.uid == 'user123'
-     * @deny (get, update, delete) User with ID 'user456' tries to read/update/delete the category of user 'user123'. auth.uid == 'user456'
-     * @principle Enforces document ownership for categories.
-     */
-    match /users/{userId}/categories/{categoryId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+    match /users/{userId}/{document=**} {
+      allow read, write: if isSignedIn() && isOwner(userId);
     }
-
-    /**
-     * @description Manages access to user's budgets. Only the authenticated user can create, read, update, or delete their own budgets.
-     * @path /users/{userId}/budgets/{budgetId}
-     * @allow (create) User with ID 'user123' creates a budget. auth.uid == 'user123'
-     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their budget. auth.uid == 'user123'
-     * @deny (get, update, delete) User with ID 'user456' tries to read/update/delete the budget of user 'user123'. auth.uid == 'user456'
-     * @principle Enforces document ownership for budgets.
-     */
-    match /users/{userId}/budgets/{budgetId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
-    }
-
-    /**
-     * @description Manages access to user's reminders. Only the authenticated user can create, read, update, or delete their own reminders.
-     * @path /users/{userId}/reminders/{reminderId}
-     * @allow (create) User with ID 'user123' creates a reminder. auth.uid == 'user123'
-     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their reminder. auth.uid == 'user123'
-     * @deny (get, update, delete) User with ID 'user456' tries to read/update/delete the reminder of user 'user123'. auth.uid == 'user456'
-     * @principle Enforces document ownership for reminders.
-     */
-    match /users/{userId}/reminders/{reminderId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
-    }
-
-    /**
-     * @description Manages access to files uploaded by the user. Only the authenticated user can create, read, update, or delete their own files.
-     * @path /users/{userId}/fileUploads/{fileUploadId}
-     * @allow (create) User with ID 'user123' uploads a file. auth.uid == 'user123'
-     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their uploaded file. auth.uid == 'user123'
-     * @deny (get, update, delete) User with ID 'user456' tries to read/update/delete a file uploaded by user 'user123'. auth.uid == 'user456'
-     * @principle Enforces document ownership for file uploads.
-     */
-    match /users/{userId}/fileUploads/{fileUploadId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && isValidFileUpload(request.resource.data);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
-    }
-  }
-
-  // Helper functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-  
-  function isValidTransaction(data) {
-    return data.description is string &&
-           data.amount is number &&
-           data.category is string &&
-           data.type is string && (data.type == 'income' || data.type == 'expense');
-  }
-
-  function isValidFileUpload(data) {
-      return data.name is string &&
-             data.uploadDate is timestamp &&
-             data.fileSize is number &&
-             data.fileType is string;
   }
 }

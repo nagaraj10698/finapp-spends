@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -86,6 +87,7 @@ export default function SignupPage() {
           email: user.email,
           firstName: values.firstName,
           lastName: values.lastName,
+          photoURL: user.photoURL,
       });
 
       // Create default categories for the user

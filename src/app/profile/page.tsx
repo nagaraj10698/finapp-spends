@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,6 +19,10 @@ import { useFirebase } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useRef, useState } from 'react';
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
@@ -28,6 +33,9 @@ const formSchema = z.object({
 export default function ProfilePage() {
   const { toast } = useToast();
   const { user, auth, firestore } = useFirebase();
+  const [photoURL, setPhotoURL] = useState(user?.photoURL);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -37,6 +45,45 @@ export default function ProfilePage() {
         email: user?.email || '',
     },
   });
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+    setIsUploading(true);
+
+    const storage = getStorage();
+    const storageRef = ref(storage, `profile-pictures/${user.uid}`);
+
+    try {
+        await uploadBytes(storageRef, file);
+        const newPhotoURL = await getDownloadURL(storageRef);
+        setPhotoURL(newPhotoURL);
+        
+        await updateProfile(user, { photoURL: newPhotoURL });
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await updateDoc(userDocRef, { photoURL: newPhotoURL });
+        
+        toast({
+            title: 'Profile Picture Updated',
+            description: 'Your new profile picture has been saved.',
+        });
+
+    } catch (error) {
+        console.error("Error uploading file: ", error);
+        toast({
+            variant: "destructive",
+            title: "Upload Failed",
+            description: "Could not upload your profile picture.",
+        });
+    } finally {
+        setIsUploading(false);
+    }
+  };
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) {
@@ -81,9 +128,33 @@ export default function ProfilePage() {
       <Card>
         <CardHeader>
             <CardTitle>Personal Information</CardTitle>
-            <CardDescription>Update your personal details here.</CardDescription>
+            <CardDescription>Update your personal details and profile picture here.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-8">
+            <div className="flex items-center space-x-4">
+                <div className="relative">
+                    <Avatar className="h-20 w-20 cursor-pointer" onClick={handleAvatarClick}>
+                        <AvatarImage src={photoURL || undefined} alt="User Avatar" />
+                        <AvatarFallback>{(user?.displayName?.[0] || user?.email?.[0] || "U")}</AvatarFallback>
+                    </Avatar>
+                     {isUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+                            <Loader2 className="h-8 w-8 animate-spin text-white" />
+                        </div>
+                    )}
+                </div>
+
+                <Button variant="outline" onClick={handleAvatarClick} disabled={isUploading}>
+                    Change Picture
+                </Button>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/png, image/jpeg"
+                />
+            </div>
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -22,6 +23,11 @@
         "lastName": {
           "type": "string",
           "description": "User's last name."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of the user's profile picture.",
+          "format": "uri"
         }
       },
       "required": [

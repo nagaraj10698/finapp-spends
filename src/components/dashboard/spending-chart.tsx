@@ -121,9 +121,9 @@ export default function SpendingChart({ data, categories }: SpendingChartProps) 
                         <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                         <span>{entry.name}</span>
                     </div>
-                    <div className="font-medium flex items-center gap-1">
-                        <DhiramSymbol className="h-3 w-3" />
-                        {entry.total.toFixed(2)}
+                    <div className="font-medium">
+                        <DhiramSymbol className="h-3 w-3 mr-1 inline" />
+                        <span>{entry.total.toFixed(2)}</span>
                     </div>
                 </div>
             ))}

@@ -3,11 +3,12 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { columns } from './columns';
-import { DataTable } from './data-table';
+import { DataTable } from '@/components/ui/data-table';
 import { Transaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, writeBatch } from 'firebase/firestore';
+import { DataTableToolbar } from './data-table-toolbar';
 
 export default function TransactionsPage() {
   const { toast } = useToast();
@@ -53,7 +54,7 @@ export default function TransactionsPage() {
        <div className="flex items-center justify-between">
         <h1 className="font-headline text-2xl font-semibold">All Transactions</h1>
        </div>
-      <DataTable columns={tableColumns} data={transactionData} onDelete={handleDelete} />
+      <DataTable columns={tableColumns} data={transactionData} toolbar={<DataTableToolbar onDelete={handleDelete} />} />
     </div>
   );
 }

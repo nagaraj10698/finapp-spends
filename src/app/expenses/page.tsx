@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 import { columns } from '../transactions/columns';
-import { DataTable } from '../transactions/data-table';
+import { DataTable } from '@/components/ui/data-table';
 import AddExpenseDialog from './add-expense-dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -11,6 +11,7 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import type { Transaction } from '@/lib/types';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { DataTableToolbar } from './data-table-toolbar';
 
 export default function ExpensesPage() {
     const { toast } = useToast();
@@ -68,7 +69,7 @@ export default function ExpensesPage() {
             </Button>
         </AddExpenseDialog>
        </div>
-      <DataTable columns={columns} data={expenseData} onDelete={handleDelete} />
+      <DataTable columns={columns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDelete}/>} />
     </div>
   );
 }

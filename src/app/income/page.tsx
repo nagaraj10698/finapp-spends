@@ -2,7 +2,7 @@
 'use client';
 import { useMemo } from 'react';
 import { columns } from './columns';
-import { DataTable } from '../transactions/data-table';
+import { DataTable } from '@/components/ui/data-table';
 import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -10,6 +10,7 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import type { Transaction, Income } from '@/lib/types';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { DataTableToolbar } from './data-table-toolbar';
 
 
 export default function IncomePage() {
@@ -67,7 +68,7 @@ export default function IncomePage() {
             </Button>
         </AddIncomeDialog>
        </div>
-      <DataTable columns={columns} data={incomeData as unknown as Income[]} onDelete={handleDelete as any} />
+      <DataTable columns={columns} data={incomeData as unknown as Income[]} toolbar={<DataTableToolbar onDelete={handleDelete as any}/>} />
     </div>
   );
 }

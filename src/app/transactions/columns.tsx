@@ -144,10 +144,12 @@ export const getColumns = (
         let billStatus: 'Open' | 'Closed' | 'Overdue' | null = null;
         let badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
         let icon: React.ReactNode | null = null;
+        let customClasses = '';
 
         if (status === 'Paid') {
             billStatus = 'Closed';
-            badgeVariant = 'default';
+            badgeVariant = 'outline';
+            customClasses = 'border-green-300 text-green-700 bg-green-50';
             icon = <CheckCircle2 className="h-3 w-3" />;
         } else if (status === 'Un-paid') {
             if (date < today) {
@@ -164,7 +166,7 @@ export const getColumns = (
         if (!billStatus) return null;
 
         return (
-            <Badge variant={badgeVariant} className="flex w-fit items-center gap-1.5">
+            <Badge variant={badgeVariant} className={cn("flex w-fit items-center gap-1.5", customClasses)}>
                 {icon}
                 {billStatus}
             </Badge>

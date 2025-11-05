@@ -110,8 +110,8 @@ export default function DashboardPage() {
     const upcomingBills = useMemo(() => getUpcomingBills(allTransactions, dateRange), [allTransactions, dateRange]);
 
     const budgetForecastData = useMemo(() => {
-        return getBudgetForecast(allTransactions, period, dateRange);
-    }, [allTransactions, period, dateRange]);
+        return getBudgetForecast(allTransactions, 'monthly', {from: startOfMonth(new Date()), to: endOfMonth(new Date())});
+    }, [allTransactions]);
 
 
     if (transactionsLoading || categoriesLoading) {
@@ -130,7 +130,7 @@ export default function DashboardPage() {
                 </Button>
             </AddIncomeDialog>
             <AddExpenseDialog>
-                <Button variant="outline">
+                <Button variant="secondary" className="bg-orange-400 text-white hover:bg-orange-500">
                     <MinusCircle className="mr-2 h-4 w-4" />
                     Add Expense
                 </Button>
@@ -214,7 +214,7 @@ export default function DashboardPage() {
             <CardHeader>
                 <CardTitle className="font-headline">Budget Forecast</CardTitle>
                 <CardDescription>
-                Your expense forecast for the selected period.
+                Your expense forecast for this month.
                 </CardDescription>
             </CardHeader>
             <CardContent>

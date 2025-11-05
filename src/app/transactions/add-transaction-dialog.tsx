@@ -92,7 +92,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
   const isRecurring = form.watch('isRecurring');
 
   useEffect(() => {
-    form.resetField('category');
+    form.resetField('category', { defaultValue: '' });
   }, [transactionType, form]);
 
 

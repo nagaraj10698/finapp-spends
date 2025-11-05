@@ -190,47 +190,6 @@
         "isRecurring",
         "type"
       ]
-    },
-    "Reminder": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Reminder",
-      "type": "object",
-      "description": "Represents a reminder for bills or subscriptions.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Reminder entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Reminder)"
-        },
-        "reminderName": {
-          "type": "string",
-          "description": "Name of the reminder."
-        },
-        "reminderDate": {
-          "type": "string",
-          "description": "Date of the reminder.",
-          "format": "date-time"
-        },
-        "reminderAmount": {
-          "type": "number",
-          "description": "Amount due for the reminder."
-        },
-        "isPaid": {
-          "type": "boolean",
-          "description": "Whether the reminder has been paid."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "reminderName",
-        "reminderDate",
-        "reminderAmount",
-        "isPaid"
-      ]
     }
   },
   "auth": {
@@ -312,26 +271,6 @@
             {
               "name": "budgetId",
               "description": "The unique identifier of the budget."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/reminders/{reminderId}",
-        "definition": {
-          "entityName": "Reminder",
-          "schema": {
-            "$ref": "#/backend/entities/Reminder"
-          },
-          "description": "Stores user's reminders for bills and subscriptions. Accessible only by the user themselves.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "reminderId",
-              "description": "The unique identifier of the reminder."
             }
           ]
         }

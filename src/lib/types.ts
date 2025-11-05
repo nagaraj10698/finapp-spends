@@ -49,15 +49,6 @@ export interface Income {
   status?: 'Received' | 'Pending';
 }
 
-export interface Reminder {
-  id: string;
-  reminderName: string;
-  reminderDate: Date | Timestamp;
-  reminderAmount: number;
-  isPaid: boolean;
-}
-
-
 export interface Notification {
   id: string;
   type: 'overdue' | 'upcoming' | 'budget';

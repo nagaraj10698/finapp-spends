@@ -34,7 +34,7 @@ export interface Income {
   id: string;
   description: string;
   amount: number;
-  date: Date;
+  date: Date | Timestamp;
 }
 
 export interface UploadedFile {

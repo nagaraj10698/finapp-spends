@@ -10,7 +10,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { ProcessTransactionsOutput, UploadedFile, Transaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
-import { collection, writeBatch, doc } from 'firebase/firestore';
+import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
 
 interface TransactionUploadProps {
   onProcess: (data: ProcessTransactionsOutput) => void;
@@ -80,7 +80,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
                     const newTx: Omit<Transaction, 'id'> = {
                         description: t.description,
                         amount: t.amount,
-                        date: new Date(t.date),
+                        date: new Date(t.date), // Correctly convert string date to Date object
                         category: t.category,
                         type: t.amount < 0 ? 'expense' : 'income'
                     };

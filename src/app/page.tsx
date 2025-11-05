@@ -58,9 +58,11 @@ export default function DashboardPage() {
     const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
-    const [dateRange, setDateRange] = useState<DateRange | undefined>({
-      from: startOfMonth(new Date()),
-      to: endOfMonth(new Date()),
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+        if (typeof window === 'undefined') {
+            return { from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
+        }
+        return { from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
     });
     const [activePreset, setActivePreset] = useState<string | null>('This Month');
     const [isDatePopoverOpen, setDatePopoverOpen] = useState(false);
@@ -112,21 +114,23 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <h1 className="font-headline text-2xl font-semibold">Dashboard</h1>
-        <div className='flex items-center gap-2 mt-4'>
-            <AddIncomeDialog>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Income
-                </Button>
-            </AddIncomeDialog>
-            <AddExpenseDialog>
-                <Button variant="secondary" className="bg-orange-400 text-white hover:bg-orange-500">
-                    <MinusCircle className="mr-2 h-4 w-4" />
-                    Add Expense
-                </Button>
-            </AddExpenseDialog>
+        <div className='flex flex-col md:flex-row items-center gap-2'>
+            <div className="flex w-full md:w-auto gap-2">
+              <AddIncomeDialog>
+                  <Button className="w-full">
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Add Income
+                  </Button>
+              </AddIncomeDialog>
+              <AddExpenseDialog>
+                  <Button variant="secondary" className="bg-orange-400 text-white hover:bg-orange-500 w-full">
+                      <MinusCircle className="mr-2 h-4 w-4" />
+                      Add Expense
+                  </Button>
+              </AddExpenseDialog>
+            </div>
             <Popover open={isDatePopoverOpen} onOpenChange={setDatePopoverOpen}>
                 <PopoverTrigger asChild>
                 <Button
@@ -134,7 +138,7 @@ export default function DashboardPage() {
                     variant={"outline"}
                     size="sm"
                     className={cn(
-                    "w-[240px] justify-start text-left font-normal",
+                    "w-full md:w-[240px] justify-start text-left font-normal",
                     !dateRange && "text-muted-foreground"
                     )}
                 >

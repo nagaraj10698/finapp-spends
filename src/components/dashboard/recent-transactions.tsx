@@ -29,7 +29,7 @@ export default function RecentTransactions({
           <TableHead>Description</TableHead>
           <TableHead>Category</TableHead>
           <TableHead className="text-right">Amount</TableHead>
-          <TableHead className="hidden sm:table-cell">Date</TableHead>
+          <TableHead>Date</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -58,7 +58,7 @@ export default function RecentTransactions({
               <TableCell className={cn("text-right flex items-center justify-end gap-1", amount < 0 ? 'text-red-500' : 'text-green-500')}>
                 <DhiramSymbol />{Math.abs(amount).toFixed(2)}
               </TableCell>
-              <TableCell className="hidden sm:table-cell">
+              <TableCell>
                 {(transaction.date as Date).toLocaleDateString()}
               </TableCell>
             </TableRow>

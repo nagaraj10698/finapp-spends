@@ -86,48 +86,78 @@ export function getRecentTransactions(allTransactions: Transaction[] | null, cou
     .slice(0, count);
 }
 
-export function getUpcomingBills(allTransactions: Transaction[] | null, dateRange?: DateRange): Transaction[] {
-    if (!allTransactions) return [];
-    
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const rangeEnd = dateRange?.to ? toDate(dateRange.to) : addMonths(today, 1);
+export function getUpcomingBills(allTransactions: Transaction[] | null): Transaction[] {
+  if (!allTransactions) return [];
 
-    const upcoming: Transaction[] = [];
-    const recurring = allTransactions.filter(t => t.isRecurring && t.frequency && t.type === 'expense');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    recurring.forEach(t => {
-        let nextDate = toDate(t.date);
-        // Find the next occurrence after today
-        while(nextDate < today) {
-             switch (t.frequency) {
-                case 'weekly':
-                    nextDate = addWeeks(nextDate, 1);
-                    break;
-                case 'monthly':
-                    nextDate = addMonths(nextDate, 1);
-                    break;
-                case 'quarterly':
-                    nextDate = addQuarters(nextDate, 1);
-                    break;
-                case 'yearly':
-                    nextDate = addYears(nextDate, 1);
-                    break;
-                default:
-                     nextDate = new Date(today.getFullYear() + 100, 1, 1); // stop loop
-                    break;
-             }
+  const rangeEnd = addMonths(today, 3); // Look ahead 3 months
+
+  const upcoming: Transaction[] = [];
+
+  const unpaidExpenses = allTransactions.filter(
+    (t) => t.type === 'expense' && t.status === 'Un-paid'
+  );
+
+  unpaidExpenses.forEach((t) => {
+    const expenseDate = toDate(t.date);
+    if (!t.isRecurring) {
+      if (isWithinInterval(expenseDate, { start: today, end: rangeEnd })) {
+        upcoming.push({ ...t, date: expenseDate });
+      }
+    } else {
+      // Handle recurring bills
+      let nextDate = expenseDate;
+      while (isBefore(nextDate, today)) {
+        // Find the next occurrence from today
+        switch (t.frequency) {
+          case 'weekly':
+            nextDate = addWeeks(nextDate, 1);
+            break;
+          case 'monthly':
+            nextDate = addMonths(nextDate, 1);
+            break;
+          case 'quarterly':
+            nextDate = addQuarters(nextDate, 1);
+            break;
+          case 'yearly':
+            nextDate = addYears(nextDate, 1);
+            break;
+          default:
+            nextDate = addYears(rangeEnd, 1); // Move way into the future to exit loop
         }
-        
-        if (nextDate >= today && nextDate <= rangeEnd) {
-            upcoming.push({
-                ...t,
-                id: `${t.id}-upcoming-${nextDate.toISOString()}`,
-                date: nextDate,
-            });
+      }
+
+      // Add all occurrences within the next 3 months
+      while (isWithinInterval(nextDate, { start: today, end: rangeEnd })) {
+        upcoming.push({
+          ...t,
+          id: `${t.id}-upcoming-${nextDate.toISOString()}`,
+          date: nextDate,
+        });
+
+        switch (t.frequency) {
+          case 'weekly':
+            nextDate = addWeeks(nextDate, 1);
+            break;
+          case 'monthly':
+            nextDate = addMonths(nextDate, 1);
+            break;
+          case 'quarterly':
+            nextDate = addQuarters(nextDate, 1);
+            break;
+          case 'yearly':
+            nextDate = addYears(nextDate, 1);
+            break;
+          default:
+            nextDate = addYears(rangeEnd, 1); // Exit loop
         }
-    });
-    return upcoming.sort((a, b) => toDate(a.date).getTime() - toDate(b.date).getTime()).slice(0, 5);
+      }
+    }
+  });
+
+  return upcoming.sort((a, b) => toDate(a.date).getTime() - toDate(b.date).getTime());
 }
 
 

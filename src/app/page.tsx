@@ -10,31 +10,25 @@ import {
 } from '@/components/ui/card';
 import OverviewCards from '@/components/dashboard/overview-cards';
 import SpendingChart from '@/components/dashboard/spending-chart';
-import RecentTransactions from '@/components/dashboard/recent-transactions';
 import {
   getRecentTransactions,
   getSpendingByCategory,
   getTotals,
   getUpcomingBills,
-  getBudgetForecast,
 } from '@/lib/data';
-import UpcomingBills from '@/components/dashboard/upcoming-bills';
 import type { Transaction, Budget, Category } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import BudgetForecastChart from '@/app/budgets/budget-forecast-chart';
-import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDays, format, isSameMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
+import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, format, isSameMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, MinusCircle, PlusCircle, TrendingUp } from 'lucide-react';
+import { Calendar as CalendarIcon, MinusCircle, PlusCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
 import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
-
-type ForecastPeriod = 'daily' | 'monthly';
+import UpcomingBillsTimeline from '@/components/dashboard/upcoming-bills-timeline';
 
 const PRESET_RANGES = [
     { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
@@ -59,7 +53,6 @@ export default function DashboardPage() {
     const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
-    const [period, setPeriod] = useState<ForecastPeriod>('monthly');
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
       from: startOfMonth(new Date()),
       to: endOfMonth(new Date()),
@@ -69,12 +62,6 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (dateRange?.from && dateRange?.to) {
-          if (isSameMonth(dateRange.from, dateRange.to)) {
-            setPeriod('daily');
-          } else {
-            setPeriod('monthly');
-          }
-    
           const matchedPreset = PRESET_RANGES.find(p => {
             const range = p.getRange();
             return range.from && range.to && dateRange.from && dateRange.to && isSameDay(range.from, dateRange.from) && isSameDay(range.to, dateRange.to)
@@ -105,13 +92,7 @@ export default function DashboardPage() {
 
     const totals = useMemo(() => getTotals(filteredTransactions), [filteredTransactions]);
     const spendingByCategory = useMemo(() => getSpendingByCategory(filteredTransactions), [filteredTransactions]);
-    const recentTransactions = useMemo(() => getRecentTransactions(filteredTransactions, 5), [filteredTransactions]);
-    const upcomingBills = useMemo(() => getUpcomingBills(allTransactions, dateRange), [allTransactions, dateRange]);
-
-    const budgetForecastData = useMemo(() => {
-        return getBudgetForecast(allTransactions, period, dateRange);
-    }, [allTransactions, period, dateRange]);
-
+    const upcomingBills = useMemo(() => getUpcomingBills(allTransactions), [allTransactions]);
 
     if (transactionsLoading || categoriesLoading) {
         return <div>Loading...</div>
@@ -210,27 +191,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         <Card>
-            <CardHeader>
-                <CardTitle className="font-headline">Budget Forecast</CardTitle>
-                <CardDescription>
-                Your expense forecast for the selected period.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <BudgetForecastChart data={budgetForecastData} />
-            </CardContent>
-        </Card>
-      </div>
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
-          <CardHeader>
-            <CardTitle className="font-headline">Recent Transactions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RecentTransactions transactions={recentTransactions} categories={categories ?? []} />
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle className="font-headline">Upcoming Bills</CardTitle>
              <CardDescription>
@@ -238,7 +198,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <UpcomingBills bills={upcomingBills} categories={categories ?? []} />
+            <UpcomingBillsTimeline bills={upcomingBills} categories={categories ?? []} />
           </CardContent>
         </Card>
       </div>

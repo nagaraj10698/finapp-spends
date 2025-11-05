@@ -1,4 +1,5 @@
 
+
 import {
   ShoppingBag,
   HeartPulse,
@@ -20,7 +21,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Income } from './types';
-import { addWeeks, addMonths, addQuarters, addYears } from 'date-fns';
+import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 
 
@@ -166,4 +167,59 @@ export function getBudgets(budgets: Budget[], allTransactions: Transaction[] | n
         budgetStartDate: toDate(budget.budgetStartDate),
         budgetEndDate: toDate(budget.budgetEndDate),
     }));
+}
+
+
+export function getBudgetForecast(allTransactions: Transaction[] | null) {
+  if (!allTransactions) return [];
+
+  const today = new Date();
+  const months = Array.from({ length: 4 }, (_, i) => addMonths(today, i));
+  const forecastData: { name: string; upcoming: number; unpaid: number }[] = [];
+
+  const unpaidExpenses = allTransactions.filter(t => t.type === 'expense' && t.status === 'Un-paid');
+  const recurringExpenses = allTransactions.filter(t => t.type === 'expense' && t.isRecurring && t.frequency);
+
+  months.forEach(monthDate => {
+    const monthName = format(monthDate, 'MMM yyyy');
+    const start = startOfMonth(monthDate);
+    const end = endOfMonth(monthDate);
+    
+    // Calculate total unpaid expenses for the current month
+    const unpaidForMonth = unpaidExpenses
+      .filter(t => isWithinInterval(toDate(t.date), { start, end }))
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      
+    // Calculate total upcoming recurring expenses for the month
+    let upcomingForMonth = 0;
+    recurringExpenses.forEach(t => {
+      let nextDate = toDate(t.date);
+      while(nextDate <= end) {
+        if (nextDate >= start) {
+          upcomingForMonth += Math.abs(t.amount);
+        }
+        
+        switch (t.frequency) {
+            case 'weekly': nextDate = addWeeks(nextDate, 1); break;
+            case 'monthly': nextDate = addMonths(nextDate, 1); break;
+            case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
+            case 'yearly': nextDate = addYears(nextDate, 1); break;
+            default: nextDate = addYears(end, 1); // Break loop
+        }
+      }
+    });
+
+    forecastData.push({ name: monthName, unpaid: unpaidForMonth, upcoming: upcomingForMonth });
+  });
+
+  // Add a bucket for all past-due unpaid items
+  const pastDueUnpaid = unpaidExpenses
+    .filter(t => toDate(t.date) < startOfMonth(today))
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  
+  if(pastDueUnpaid > 0) {
+    forecastData.unshift({ name: "Past Due", unpaid: pastDueUnpaid, upcoming: 0 });
+  }
+
+  return forecastData;
 }

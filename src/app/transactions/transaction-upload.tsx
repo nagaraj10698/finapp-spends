@@ -60,37 +60,47 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
 
     setLoading(true);
     setError(null);
-    
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-        try {
-            const fileContent = event.target?.result as string;
-            const response = await processTransactionsAction(fileContent);
-            if (response.success && response.data) {
-                onProcess(response.data);
-                // Add to historical list
-                const newFile: UploadedFile = {
-                name: file.name,
-                uploadDate: new Date().toLocaleDateString(),
-                };
-                const updatedFiles = [newFile, ...uploadedFiles];
-                setUploadedFiles(updatedFiles);
-                localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
-                setFile(null); // Clear the file only after successful processing
-            } else {
-                setError(response.error ?? 'An unknown error occurred.');
-            }
-        } catch (e: any) {
-             setError(e.message || 'Failed to process file.');
-        } finally {
-            setLoading(false);
-        }
+
+    const readFileAsText = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            resolve(event.target.result as string);
+          } else {
+            reject(new Error("Failed to read file."));
+          }
+        };
+        reader.onerror = () => {
+          reject(new Error("Failed to read file."));
+        };
+        reader.readAsText(file);
+      });
     };
-    reader.onerror = () => {
-      setError('Failed to read file.');
+
+    try {
+      const fileContent = await readFileAsText(file);
+      const response = await processTransactionsAction(fileContent);
+      
+      if (response.success && response.data) {
+        onProcess(response.data);
+        // Add to historical list
+        const newFile: UploadedFile = {
+          name: file.name,
+          uploadDate: new Date().toLocaleDateString(),
+        };
+        const updatedFiles = [newFile, ...uploadedFiles];
+        setUploadedFiles(updatedFiles);
+        localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
+        setFile(null); // Clear the file only after successful processing
+      } else {
+        setError(response.error ?? 'An unknown error occurred.');
+      }
+    } catch (e: any) {
+      setError(e.message || 'Failed to process file.');
+    } finally {
       setLoading(false);
-    };
-    reader.readAsText(file);
+    }
   };
 
   return (
@@ -131,7 +141,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
                     </Button>
                   </div>
                 ) : (
-                  <div className="text-center">
+                  <div className="text-center p-4">
                     <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground" />
                     <p className="mt-1 flex justify-center text-xs leading-6 text-muted-foreground">
                       <span className="font-semibold text-primary">

@@ -1,6 +1,6 @@
 
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { getBudgets, getBudgetForecast } from '@/lib/data';
 import BudgetCard from './budget-card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, addMonths, differenceInDays } from 'date-fns';
 
 type ForecastPeriod = 'weekly' | 'monthly';
 
@@ -48,6 +48,14 @@ export default function BudgetsPage() {
     to: endOfMonth(addMonths(new Date(), 2)),
   });
 
+  useEffect(() => {
+    if (dateRange?.from && dateRange?.to) {
+      const days = differenceInDays(dateRange.to, dateRange.from);
+      setPeriod(days > 31 ? 'monthly' : 'weekly');
+    }
+  }, [dateRange]);
+
+
   const processedBudgets = useMemo(() => {
     if (!budgets) return [];
     return getBudgets(budgets, transactions);
@@ -77,8 +85,6 @@ export default function BudgetsPage() {
                     <CardDescription>This chart shows your unpaid and upcoming recurring expenses.</CardDescription>
                 </div>
                 <div className='flex items-center gap-2'>
-                     <Button variant={period === 'weekly' ? 'default' : 'outline'} size="sm" onClick={() => setPeriod('weekly')}>Weekly</Button>
-                    <Button variant={period === 'monthly' ? 'default' : 'outline'} size="sm" onClick={() => setPeriod('monthly')}>Monthly</Button>
                     <Popover>
                         <PopoverTrigger asChild>
                         <Button

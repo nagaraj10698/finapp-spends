@@ -26,18 +26,16 @@ const chartConfig = {
 };
 
 const COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--primary) / 0.9)",
-  "hsl(var(--primary) / 0.8)",
-  "hsl(var(--primary) / 0.7)",
-  "hsl(var(--primary) / 0.6)",
-  "hsl(var(--primary) / 0.5)",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-2) / 0.9)",
-  "hsl(var(--chart-2) / 0.8)",
-  "hsl(var(--chart-2) / 0.7)",
-  "hsl(var(--chart-2) / 0.6)",
-  "hsl(var(--chart-2) / 0.5)",
+  "hsl(210, 90%, 70%)",
+  "hsl(0, 90%, 75%)",
+  "hsl(140, 90%, 70%)",
+  "hsl(43, 74%, 75%)",
+  "hsl(27, 87%, 75%)",
+  "hsl(347, 89%, 80%)",
+  "hsl(260, 100%, 80%)",
+  "hsl(190, 80%, 70%)",
+  "hsl(80, 70%, 70%)",
+  "hsl(300, 80%, 80%)",
 ];
 
 

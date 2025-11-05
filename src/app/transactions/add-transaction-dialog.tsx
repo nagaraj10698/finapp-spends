@@ -116,17 +116,6 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
         
         const amount = values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
 
-        let fileURL: string | undefined = undefined;
-        let fileName: string | undefined = undefined;
-
-        if (values.attachment) {
-            const storage = getStorage(firebaseApp);
-            const storageRef = ref(storage, `user_uploads/${user.uid}/${newTransactionRef.id}/${values.attachment.name}`);
-            const snapshot = await uploadBytes(storageRef, values.attachment);
-            fileURL = await getDownloadURL(snapshot.ref);
-            fileName = values.attachment.name;
-        }
-
         const newTransaction: Omit<Transaction, 'id'> = {
             description: values.description,
             amount: amount,
@@ -134,12 +123,18 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
             date: values.date,
             isRecurring: values.isRecurring,
             type: values.type,
-            fileURL,
-            fileName,
         };
         
         if (values.isRecurring) {
             newTransaction.frequency = values.frequency;
+        }
+
+        if (values.attachment) {
+            const storage = getStorage(firebaseApp);
+            const storageRef = ref(storage, `user_uploads/${user.uid}/${newTransactionRef.id}/${values.attachment.name}`);
+            const snapshot = await uploadBytes(storageRef, values.attachment);
+            newTransaction.fileURL = await getDownloadURL(snapshot.ref);
+            newTransaction.fileName = values.attachment.name;
         }
 
         await setDoc(newTransactionRef, newTransaction);

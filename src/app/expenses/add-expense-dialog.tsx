@@ -106,17 +106,6 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
       const expenseCollection = collection(firestore, 'users', user.uid, 'transactions');
       const newExpenseRef = doc(expenseCollection);
 
-      let fileURL: string | undefined = undefined;
-      let fileName: string | undefined = undefined;
-
-      if (values.attachment) {
-          const storage = getStorage(firebaseApp);
-          const storageRef = ref(storage, `user_uploads/${user.uid}/${newExpenseRef.id}/${values.attachment.name}`);
-          const snapshot = await uploadBytes(storageRef, values.attachment);
-          fileURL = await getDownloadURL(snapshot.ref);
-          fileName = values.attachment.name;
-      }
-
       const newExpense: Omit<Transaction, 'id'> = {
           description: values.description,
           amount: -Math.abs(values.amount), // ensure it's negative
@@ -124,12 +113,18 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
           date: values.date,
           isRecurring: values.isRecurring,
           type: 'expense',
-          fileURL,
-          fileName,
       };
 
       if (values.isRecurring) {
         newExpense.frequency = values.frequency;
+      }
+
+      if (values.attachment) {
+          const storage = getStorage(firebaseApp);
+          const storageRef = ref(storage, `user_uploads/${user.uid}/${newExpenseRef.id}/${values.attachment.name}`);
+          const snapshot = await uploadBytes(storageRef, values.attachment);
+          newExpense.fileURL = await getDownloadURL(snapshot.ref);
+          newExpense.fileName = values.attachment.name;
       }
 
       await setDoc(newExpenseRef, newExpense);

@@ -86,26 +86,21 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
         const incomeCollection = collection(firestore, 'users', user.uid, 'transactions');
         const newIncomeRef = doc(incomeCollection);
 
-        let fileURL: string | undefined = undefined;
-        let fileName: string | undefined = undefined;
-
-        if (values.attachment) {
-            const storage = getStorage(firebaseApp);
-            const storageRef = ref(storage, `user_uploads/${user.uid}/${newIncomeRef.id}/${values.attachment.name}`);
-            const snapshot = await uploadBytes(storageRef, values.attachment);
-            fileURL = await getDownloadURL(snapshot.ref);
-            fileName = values.attachment.name;
-        }
-
         const newIncome: Omit<Transaction, 'id'> = {
             description: values.description,
             amount: values.amount,
             category: values.category,
             date: values.date,
             type: 'income',
-            fileURL,
-            fileName,
         };
+        
+        if (values.attachment) {
+            const storage = getStorage(firebaseApp);
+            const storageRef = ref(storage, `user_uploads/${user.uid}/${newIncomeRef.id}/${values.attachment.name}`);
+            const snapshot = await uploadBytes(storageRef, values.attachment);
+            newIncome.fileURL = await getDownloadURL(snapshot.ref);
+            newIncome.fileName = values.attachment.name;
+        }
         
         await setDoc(newIncomeRef, newIncome);
 

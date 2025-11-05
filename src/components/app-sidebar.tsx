@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -13,6 +12,7 @@ import {
   PlusCircle,
   MinusCircle,
   TrendingUp,
+  ArrowRightLeft,
 } from 'lucide-react';
 import {
   SidebarContent,
@@ -33,6 +33,7 @@ const menuItems = [
   { href: '/expenses', label: 'Expenses', icon: Landmark },
   { href: '/income', label: 'Income', icon: TrendingUp },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
+  { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
   { href: '/insights', label: 'Insights', icon: FilePieChart },
 ];
 

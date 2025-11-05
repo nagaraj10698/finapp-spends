@@ -1,25 +1,13 @@
-import { getMockExpenses } from '@/lib/data';
-import { columns } from './columns';
-import { DataTable } from './data-table';
-import AddExpenseDialog from './add-expense-dialog';
-import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import TransactionUpload from "./transaction-upload";
 
-export default function ExpensesPage() {
-  const data = getMockExpenses();
-
-  return (
-    <div className="space-y-4">
-       <div className="flex items-center justify-between">
-        <h1 className="font-headline text-2xl font-semibold">Expenses</h1>
-        <AddExpenseDialog>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Expense
-            </Button>
-        </AddExpenseDialog>
-       </div>
-      <DataTable columns={columns} data={data} />
-    </div>
-  );
+export default function TransactionsPage() {
+    return (
+        <div className="space-y-4">
+            <h1 className="font-headline text-2xl font-semibold">Transactions</h1>
+            <p className="text-muted-foreground">
+                Upload your bank statement to automatically categorize your transactions.
+            </p>
+            <TransactionUpload />
+        </div>
+    );
 }

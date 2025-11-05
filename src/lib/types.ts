@@ -1,4 +1,5 @@
 
+
 import type { LucideIcon } from "lucide-react";
 import { z } from 'zod';
 import type { Timestamp } from 'firebase/firestore';
@@ -47,4 +48,12 @@ export interface Income {
   amount: number;
   date: Date | Timestamp;
   status?: 'Received' | 'Pending';
+}
+
+export interface Notification {
+  id: string;
+  type: 'overdue' | 'upcoming' | 'budget';
+  title: string;
+  description: string;
+  href: string;
 }

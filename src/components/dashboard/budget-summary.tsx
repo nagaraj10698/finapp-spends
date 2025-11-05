@@ -1,20 +1,42 @@
 
+
 import type { Budget, Category } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { getIconByName } from '@/lib/data';
+import { getBudgets, getIconByName } from '@/lib/data';
 import { DhiramSymbol } from '../ui/dhiram-symbol';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import type { Transaction } from '@/lib/types';
+import { useMemo } from 'react';
 
-interface BudgetSummaryProps {
-  budgets: Budget[];
-  categories: Category[];
-}
+export default function BudgetSummary() {
+    const { firestore, user } = useFirebase();
+    const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
+    const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
+    const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
 
-export default function BudgetSummary({ budgets, categories }: BudgetSummaryProps) {
+    const { data: allBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
+    const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
+    const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
+
+    const budgetsWithSpent = useMemo(() => {
+        return getBudgets(allBudgets, allTransactions);
+    }, [allBudgets, allTransactions]);
+
+    if (budgetsLoading || transactionsLoading || categoriesLoading) {
+        return <div>Loading budgets...</div>;
+    }
+    
+    if (!budgetsWithSpent || budgetsWithSpent.length === 0) {
+        return <div className="text-sm text-muted-foreground">No budgets set yet.</div>;
+    }
+
+
   return (
     <div className="space-y-4">
-      {budgets.map((budget) => {
-        const category = categories.find(c => c.name === budget.category);
+      {budgetsWithSpent.map((budget) => {
+        const category = categories?.find(c => c.name === budget.category);
         const Icon = category ? getIconByName(category.icon) : null;
         const spent = budget.spent ?? 0;
         const limit = budget.limit ?? 0;

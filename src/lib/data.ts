@@ -20,8 +20,8 @@ import {
   Wallet,
   TrendingUp,
 } from 'lucide-react';
-import type { Category, Transaction, Budget } from './types';
-import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays } from 'date-fns';
+import type { Category, Transaction, Budget, Notification } from './types';
+import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, addDays, isAfter } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
@@ -188,7 +188,7 @@ export function getBudgets(budgets: Budget[] | null, allTransactions: Transactio
 
     return budgets.map(budget => {
         const spent = allTransactions
-            .filter(t => t.type === 'expense' && t.category === budget.category)
+            .filter(t => t.type === 'expense' && t.category === budget.category && isWithinInterval(toDate(t.date), {start: toDate(budget.budgetStartDate), end: toDate(budget.budgetEndDate)}))
             .reduce((sum, t) => sum + Math.abs(t.amount), 0);
         return {
             ...budget,
@@ -288,4 +288,67 @@ export function getBudgetForecast(
   return forecastData;
 }
 
+
+export function getNotifications(allTransactions: Transaction[] | null, allBudgets: Budget[] | null): Notification[] {
+  const notifications: Notification[] = [];
+  if (!allTransactions && !allBudgets) return [];
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Overdue bills
+  if (allTransactions) {
+    const overdueBills = allTransactions.filter(t => 
+      t.type === 'expense' && 
+      t.status === 'Un-paid' && 
+      isBefore(toDate(t.date), today)
+    );
+    overdueBills.forEach(bill => {
+      notifications.push({
+        id: `overdue-${bill.id}`,
+        type: 'overdue',
+        title: 'Overdue Bill',
+        description: `${bill.description} was due on ${format(toDate(bill.date), 'LLL dd')}.`,
+        href: '/expenses',
+      });
+    });
+
+    // Upcoming bills
+    const upcomingBills = allTransactions.filter(t =>
+        t.type === 'expense' &&
+        t.status === 'Un-paid' &&
+        isWithinInterval(toDate(t.date), { start: today, end: addDays(today, 7)})
+    );
+    upcomingBills.forEach(bill => {
+        notifications.push({
+            id: `upcoming-${bill.id}`,
+            type: 'upcoming',
+            title: 'Upcoming Bill',
+            description: `${bill.description} is due on ${format(toDate(bill.date), 'LLL dd')}.`,
+            href: '/expenses',
+        });
+    });
+  }
+
+  // Budget alerts
+  if (allBudgets && allTransactions) {
+    const budgetsWithSpent = getBudgets(allBudgets, allTransactions);
+    budgetsWithSpent.forEach(budget => {
+        const spent = budget.spent ?? 0;
+        const limit = budget.limit ?? 0;
+        const usage = limit > 0 ? (spent / limit) * 100 : 0;
+        if (usage >= 80) {
+             notifications.push({
+                id: `budget-${budget.id}`,
+                type: 'budget',
+                title: 'Budget Alert',
+                description: `You've used ${usage.toFixed(0)}% of your ${budget.name} budget.`,
+                href: '/budgets',
+            });
+        }
+    });
+  }
+  
+  return notifications;
+}
     

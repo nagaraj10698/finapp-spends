@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { FirebaseClientProvider } from '@/firebase';
 import { usePathname } from 'next/navigation';
 import AuthLayout from './auth/layout';
+import Notifications from '@/components/notifications';
 
 // Metadata can't be in a client component, so we export it from a server component context
 // but since the root layout now needs to be a client component because of usePathname,
@@ -35,7 +36,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             </Sidebar>
             <SidebarInset className="flex flex-col">
               <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-                <UserNav />
+                <div className='flex items-center gap-4'>
+                  <Notifications />
+                  <UserNav />
+                </div>
               </header>
               <main className="flex-1 overflow-auto p-4 sm:px-6 sm:py-0">
                 {children}

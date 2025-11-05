@@ -33,6 +33,7 @@ import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
 import UpcomingBillsTimeline from '@/components/dashboard/upcoming-bills-timeline';
 import BudgetForecastChart from '@/app/budgets/budget-forecast-chart';
 import RecentTransactions from '@/components/dashboard/recent-transactions';
+import BudgetSummary from '@/components/dashboard/budget-summary';
 
 const PRESET_RANGES = [
     { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
@@ -242,5 +243,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

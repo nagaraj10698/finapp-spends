@@ -63,23 +63,28 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
     
     const reader = new FileReader();
     reader.onload = async (event) => {
-      const fileContent = event.target?.result as string;
-      const response = await processTransactionsAction(fileContent);
-      if (response.success) {
-        onProcess(response.data);
-        // Add to historical list
-        const newFile: UploadedFile = {
-          name: file.name,
-          uploadDate: new Date().toLocaleDateString(),
-        };
-        const updatedFiles = [newFile, ...uploadedFiles];
-        setUploadedFiles(updatedFiles);
-        localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
-        setFile(null); // Clear the file after processing
-      } else {
-        setError(response.error ?? 'An unknown error occurred.');
-      }
-      setLoading(false);
+        try {
+            const fileContent = event.target?.result as string;
+            const response = await processTransactionsAction(fileContent);
+            if (response.success && response.data) {
+                onProcess(response.data);
+                // Add to historical list
+                const newFile: UploadedFile = {
+                name: file.name,
+                uploadDate: new Date().toLocaleDateString(),
+                };
+                const updatedFiles = [newFile, ...uploadedFiles];
+                setUploadedFiles(updatedFiles);
+                localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
+                setFile(null); // Clear the file only after successful processing
+            } else {
+                setError(response.error ?? 'An unknown error occurred.');
+            }
+        } catch (e: any) {
+             setError(e.message || 'Failed to process file.');
+        } finally {
+            setLoading(false);
+        }
     };
     reader.onerror = () => {
       setError('Failed to read file.');
@@ -120,6 +125,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
                         removeFile();
                       }}
                       className="mt-2"
+                      disabled={loading}
                     >
                       <X className="mr-2 h-4 w-4" /> Remove
                     </Button>
@@ -145,14 +151,14 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
                 ) : null}
                 Process Transactions
               </Button>
+               {error && (
+                <Alert variant="destructive">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
-          {error && (
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
         </div>
       </TabsContent>
       <TabsContent value="documents">

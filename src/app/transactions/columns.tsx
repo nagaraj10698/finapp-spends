@@ -88,13 +88,19 @@ export const columns: ColumnDef<Transaction>[] = [
       const date = row.getValue('date') as Date;
       return <div className="pl-4">{date.toLocaleDateString()}</div>;
     },
+    filterFn: (row, id, value) => {
+        const rowDate = new Date(row.getValue(id));
+        const [from, to] = value as [Date, Date];
+        return rowDate >= from && rowDate <= to;
+    }
   },
    {
     accessorKey: 'type',
     header: 'Type',
     cell: ({ row }) => {
       const type = row.getValue('type') as string;
-      return <Badge variant={type === 'income' ? 'default' : 'destructive'} className="capitalize">{type}</Badge>;
+       const label = type === 'income' ? 'Credit' : 'Debit';
+      return <Badge variant={type === 'income' ? 'default' : 'destructive'} className="capitalize">{label}</Badge>;
     },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id))

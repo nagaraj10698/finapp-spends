@@ -85,12 +85,19 @@ export function DataTable<TData extends { id: string }, TValue>({
   
   React.useEffect(() => {
     if (date?.from && date?.to) {
+      const dateFilter = (row: any, columnId: string, value: [Date, Date]) => {
+        const rowDate = new Date(row.getValue(columnId));
+        return rowDate >= value[0] && rowDate <= value[1];
+      };
+      table.getColumn('date')?.addFilterFn('in-range', dateFilter);
       table.getColumn('date')?.setFilterValue([date.from, date.to]);
+    } else {
+        table.getColumn('date')?.setFilterValue(undefined);
     }
   }, [date, table]);
 
   const categoryOptions = categories.map(c => ({ value: c.name, label: c.name, icon: c.icon }));
-  const typeOptions = [{value: 'income', label: 'Income'}, {value: 'expense', label: 'Expense'}];
+  const typeOptions = [{value: 'income', label: 'Credit'}, {value: 'expense', label: 'Debit'}];
 
   return (
     <div>
@@ -160,7 +167,7 @@ export function DataTable<TData extends { id: string }, TValue>({
       </div>
       <div className="flex items-center justify-between py-4">
         <div className="text-sm text-muted-foreground">
-            Total Transactions: {data.length}
+            Total Transactions: {table.getFilteredRowModel().rows.length}
         </div>
         <div className="flex items-center gap-2">
             {table.getFilteredSelectedRowModel().rows.length > 0 && (

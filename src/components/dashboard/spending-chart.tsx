@@ -26,19 +26,20 @@ const chartConfig = {
 };
 
 const COLORS = [
-    'hsl(var(--chart-1))',
-    'hsl(var(--chart-2))',
-    'hsl(var(--chart-3))',
-    'hsl(var(--chart-4))',
-    'hsl(var(--chart-5))',
-    '#8884d8',
-    '#82ca9d',
-    '#ffc658',
-    '#ff8042',
-    '#00C49F',
-    '#FFBB28',
-    '#FF8042'
+  "hsl(var(--primary))",
+  "hsl(var(--primary) / 0.9)",
+  "hsl(var(--primary) / 0.8)",
+  "hsl(var(--primary) / 0.7)",
+  "hsl(var(--primary) / 0.6)",
+  "hsl(var(--primary) / 0.5)",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-2) / 0.9)",
+  "hsl(var(--chart-2) / 0.8)",
+  "hsl(var(--chart-2) / 0.7)",
+  "hsl(var(--chart-2) / 0.6)",
+  "hsl(var(--chart-2) / 0.5)",
 ];
+
 
 const CustomTooltipContent = ({ active, payload, categories }: any) => {
   if (!active || !payload || payload.length === 0) {

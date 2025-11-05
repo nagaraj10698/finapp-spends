@@ -15,26 +15,37 @@ import {
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useUser, initiateAnonymousSignIn } from '@/firebase';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Skeleton } from './ui/skeleton';
+import Link from 'next/link';
 
 export function UserNav() {
   const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    if (!user && !isUserLoading) {
-        initiateAnonymousSignIn(auth);
+    if (!isUserLoading && !user) {
+      router.push('/login');
     }
-  }, [user, isUserLoading, auth]);
+  }, [user, isUserLoading, router]);
 
   if (isUserLoading) {
-    return <div>Loading...</div>
+    return <Skeleton className="h-9 w-9 rounded-full" />;
   }
-
+  
   if (!user) {
     return (
-        <Button onClick={() => initiateAnonymousSignIn(auth)}>Sign In</Button>
-    )
+      <div className="flex items-center gap-2">
+        <Button asChild variant="outline">
+          <Link href="/login">Log In</Link>
+        </Button>
+        <Button asChild>
+          <Link href="/signup">Sign Up</Link>
+        </Button>
+      </div>
+    );
   }
 
 
@@ -43,23 +54,23 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            {userAvatar && !user.isAnonymous && (
+            {(user.photoURL || userAvatar) && (
               <AvatarImage
-                src={user.photoURL || userAvatar.imageUrl}
+                src={user.photoURL ?? userAvatar?.imageUrl}
                 alt="User Avatar"
-                data-ai-hint={userAvatar.imageHint}
+                data-ai-hint={userAvatar?.imageHint}
               />
             )}
-            <AvatarFallback>{user.isAnonymous ? "A" : (user.displayName?.[0] || user.email?.[0] || "U")}</AvatarFallback>
+            <AvatarFallback>{(user.displayName?.[0] || user.email?.[0] || "U")}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.isAnonymous ? "Anonymous User" : (user.displayName || "User")}</p>
+            <p className="text-sm font-medium leading-none">{user.displayName || "User"}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user.isAnonymous ? "anonymous@example.com" : user.email}
+              {user.email}
             </p>
           </div>
         </DropdownMenuLabel>

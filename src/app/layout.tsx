@@ -1,3 +1,5 @@
+
+'use client';
 import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
@@ -13,39 +15,21 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FirebaseClientProvider } from '@/firebase';
+import { usePathname } from 'next/navigation';
+import AuthLayout from './auth/layout';
 
-export const metadata: Metadata = {
-  title: 'Spends',
-  description: 'Track your spending and save money.',
-};
+// Metadata can't be in a client component, so we export it from a server component context
+// but since the root layout now needs to be a client component because of usePathname,
+// we can't export it from here. The best practice is to have a server component wrapper.
+// For simplicity here, we'll just remove it for now as it's not critical.
+// export const metadata: Metadata = {
+//   title: 'Spends',
+//   description: 'Track your spending and save money.',
+// };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Space+Grotesk:wght@300..700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body
-        className={cn(
-          'min-h-screen bg-background font-body antialiased',
-          '[--font-body:_"PT_Sans"] [--font-headline:_"Space_Grotesk"]'
-        )}
-      >
-        <FirebaseClientProvider>
-          <SidebarProvider>
+function AppLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <SidebarProvider>
             <Sidebar>
               <AppSidebar />
             </Sidebar>
@@ -65,7 +49,51 @@ export default function RootLayout({
                 {children}
               </main>
             </SidebarInset>
-          </SidebarProvider>
+        </SidebarProvider>
+    )
+}
+
+function LayoutDecider({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const isAuthPage = pathname === '/login' || pathname === '/signup';
+
+    if (isAuthPage) {
+        return <AuthLayout>{children}</AuthLayout>
+    }
+
+    return <AppLayout>{children}</AppLayout>
+}
+
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <title>Spends</title>
+        <meta name="description" content="Track your spending and save money." />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Space+Grotesk:wght@300..700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body
+        className={cn(
+          'min-h-screen bg-background font-body antialiased',
+          '[--font-body:_"PT_Sans"] [--font-headline:_"Space_Grotesk"]'
+        )}
+      >
+        <FirebaseClientProvider>
+          <LayoutDecider>{children}</LayoutDecider>
         </FirebaseClientProvider>
         <Toaster />
       </body>

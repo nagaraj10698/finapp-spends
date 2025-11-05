@@ -15,6 +15,7 @@ import {
   TrendingUp,
   ArrowRightLeft,
   FileText,
+  BellRing,
 } from 'lucide-react';
 import {
   SidebarContent,
@@ -36,6 +37,7 @@ const menuItems = [
   { href: '/expenses', label: 'Expenses', icon: Landmark },
   { href: '/income', label: 'Income', icon: TrendingUp },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
+  { href: '/reminders', label: 'Reminders', icon: BellRing },
 ];
 
 const bottomMenuItems = [

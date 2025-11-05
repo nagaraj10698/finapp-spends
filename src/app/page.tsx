@@ -31,6 +31,8 @@ import { Calendar as CalendarIcon, MinusCircle, PlusCircle, TrendingUp } from 'l
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
+import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
 
 type ForecastPeriod = 'daily' | 'weekly' | 'monthly';
 
@@ -121,6 +123,18 @@ export default function DashboardPage() {
       <div className="flex justify-between items-center">
         <h1 className="font-headline text-2xl font-semibold">Dashboard</h1>
         <div className='flex items-center gap-2'>
+            <AddIncomeDialog>
+                <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Income
+                </Button>
+            </AddIncomeDialog>
+            <AddExpenseDialog>
+                <Button variant="outline">
+                    <MinusCircle className="mr-2 h-4 w-4" />
+                    Add Expense
+                </Button>
+            </AddExpenseDialog>
             <Popover open={isDatePopoverOpen} onOpenChange={setDatePopoverOpen}>
                 <PopoverTrigger asChild>
                 <Button
@@ -187,30 +201,6 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <OverviewCards totals={totals} />
       </div>
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Link href="/income">
-            <Card className="hover:bg-accent hover:text-accent-foreground transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Add Income</CardTitle>
-                    <PlusCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <p className="text-xs text-muted-foreground">Log a new source of income.</p>
-                </CardContent>
-            </Card>
-        </Link>
-        <Link href="/expenses">
-            <Card className="hover:bg-accent hover:text-accent-foreground transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Add Expense</CardTitle>
-                    <MinusCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <p className="text-xs text-muted-foreground">Record a new expense or payment.</p>
-                </CardContent>
-            </Card>
-        </Link>
-       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -224,7 +214,7 @@ export default function DashboardPage() {
             <CardHeader>
                 <CardTitle className="font-headline">Budget Forecast</CardTitle>
                 <CardDescription>
-                Your expense forecast for this month.
+                Your expense forecast for the selected period.
                 </CardDescription>
             </CardHeader>
             <CardContent>

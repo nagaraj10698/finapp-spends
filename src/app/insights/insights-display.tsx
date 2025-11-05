@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -8,17 +9,23 @@ import type { SpendingInsightsOutput } from '@/ai/flows/spending-insights';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { useFirebase } from '@/firebase';
 
 export default function InsightsDisplay() {
+  const { user } = useFirebase();
   const [loading, setLoading] = useState(false);
   const [insights, setInsights] = useState<SpendingInsightsOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleGetInsights = async () => {
+    if (!user) {
+        setError("You must be logged in to get insights.");
+        return;
+    }
     setLoading(true);
     setError(null);
     setInsights(null);
-    const result = await getSpendingInsightsAction();
+    const result = await getSpendingInsightsAction(user.uid);
     if (result.success) {
       setInsights(result.data);
     } else {
@@ -38,7 +45,7 @@ export default function InsightsDisplay() {
           <CardTitle className="font-headline">Generate Your Insights</CardTitle>
         </CardHeader>
         <CardContent>
-          <Button onClick={handleGetInsights} disabled={loading}>
+          <Button onClick={handleGetInsights} disabled={loading || !user}>
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (

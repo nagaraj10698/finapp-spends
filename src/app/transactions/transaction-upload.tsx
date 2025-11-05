@@ -59,7 +59,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
         try {
             const formData = new FormData();
             formData.append('file', file);
-            const response = await processTransactionsAction(formData);
+            const response = await processTransactionsAction(formData, user.uid);
 
             if (response.success && response.data) {
                 totalProcessedCount += response.data.transactions.length;

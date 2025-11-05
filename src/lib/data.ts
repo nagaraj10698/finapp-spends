@@ -1,4 +1,3 @@
-
 import {
   ShoppingBag,
   HeartPulse,
@@ -178,4 +177,3 @@ export function getBudgets(budgets: Budget[], allTransactions: Transaction[] | n
         };
       });
 }
-

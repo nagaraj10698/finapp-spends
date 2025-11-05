@@ -154,7 +154,6 @@ service cloud.firestore {
   function isValidTransaction(data) {
     return data.description is string &&
            data.amount is number &&
-           data.date is timestamp &&
            data.category is string &&
            data.type is string && (data.type == 'income' || data.type == 'expense');
   }
@@ -166,4 +165,3 @@ service cloud.firestore {
              data.fileType is string;
   }
 }
-    

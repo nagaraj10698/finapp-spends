@@ -1,12 +1,14 @@
 
 'use client';
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Legend, Tooltip, Cell } from 'recharts';
 import {
   ChartContainer,
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { DhiramSymbol } from '../ui/dhiram-symbol';
+import { getCategoryByName } from '@/lib/data';
+import { cn } from '@/lib/utils';
 
 interface SpendingChartProps {
   data: {
@@ -21,68 +23,73 @@ const chartConfig = {
   },
 };
 
+const COLORS = [
+    'hsl(var(--chart-1))',
+    'hsl(var(--chart-2))',
+    'hsl(var(--chart-3))',
+    'hsl(var(--chart-4))',
+    'hsl(var(--chart-5))',
+    '#8884d8',
+    '#82ca9d',
+    '#ffc658',
+    '#ff8042',
+    '#00C49F',
+    '#FFBB28',
+    '#FF8042'
+];
+
 const CustomTooltipContent = (props: any) => {
   if (!props.active || !props.payload || props.payload.length === 0) {
     return null;
   }
-  const { payload, label } = props;
-  const value = payload[0].value;
+  const { payload } = props;
+  const { name, value } = payload[0];
+  const category = getCategoryByName(name);
+
 
   return (
     <div className="rounded-lg border bg-background p-2 shadow-sm">
-      <div className="grid grid-cols-2 gap-2">
-        <div className="flex flex-col space-y-1">
-          <span className="text-[0.70rem] uppercase text-muted-foreground">{label}</span>
-          <span className="font-bold text-muted-foreground flex items-center gap-1">
+      <div className="flex items-center gap-2">
+         {category && <category.icon className={cn("h-4 w-4", category.color)} />}
+        <span className="font-semibold">{name}</span>
+      </div>
+      <div className="flex flex-col space-y-1 mt-1">
+        <span className="font-bold text-muted-foreground flex items-center gap-1">
             <DhiramSymbol />
             {Number(value).toFixed(2)}
-          </span>
-        </div>
+        </span>
       </div>
     </div>
   );
 };
 
-
 export default function SpendingChart({ data }: SpendingChartProps) {
   return (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart
-          accessibilityLayer
-          data={data}
-          margin={{
-            top: 20,
-            right: 20,
-            bottom: 20,
-            left: 20,
-          }}
-        >
-          <XAxis
-            dataKey="name"
-            stroke="#888888"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis
-            stroke="#888888"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(value) => {
-              const num = Number(value);
-              if (num >= 1000) return `Dh${(num/1000).toFixed(0)}k`
-              return `Dh${value}`
-            }}
-          />
+        <PieChart>
           <Tooltip
             cursor={false}
             content={<CustomTooltipContent />}
-            
           />
-          <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-        </BarChart>
+          <Pie
+            data={data}
+            dataKey="total"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            innerRadius={80}
+            outerRadius={120}
+            fill="#8884d8"
+            paddingAngle={5}
+            labelLine={false}
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Legend wrapperStyle={{fontSize: '0.8rem'}} />
+        </PieChart>
       </ResponsiveContainer>
     </ChartContainer>
   );

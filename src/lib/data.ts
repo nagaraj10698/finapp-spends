@@ -132,7 +132,7 @@ export function getUpcomingBills(allTransactions: Transaction[]): Transaction[] 
     const today = new Date();
     const nextMonth = addMonths(today, 1);
     const upcoming: Transaction[] = [];
-    const recurring = allTransactions.filter(t => t.isRecurring && t.frequency);
+    const recurring = allTransactions.filter(t => t.isRecurring && t.frequency && t.type === 'expense');
 
     recurring.forEach(t => {
         let nextDate = new Date(t.date);
@@ -184,14 +184,10 @@ export function getTotals(allTransactions: Transaction[]) {
 
 export function getSpendingByCategory(allTransactions: Transaction[]) {
   const spendingMap = new Map<string, number>();
-  const today = new Date();
-  const currentMonthExpenses = allTransactions.filter(t => 
-    t.date.getMonth() === today.getMonth() && 
-    t.date.getFullYear() === today.getFullYear() &&
-    t.amount < 0
-  );
   
-  currentMonthExpenses.forEach(t => {
+  const allExpenses = allTransactions.filter(t => t.amount < 0);
+  
+  allExpenses.forEach(t => {
     const absAmount = Math.abs(t.amount);
     spendingMap.set(t.category, (spendingMap.get(t.category) || 0) + absAmount);
   });
@@ -199,7 +195,19 @@ export function getSpendingByCategory(allTransactions: Transaction[]) {
 }
 
 export function getBudgets(allTransactions: Transaction[]): Budget[] {
-  const spending = getSpendingByCategory(allTransactions);
+  const today = new Date();
+  const spendingThisMonth = new Map<string, number>();
+  const currentMonthExpenses = allTransactions.filter(t => 
+    t.date.getMonth() === today.getMonth() && 
+    t.date.getFullYear() === today.getFullYear() &&
+    t.amount < 0
+  );
+
+  currentMonthExpenses.forEach(t => {
+      const absAmount = Math.abs(t.amount);
+      spendingThisMonth.set(t.category, (spendingThisMonth.get(t.category) || 0) + absAmount);
+  });
+
   const budgetData: { [key: string]: number } = {
     'Groceries': 400,
     'Dining Out': 200,
@@ -210,7 +218,7 @@ export function getBudgets(allTransactions: Transaction[]): Budget[] {
   };
 
   return Object.entries(budgetData).map(([name, limit], index) => {
-    const spent = spending.find(s => s.name === name)?.total || 0;
+    const spent = spendingThisMonth.get(name) || 0;
     return {
       id: `budget-${index + 1}`,
       name,

@@ -39,16 +39,16 @@ export default function BudgetCard({ budget }: BudgetCardProps) {
           <span>Limit</span>
         </div>
         <div className="flex justify-between font-medium">
-          <span>${budget.spent.toFixed(2)}</span>
-          <span>${budget.limit.toFixed(2)}</span>
+          <span>د.إ{budget.spent.toFixed(2)}</span>
+          <span>د.إ{budget.limit.toFixed(2)}</span>
         </div>
         <Progress value={progress} />
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
           {remaining >= 0
-            ? `$${remaining.toFixed(2)} remaining`
-            : `$${Math.abs(remaining).toFixed(2)} over budget`}
+            ? `د.إ${remaining.toFixed(2)} remaining`
+            : `د.إ${Math.abs(remaining).toFixed(2)} over budget`}
         </p>
       </CardFooter>
     </Card>

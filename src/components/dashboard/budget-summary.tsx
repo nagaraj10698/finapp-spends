@@ -21,7 +21,7 @@ export default function BudgetSummary({ budgets }: BudgetSummaryProps) {
                 <span className="font-medium">{budget.name}</span>
               </div>
               <span className="text-sm text-muted-foreground">
-                ${budget.spent.toFixed(0)} / ${budget.limit}
+                د.إ{budget.spent.toFixed(0)} / د.إ{budget.limit}
               </span>
             </div>
             <Progress value={progress} />

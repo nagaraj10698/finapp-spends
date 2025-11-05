@@ -45,13 +45,13 @@ export default function SpendingChart({ data }: SpendingChartProps) {
             fontSize={12}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => `د.إ${value}`}
           />
           <Tooltip
             cursor={false}
             content={<ChartTooltipContent
               labelFormatter={(label) => { return data.find(d => d.name === label)?.name; }}
-              formatter={(value) => `$${Number(value).toFixed(2)}`}
+              formatter={(value) => `د.إ${Number(value).toFixed(2)}`}
             />}
             
           />

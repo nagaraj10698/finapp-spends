@@ -48,7 +48,7 @@ export default function RecentTransactions({
                 )}
               </TableCell>
               <TableCell className="text-right">
-                ${transaction.amount.toFixed(2)}
+                د.إ{transaction.amount.toFixed(2)}
               </TableCell>
               <TableCell className="hidden sm:table-cell">
                 {transaction.date.toLocaleDateString()}

@@ -60,7 +60,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
     console.log(values);
     toast({
       title: 'Expense Added',
-      description: `${values.description} for $${values.amount} has been added.`,
+      description: `${values.description} for د.إ${values.amount} has been added.`,
     });
     // Here you would typically call a server action to save the data
   }

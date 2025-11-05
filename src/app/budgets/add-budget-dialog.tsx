@@ -53,7 +53,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
     console.log(values);
     toast({
       title: 'Budget Added',
-      description: `A budget for ${values.category} of $${values.limit} has been set.`,
+      description: `A budget for ${values.category} of د.إ${values.limit} has been set.`,
     });
     // Here you would typically call a server action to save the data
   }

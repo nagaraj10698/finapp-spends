@@ -44,6 +44,7 @@ const formSchema = z.object({
   limit: z.coerce.number().positive('Limit must be positive.'),
   name: z.string().min(1, 'Please select a category.'),
   isRecurring: z.boolean(),
+  type: z.enum(['Bills', 'Subscription', 'Expense'], { required_error: 'Please select a type.' }),
 });
 
 export default function AddBudgetDialog({children}: {children: ReactNode}) {
@@ -60,6 +61,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
       limit: 0,
       name: '',
       isRecurring: false,
+      type: 'Expense',
     },
   });
 
@@ -78,6 +80,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
         name: values.name,
         limit: values.limit,
         isRecurring: values.isRecurring,
+        type: values.type,
     };
 
     await addDocumentNonBlocking(budgetCollection, newBudget);
@@ -156,6 +159,28 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                       <Input type="number" placeholder="0.00" {...field} className="pl-12" />
                     </div>
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Type</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a budget type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Bills">Bills</SelectItem>
+                      <SelectItem value="Subscription">Subscription</SelectItem>
+                      <SelectItem value="Expense">Expense</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

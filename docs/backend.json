@@ -78,6 +78,15 @@
             "type": "string",
             "description": "Frequency of recurring transaction.",
             "enum": ["weekly", "monthly", "quarterly", "yearly"]
+        },
+        "fileURL": {
+          "type": "string",
+          "description": "URL of an uploaded file attachment.",
+          "format": "uri"
+        },
+        "fileName": {
+            "type": "string",
+            "description": "Name of the uploaded file."
         }
       },
       "required": [
@@ -159,6 +168,11 @@
         "isRecurring": {
           "type": "boolean",
           "description": "Whether the budget is recurring."
+        },
+        "type": {
+            "type": "string",
+            "description": "Type of budget.",
+            "enum": ["Bills", "Subscription", "Expense"]
         }
       },
       "required": [
@@ -169,7 +183,8 @@
         "budgetAmount",
         "budgetStartDate",
         "budgetEndDate",
-        "isRecurring"
+        "isRecurring",
+        "type"
       ]
     },
     "Reminder": {

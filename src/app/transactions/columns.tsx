@@ -88,7 +88,7 @@ export const getColumns = (categories: Category[]): ColumnDef<Transaction>[] => 
     },
     cell: ({ row }) => {
       const date = row.getValue('date') as Date;
-      return <div className="pl-4">{date.toLocaleDateString()}</div>;
+      return <div className="text-left pl-4">{date.toLocaleDateString()}</div>;
     },
     filterFn: (row, id, value) => {
         const rowDate = new Date(row.getValue(id));

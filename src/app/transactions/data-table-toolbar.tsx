@@ -33,7 +33,10 @@ export function DataTableToolbar<TData>({
 
   React.useEffect(() => {
     if (date?.from && date?.to) {
-        table.getColumn('date')?.setFilterValue([date.from, date.to]);
+        // The dates from the picker are at midnight, so we extend the 'to' date to the end of the day
+        const toDate = new Date(date.to);
+        toDate.setHours(23, 59, 59, 999);
+        table.getColumn('date')?.setFilterValue([date.from, toDate]);
     } else {
         table.getColumn('date')?.setFilterValue(undefined);
     }

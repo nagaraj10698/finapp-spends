@@ -9,6 +9,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, writeBatch } from 'firebase/firestore';
 import { DataTableToolbar } from './data-table-toolbar';
+import AddTransactionDialog from './add-transaction-dialog';
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
 
 export default function TransactionsPage() {
   const { toast } = useToast();
@@ -46,7 +49,12 @@ export default function TransactionsPage() {
   };
 
   const tableColumns = useMemo(() => getColumns(categories ?? []), [categories]);
-  const transactionData = useMemo(() => allTransactions?.map(t => ({...t, date: (t.date as any).toDate()})) ?? [], [allTransactions]);
+  const transactionData = useMemo(() => {
+    if (!allTransactions) return [];
+    return allTransactions
+      .map(t => ({...t, date: (t.date as any).toDate()}))
+      .sort((a,b) => b.date.getTime() - a.date.getTime())
+  }, [allTransactions]);
 
   if (transactionsLoading || categoriesLoading) {
     return <div>Loading transactions...</div>;
@@ -56,6 +64,12 @@ export default function TransactionsPage() {
     <div className="space-y-4">
        <div className="flex items-center justify-between">
         <h1 className="font-headline text-2xl font-semibold">All Transactions</h1>
+         <AddTransactionDialog>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Transaction
+            </Button>
+        </AddTransactionDialog>
        </div>
       <DataTable columns={tableColumns} data={transactionData} toolbar={<DataTableToolbar onDelete={handleDelete} categories={categories ?? []} />} />
     </div>

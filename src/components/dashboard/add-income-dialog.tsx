@@ -25,8 +25,9 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
-import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, setDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Transaction, Category } from '@/lib/types';
 import {
   Select,
@@ -48,12 +49,14 @@ const formSchema = z.object({
   description: z.string().min(2, 'Description must be at least 2 characters.'),
   category: z.string().min(1, 'Please select a category.'),
   date: z.date(),
+  attachment: z.instanceof(File).optional(),
 });
 
 export default function AddIncomeDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
-  const { firestore, user } = useFirebase();
+  const { firestore, user, firebaseApp } = useFirebase();
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -69,7 +72,7 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !user) {
+    if (!firestore || !user || !firebaseApp) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -77,32 +80,60 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
         });
         return;
     }
+    setIsSubmitting(true);
 
-    const incomeCollection = collection(firestore, 'users', user.uid, 'transactions');
-    const newIncome: Omit<Transaction, 'id'> = {
-        description: values.description,
-        amount: values.amount,
-        category: values.category,
-        date: values.date,
-        type: 'income',
-    };
-    
-    await addDocumentNonBlocking(incomeCollection, newIncome);
+    try {
+        const incomeCollection = collection(firestore, 'users', user.uid, 'transactions');
+        const newIncomeRef = doc(incomeCollection);
 
-    toast({
-      title: 'Income Added',
-      description: (
-        <span>
-          {values.description} of <DhiramSymbol />
-          {values.amount} has been added.
-        </span>
-      ),
-    });
-    form.reset();
-    setOpen(false);
+        let fileURL: string | undefined = undefined;
+        let fileName: string | undefined = undefined;
+
+        if (values.attachment) {
+            const storage = getStorage(firebaseApp);
+            const storageRef = ref(storage, `user_uploads/${user.uid}/${newIncomeRef.id}/${values.attachment.name}`);
+            const snapshot = await uploadBytes(storageRef, values.attachment);
+            fileURL = await getDownloadURL(snapshot.ref);
+            fileName = values.attachment.name;
+        }
+
+        const newIncome: Omit<Transaction, 'id'> = {
+            description: values.description,
+            amount: values.amount,
+            category: values.category,
+            date: values.date,
+            type: 'income',
+            fileURL,
+            fileName,
+        };
+        
+        await setDoc(newIncomeRef, newIncome);
+
+        toast({
+          title: 'Income Added',
+          description: (
+            <span>
+              {values.description} of <DhiramSymbol />
+              {values.amount} has been added.
+            </span>
+          ),
+        });
+        form.reset();
+        setOpen(false);
+    } catch (error) {
+        console.error("Error adding income:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to add income. Please try again."
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   const incomeCategories = categories?.filter(c => c.type === 'income');
+  const fileRef = form.register("attachment");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -218,8 +249,30 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="attachment"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Attachment</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="file" 
+                      accept="image/*,.pdf,.xls,.xlsx"
+                      {...fileRef}
+                      onChange={(e) => {
+                        field.onChange(e.target.files ? e.target.files[0] : undefined);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter>
-              <Button type="submit">Save Income</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save Income'}
+                </Button>
             </DialogFooter>
           </form>
         </Form>

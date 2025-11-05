@@ -39,8 +39,9 @@ import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Switch } from '@/components/ui/switch';
-import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, setDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Transaction, Category } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -54,6 +55,7 @@ const formSchema = z
     date: z.date(),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
+    attachment: z.instanceof(File).optional(),
   })
   .refine(
     (data) => {
@@ -70,8 +72,9 @@ const formSchema = z
 
 export default function AddTransactionDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
-  const { firestore, user } = useFirebase();
+  const { firestore, user, firebaseApp } = useFirebase();
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -97,7 +100,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !user) {
+    if (!firestore || !user || !firebaseApp) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -105,37 +108,64 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
         });
         return;
     }
+    setIsSubmitting(true);
     
-    const transactionCollection = collection(firestore, 'users', user.uid, 'transactions');
-    
-    const amount = values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
+    try {
+        const transactionCollection = collection(firestore, 'users', user.uid, 'transactions');
+        const newTransactionRef = doc(transactionCollection);
+        
+        const amount = values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
 
-    const newTransaction: Omit<Transaction, 'id'> = {
-        description: values.description,
-        amount: amount,
-        category: values.category,
-        date: values.date,
-        isRecurring: values.isRecurring,
-        frequency: values.isRecurring ? values.frequency : undefined,
-        type: values.type
-    };
+        let fileURL: string | undefined = undefined;
+        let fileName: string | undefined = undefined;
 
-    await addDocumentNonBlocking(transactionCollection, newTransaction);
+        if (values.attachment) {
+            const storage = getStorage(firebaseApp);
+            const storageRef = ref(storage, `user_uploads/${user.uid}/${newTransactionRef.id}/${values.attachment.name}`);
+            const snapshot = await uploadBytes(storageRef, values.attachment);
+            fileURL = await getDownloadURL(snapshot.ref);
+            fileName = values.attachment.name;
+        }
 
-    toast({
-      title: 'Transaction Added',
-      description: (
-        <span>
-          {values.description} for <DhiramSymbol />
-          {values.amount} has been added.
-        </span>
-      ),
-    });
-    form.reset();
-    setOpen(false);
+        const newTransaction: Omit<Transaction, 'id'> = {
+            description: values.description,
+            amount: amount,
+            category: values.category,
+            date: values.date,
+            isRecurring: values.isRecurring,
+            frequency: values.isRecurring ? values.frequency : undefined,
+            type: values.type,
+            fileURL,
+            fileName,
+        };
+
+        await setDoc(newTransactionRef, newTransaction);
+
+        toast({
+          title: 'Transaction Added',
+          description: (
+            <span>
+              {values.description} for <DhiramSymbol />
+              {values.amount} has been added.
+            </span>
+          ),
+        });
+        form.reset();
+        setOpen(false);
+    } catch (error) {
+        console.error("Error adding transaction:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to add transaction. Please try again."
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
   
   const availableCategories = categories?.filter(c => c.type === transactionType);
+  const fileRef = form.register("attachment");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -281,6 +311,26 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="attachment"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Attachment</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="file" 
+                      accept="image/*,.pdf,.xls,.xlsx"
+                      {...fileRef}
+                      onChange={(e) => {
+                        field.onChange(e.target.files ? e.target.files[0] : undefined);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
              <FormField
               control={form.control}
               name="isRecurring"
@@ -330,7 +380,9 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
               />
             )}
             <DialogFooter>
-              <Button type="submit">Save Transaction</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save Transaction'}
+                </Button>
             </DialogFooter>
           </form>
         </Form>

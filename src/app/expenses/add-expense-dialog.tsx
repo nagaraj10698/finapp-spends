@@ -39,8 +39,9 @@ import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Switch } from '@/components/ui/switch';
-import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, setDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Transaction, Category } from '@/lib/types';
 
 
@@ -52,6 +53,7 @@ const formSchema = z
     date: z.date(),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
+    attachment: z.instanceof(File).optional(),
   })
   .refine(
     (data) => {
@@ -68,8 +70,9 @@ const formSchema = z
 
 export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
-  const { firestore, user } = useFirebase();
+  const { firestore, user, firebaseApp } = useFirebase();
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -88,7 +91,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const isRecurring = form.watch('isRecurring');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !user) {
+    if (!firestore || !user || !firebaseApp) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -97,33 +100,63 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
         return;
     }
     
-    const expenseCollection = collection(firestore, 'users', user.uid, 'transactions');
-    const newExpense: Omit<Transaction, 'id'> = {
-        description: values.description,
-        amount: -Math.abs(values.amount), // ensure it's negative
-        category: values.category,
-        date: values.date,
-        isRecurring: values.isRecurring,
-        frequency: values.isRecurring ? values.frequency : undefined,
-        type: 'expense'
-    };
+    setIsSubmitting(true);
 
-    await addDocumentNonBlocking(expenseCollection, newExpense);
+    try {
+      const expenseCollection = collection(firestore, 'users', user.uid, 'transactions');
+      const newExpenseRef = doc(expenseCollection);
 
-    toast({
-      title: 'Expense Added',
-      description: (
-        <span>
-          {values.description} for <DhiramSymbol />
-          {values.amount} has been added.
-        </span>
-      ),
-    });
-    form.reset();
-    setOpen(false);
+      let fileURL: string | undefined = undefined;
+      let fileName: string | undefined = undefined;
+
+      if (values.attachment) {
+          const storage = getStorage(firebaseApp);
+          const storageRef = ref(storage, `user_uploads/${user.uid}/${newExpenseRef.id}/${values.attachment.name}`);
+          const snapshot = await uploadBytes(storageRef, values.attachment);
+          fileURL = await getDownloadURL(snapshot.ref);
+          fileName = values.attachment.name;
+      }
+
+      const newExpense: Omit<Transaction, 'id'> = {
+          description: values.description,
+          amount: -Math.abs(values.amount), // ensure it's negative
+          category: values.category,
+          date: values.date,
+          isRecurring: values.isRecurring,
+          frequency: values.isRecurring ? values.frequency : undefined,
+          type: 'expense',
+          fileURL,
+          fileName,
+      };
+
+      await setDoc(newExpenseRef, newExpense);
+
+      toast({
+        title: 'Expense Added',
+        description: (
+          <span>
+            {values.description} for <DhiramSymbol />
+            {values.amount} has been added.
+          </span>
+        ),
+      });
+      form.reset();
+      setOpen(false);
+    } catch (error) {
+        console.error("Error adding expense:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to add expense. Please try again."
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
   
   const expenseCategories = categories?.filter(c => c.type === 'expense');
+
+  const fileRef = form.register("attachment");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -241,6 +274,26 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             />
              <FormField
               control={form.control}
+              name="attachment"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Attachment</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="file" 
+                      accept="image/*,.pdf,.xls,.xlsx"
+                      {...fileRef}
+                      onChange={(e) => {
+                        field.onChange(e.target.files ? e.target.files[0] : undefined);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
               name="isRecurring"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
@@ -288,7 +341,9 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
               />
             )}
             <DialogFooter>
-              <Button type="submit">Save changes</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save changes"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

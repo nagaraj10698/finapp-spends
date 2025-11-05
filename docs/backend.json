@@ -69,6 +69,15 @@
         "transactionType": {
           "type": "string",
           "description": "Type of transaction (e.g., deposit, withdrawal)."
+        },
+        "fileURL": {
+          "type": "string",
+          "description": "URL of the uploaded receipt or document.",
+          "format": "uri"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Name of the uploaded file."
         }
       },
       "required": [

@@ -20,6 +20,8 @@ export interface Transaction {
   isRecurring?: boolean;
   frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
   type: 'income' | 'expense';
+  fileURL?: string;
+  fileName?: string;
 }
 
 export interface Budget {

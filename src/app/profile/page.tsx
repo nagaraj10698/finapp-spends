@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRef, useState } from 'react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Loader2 } from 'lucide-react';
+import ImageCropperDialog from './image-cropper-dialog';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
@@ -36,6 +37,9 @@ export default function ProfilePage() {
   const [photoURL, setPhotoURL] = useState(user?.photoURL);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [cropperOpen, setCropperOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,14 +56,29 @@ export default function ProfilePage() {
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
+    setSelectedImage(file);
+    setCropperOpen(true);
+     // Reset file input to allow re-selection of the same file
+    if(fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSaveCroppedImage = async (croppedImageBlob: Blob | null) => {
+    if (!croppedImageBlob || !user || !firestore) {
+        setCropperOpen(false);
+        return;
+    }
     setIsUploading(true);
+    setCropperOpen(false);
 
     const storage = getStorage();
     const storageRef = ref(storage, `profile-pictures/${user.uid}`);
+    const imageFile = new File([croppedImageBlob], "profile_picture.jpeg", { type: "image/jpeg" });
 
     try {
-        await uploadBytes(storageRef, file);
+        await uploadBytes(storageRef, imageFile);
         const newPhotoURL = await getDownloadURL(storageRef);
         setPhotoURL(newPhotoURL);
         
@@ -81,6 +100,7 @@ export default function ProfilePage() {
         });
     } finally {
         setIsUploading(false);
+        setSelectedImage(null);
     }
   };
 
@@ -123,6 +143,16 @@ export default function ProfilePage() {
   }
 
   return (
+    <>
+    <ImageCropperDialog 
+      isOpen={cropperOpen}
+      onClose={() => {
+        setCropperOpen(false);
+        setSelectedImage(null);
+      }}
+      image={selectedImage}
+      onSave={handleSaveCroppedImage}
+    />
     <div className="space-y-4">
       <h1 className="font-headline text-2xl font-semibold">Profile</h1>
       <Card>
@@ -209,5 +239,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

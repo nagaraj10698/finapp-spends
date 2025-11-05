@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { getCategoryByName, getIconByName } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDown, MoreHorizontal, Check, Circle } from 'lucide-react';
+import { ArrowUpDown, MoreHorizontal, Check, Circle, Edit, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,15 +15,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent
 } from '@/components/ui/dropdown-menu';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Checkbox } from "@/components/ui/checkbox";
 import { updateTransactionStatus } from '../actions';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { doc, deleteDoc } from 'firebase/firestore';
+
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
@@ -55,8 +54,20 @@ const StatusDropdown = ({ transaction }: { transaction: Transaction }) => {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className={cn("h-8 capitalize", transaction.status === 'Paid' ? 'border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700' : 'border-red-600 text-red-600 hover:bg-red-50 hover:text-red-700')}>
-            {transaction.status}
+           <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+                "h-8 capitalize w-20 justify-start",
+                transaction.status === 'Paid' 
+                ? 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:text-green-800' 
+                : 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100 hover:text-red-800'
+            )}
+            >
+            <span className='flex items-center gap-2'>
+                {transaction.status === 'Paid' ? <Check className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                {transaction.status}
+            </span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -75,7 +86,11 @@ const StatusDropdown = ({ transaction }: { transaction: Transaction }) => {
 };
 
 // This is a dynamic column definition that accepts categories
-export const getColumns = (categories: Category[]): ColumnDef<Transaction>[] => [
+export const getColumns = (
+    categories: Category[],
+    onEdit: (transaction: Transaction) => void,
+    onDelete: (transaction: Transaction) => void
+    ): ColumnDef<Transaction>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -222,9 +237,13 @@ export const getColumns = (categories: Category[]): ColumnDef<Transaction>[] => 
               Copy transaction ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Edit transaction</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">
-              Delete transaction
+            <DropdownMenuItem onClick={() => onEdit(transaction)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit transaction
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(transaction)} className="text-destructive">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete transaction
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -233,4 +252,6 @@ export const getColumns = (categories: Category[]): ColumnDef<Transaction>[] => 
   },
 ];
 
-export const columns = getColumns([]); // export a default
+export const columns = getColumns([], () => {}, () => {}); // export a default
+
+    

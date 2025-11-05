@@ -3,12 +3,11 @@
 
 import { getSpendingInsights, type SpendingInsightsInput } from "@/ai/flows/spending-insights";
 import { processTransactions } from "@/ai/flows/process-transactions";
-import { categories } from "@/lib/data";
-import type { ProcessTransactionsInput, Transaction, Budget } from "@/lib/types";
 import { parseFile } from "@/lib/file-parser";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { initializeFirebase }from "@/firebase/server";
 import { getAuth } from "firebase/auth";
+import type { ProcessTransactionsInput, Transaction, Budget, Category } from "@/lib/types";
 
 async function getCollectionData<T>(collectionName: string): Promise<T[]> {
     const { firestore } = initializeFirebase();
@@ -62,11 +61,15 @@ export async function processTransactionsAction(formData: FormData) {
         }
 
         const fileContent = await parseFile(file);
+        
+        const categories = await getCollectionData<Category>('categories');
+        const expenseCategories = categories.filter(c => c.type === 'expense').map(c => c.name);
+        const incomeCategories = categories.filter(c => c.type === 'income').map(c => c.name);
 
         const input: ProcessTransactionsInput = {
             fileContent,
-            categories: categories.map(c => c.name),
-            incomeCategories: ['Salary', 'Freelance', 'Investment', 'Other Income'],
+            categories: expenseCategories,
+            incomeCategories: incomeCategories,
         };
         const result = await processTransactions(input);
         return { success: true, data: result };
@@ -75,4 +78,3 @@ export async function processTransactionsAction(formData: FormData) {
         return { success: false, error: error.message || 'Failed to process transactions.' };
     }
 }
-

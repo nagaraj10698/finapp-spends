@@ -1,4 +1,4 @@
-import type { Transaction } from '@/lib/types';
+import type { Transaction, Category } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -13,9 +13,10 @@ import { DhiramSymbol } from '../ui/dhiram-symbol';
 
 interface UpcomingBillsProps {
   bills: Transaction[];
+  categories: Category[];
 }
 
-export default function UpcomingBills({ bills }: UpcomingBillsProps) {
+export default function UpcomingBills({ bills, categories }: UpcomingBillsProps) {
   return (
     <Table>
       <TableHeader>
@@ -27,7 +28,7 @@ export default function UpcomingBills({ bills }: UpcomingBillsProps) {
       </TableHeader>
       <TableBody>
         {bills.map((bill) => {
-          const category = getCategoryByName(bill.category);
+          const category = getCategoryByName(bill.category, categories);
           return (
             <TableRow key={bill.id}>
               <TableCell className="font-medium">

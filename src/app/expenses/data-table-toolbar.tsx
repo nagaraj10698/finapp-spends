@@ -7,24 +7,29 @@ import { Table } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTableFacetedFilter } from "@/components/ui/data-table-faceted-filter"
-import { categories } from "@/lib/data"
-import type { Transaction } from "@/lib/types"
+import { getIconByName } from "@/lib/data"
+import type { Category } from "@/lib/types"
 
 interface DataTableToolbarProps<TData> {
   table?: Table<TData>
   onDelete: (transactionsToDelete: TData[]) => void;
+  categories: Category[];
 }
 
 export function DataTableToolbar<TData>({
   table,
   onDelete,
+  categories,
 }: DataTableToolbarProps<TData>) {
   if (!table) {
     return null;
   }
   const isFiltered = table.getState().columnFilters.length > 0
   
-  const categoryOptions = categories.filter(c => !['Salary', 'Freelance', 'Investment', 'Other Income'].includes(c.name)).map(c => ({ value: c.name, label: c.name, icon: c.icon }));
+  const categoryOptions = categories.filter(c => c.type === 'expense').map(c => {
+    const Icon = getIconByName(c.icon);
+    return { value: c.name, label: c.name, icon: Icon };
+  });
   
   const handleDeleteSelected = () => {
     const selectedRowsData = table.getFilteredSelectedRowModel().rows.map(row => row.original);

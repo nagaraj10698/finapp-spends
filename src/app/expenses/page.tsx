@@ -8,7 +8,7 @@ import AddExpenseDialog from './add-expense-dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, Category } from '@/lib/types';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { DataTableToolbar } from './data-table-toolbar';
@@ -18,7 +18,11 @@ export default function ExpensesPage() {
     const { firestore, user } = useFirebase();
 
     const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
-    const { data: allTransactions, isLoading } = useCollection<Transaction>(transactionsCollection);
+    const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+    
+    const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
+    const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
+
 
     const expenseData = useMemo(() => {
         if (!allTransactions) return [];
@@ -54,7 +58,7 @@ export default function ExpensesPage() {
     };
 
 
-    if (isLoading) {
+    if (transactionsLoading || categoriesLoading) {
         return <div>Loading...</div>;
     }
 
@@ -69,7 +73,7 @@ export default function ExpensesPage() {
             </Button>
         </AddExpenseDialog>
        </div>
-      <DataTable columns={columns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDelete}/>} />
+      <DataTable columns={columns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDelete} categories={categories ?? []}/>} />
     </div>
   );
 }

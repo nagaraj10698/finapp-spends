@@ -6,14 +6,16 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { DhiramSymbol } from '../ui/dhiram-symbol';
-import { getCategoryByName } from '@/lib/data';
+import { getCategoryByName, getIconByName } from '@/lib/data';
 import { cn } from '@/lib/utils';
+import type { Category } from '@/lib/types';
 
 interface SpendingChartProps {
   data: {
     name: string;
     total: number;
   }[];
+  categories: Category[];
 }
 
 const chartConfig = {
@@ -37,19 +39,19 @@ const COLORS = [
     '#FF8042'
 ];
 
-const CustomTooltipContent = (props: any) => {
-  if (!props.active || !props.payload || props.payload.length === 0) {
+const CustomTooltipContent = ({ active, payload, categories }: any) => {
+  if (!active || !payload || payload.length === 0) {
     return null;
   }
-  const { payload } = props;
   const { name, value } = payload[0];
-  const category = getCategoryByName(name);
+  const category = getCategoryByName(name, categories);
+  const Icon = category ? getIconByName(category.icon) : null;
 
 
   return (
     <div className="rounded-lg border bg-background p-2 shadow-sm">
       <div className="flex items-center gap-2">
-         {category && <category.icon className={cn("h-4 w-4", category.color)} />}
+         {category && Icon && <Icon className={cn("h-4 w-4", category.color)} />}
         <span className="font-semibold">{name}</span>
       </div>
       <div className="flex flex-col space-y-1 mt-1">
@@ -76,14 +78,14 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 };
 
 
-export default function SpendingChart({ data }: SpendingChartProps) {
+export default function SpendingChart({ data, categories }: SpendingChartProps) {
   return (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
       <ResponsiveContainer width="100%" height={350}>
         <PieChart>
           <Tooltip
             cursor={false}
-            content={<CustomTooltipContent />}
+            content={<CustomTooltipContent categories={categories} />}
           />
           <Pie
             data={data}

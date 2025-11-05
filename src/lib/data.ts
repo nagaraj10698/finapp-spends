@@ -9,29 +9,63 @@ import {
   Shirt,
   Gift,
   LucideIcon,
+  Briefcase,
+  LineChart,
+  Lightbulb,
+  Stethoscope,
+  Shapes,
+  Landmark,
+  Wallet,
+  TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Income } from './types';
 import { addWeeks, addMonths, addQuarters, addYears } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 
 
-export const categories: Category[] = [
-  { id: 'cat-1', name: 'Groceries', icon: ShoppingBag, color: 'text-emerald-500' },
-  { id: 'cat-2', name: 'Health', icon: HeartPulse, color: 'text-red-500' },
-  { id: 'cat-3', name: 'Dining Out', icon: Utensils, color: 'text-orange-500' },
-  { id: 'cat-4', name: 'Transport', icon: Car, color: 'text-blue-500' },
-  { id: 'cat-5', name: 'Housing', icon: Home, color: 'text-cyan-500' },
-  { id: 'cat-6', name: 'Entertainment', icon: Film, color: 'text-purple-500' },
-  { id: 'cat-7', name: 'Education', icon: GraduationCap, color: 'text-indigo-500' },
-  { id: 'cat-8', name: 'Apparel', icon: Shirt, color: 'text-pink-500' },
-  { id: 'cat-9', name: 'Gifts', icon: Gift, color: 'text-yellow-500' },
-  { id: 'cat-10', name: 'Salary', icon: Gift, color: 'text-green-500' },
-  { id: 'cat-11', name: 'Freelance', icon: Gift, color: 'text-green-500' },
-  { id: 'cat-12', name: 'Investment', icon: Gift, color: 'text-green-500' },
-  { id: 'cat-13', name: 'Other Income', icon: Gift, color: 'text-green-500' },
+export const defaultCategories: Omit<Category, 'id'>[] = [
+    // Expenses
+    { name: 'Housing', icon: 'Home', color: 'text-cyan-500', type: 'expense' },
+    { name: 'Utilities', icon: 'Lightbulb', color: 'text-yellow-500', type: 'expense' },
+    { name: 'Food', icon: 'Utensils', color: 'text-orange-500', type: 'expense' },
+    { name: 'Groceries', icon: 'ShoppingBag', color: 'text-emerald-500', type: 'expense' },
+    { name: 'Transport', icon: 'Car', color: 'text-blue-500', type: 'expense' },
+    { name: 'Health & Fitness', icon: 'HeartPulse', color: 'text-red-500', type: 'expense' },
+    { name: 'Medical & wellness', icon: 'Stethoscope', color: 'text-red-600', type: 'expense' },
+    { name: 'Entertainment & Shopping', icon: 'Film', color: 'text-purple-500', type: 'expense' },
+    { name: 'Miscellaneous', icon: 'Shapes', color: 'text-gray-500', type: 'expense' },
+    // Income
+    { name: 'Salary', icon: 'Wallet', color: 'text-green-500', type: 'income' },
+    { name: 'Business / Side Hustle', icon: 'Briefcase', color: 'text-green-600', type: 'income' },
+    { name: 'Investments', icon: 'LineChart', color: 'text-green-700', type: 'income' },
+    { name: 'Other Income', icon: 'Gift', color: 'text-green-800', type: 'income' },
 ];
 
-export const getCategoryByName = (name: string) => categories.find(c => c.name === name);
+export const ICONS: Record<string, LucideIcon> = {
+    ShoppingBag,
+    HeartPulse,
+    Utensils,
+    Car,
+    Home,
+    Film,
+    GraduationCap,
+    Shirt,
+    Gift,
+    Briefcase,
+    LineChart,
+    Lightbulb,
+    Stethoscope,
+    Shapes,
+    Landmark,
+    Wallet,
+    TrendingUp,
+};
+
+export const getIconByName = (name: string): LucideIcon => {
+    return ICONS[name] || Shapes;
+}
+
+export const getCategoryByName = (name: string, categories: Category[]) => categories.find(c => c.name === name);
 
 // --- Functions that operate on live data ---
 

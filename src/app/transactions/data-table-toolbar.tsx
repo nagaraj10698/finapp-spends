@@ -6,7 +6,7 @@ import { Table } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTableFacetedFilter } from "@/components/ui/data-table-faceted-filter"
-import { categories } from "@/lib/data"
+import { getIconByName } from "@/lib/data"
 import { DateRange } from "react-day-picker"
 import * as React from "react"
 import { Calendar as CalendarIcon } from "lucide-react"
@@ -14,15 +14,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
+import type { Category } from "@/lib/types"
 
 interface DataTableToolbarProps<TData> {
   table?: Table<TData>
   onDelete: (transactionsToDelete: TData[]) => void;
+  categories: Category[];
 }
 
 export function DataTableToolbar<TData>({
   table,
   onDelete,
+  categories,
 }: DataTableToolbarProps<TData>) {
   if (!table) return null;
   
@@ -37,7 +40,10 @@ export function DataTableToolbar<TData>({
   }, [date, table]);
 
   const isFiltered = table.getState().columnFilters.length > 0
-  const categoryOptions = categories.map(c => ({ value: c.name, label: c.name, icon: c.icon }));
+  const categoryOptions = categories.map(c => {
+      const Icon = getIconByName(c.icon);
+      return { value: c.name, label: c.name, icon: Icon };
+  });
   const typeOptions = [{value: 'income', label: 'Credit'}, {value: 'expense', label: 'Debit'}];
 
   const handleDeleteSelected = () => {

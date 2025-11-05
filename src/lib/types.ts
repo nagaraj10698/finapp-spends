@@ -5,8 +5,9 @@ import type { Timestamp } from 'firebase/firestore';
 export interface Category {
   id: string;
   name: string;
-  icon: LucideIcon;
+  icon: string;
   color: string;
+  type: 'income' | 'expense';
 }
 
 export interface Transaction {

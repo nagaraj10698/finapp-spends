@@ -1,4 +1,4 @@
-import type { Transaction } from '@/lib/types';
+import type { Transaction, Category } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -8,16 +8,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { getCategoryByName } from '@/lib/data';
+import { getCategoryByName, getIconByName } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { DhiramSymbol } from '../ui/dhiram-symbol';
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
+  categories: Category[];
 }
 
 export default function RecentTransactions({
   transactions,
+  categories
 }: RecentTransactionsProps) {
   return (
     <Table>
@@ -31,7 +33,8 @@ export default function RecentTransactions({
       </TableHeader>
       <TableBody>
         {transactions.map((transaction) => {
-          const category = getCategoryByName(transaction.category);
+          const category = getCategoryByName(transaction.category, categories);
+          const Icon = category ? getIconByName(category.icon) : null;
           const amount = transaction.amount;
           return (
             <TableRow key={transaction.id}>
@@ -39,12 +42,12 @@ export default function RecentTransactions({
                 {transaction.description}
               </TableCell>
               <TableCell>
-                {category && (
+                {category && Icon && (
                   <Badge
                     variant="outline"
                     className="flex w-fit items-center gap-2"
                   >
-                    <category.icon className={cn('h-3 w-3', category.color)} />
+                    <Icon className={cn('h-3 w-3', category.color)} />
                     {transaction.category}
                   </Badge>
                 )}

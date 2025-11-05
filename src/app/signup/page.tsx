@@ -22,14 +22,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { useAuth, initiateEmailSignUp, addDocumentNonBlocking } from '@/firebase';
+import { useAuth, initiateEmailSignUp } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
 import { User, updateProfile } from 'firebase/auth';
 import Logo from '@/components/logo';
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
+import { defaultCategories } from '@/lib/data';
 
 
 const formSchema = z.object({
@@ -56,6 +57,14 @@ export default function SignupPage() {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!firestore) {
+        toast({
+            variant: 'destructive',
+            title: 'Signup Failed',
+            description: 'Database service is not available.',
+        });
+        return;
+    }
     try {
       const userCredential = await initiateEmailSignUp(
         auth,
@@ -68,15 +77,25 @@ export default function SignupPage() {
         displayName: `${values.firstName} ${values.lastName}`,
       });
       
-      if (firestore) {
-        const userRef = doc(firestore, 'users', user.uid);
-        setDoc(userRef, {
-            id: user.uid,
-            email: user.email,
-            firstName: values.firstName,
-            lastName: values.lastName,
-        }, { merge: true });
-      }
+      const batch = writeBatch(firestore);
+
+      // Create user profile document
+      const userRef = doc(firestore, 'users', user.uid);
+      batch.set(userRef, {
+          id: user.uid,
+          email: user.email,
+          firstName: values.firstName,
+          lastName: values.lastName,
+      });
+
+      // Create default categories for the user
+      const categoriesCollection = collection(firestore, 'users', user.uid, 'categories');
+      defaultCategories.forEach(category => {
+          const categoryRef = doc(categoriesCollection);
+          batch.set(categoryRef, category);
+      });
+      
+      await batch.commit();
 
 
       toast({

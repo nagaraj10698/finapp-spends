@@ -7,8 +7,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { getCategoryByName } from '@/lib/data';
-import type { Budget } from '@/lib/types';
+import { getCategoryByName, getIconByName } from '@/lib/data';
+import type { Budget, Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,10 +16,11 @@ import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 
 interface BudgetCardProps {
   budget: Budget;
+  category: Category | undefined;
 }
 
-export default function BudgetCard({ budget }: BudgetCardProps) {
-  const category = getCategoryByName(budget.name);
+export default function BudgetCard({ budget, category }: BudgetCardProps) {
+  const Icon = category ? getIconByName(category.icon) : null;
   const progress = (budget.spent / budget.limit) * 100;
   const remaining = budget.limit - budget.spent;
 
@@ -27,7 +28,7 @@ export default function BudgetCard({ budget }: BudgetCardProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2">
-          {category && <category.icon className={cn('h-6 w-6', category.color)} />}
+          {category && Icon && <Icon className={cn('h-6 w-6', category.color)} />}
           <CardTitle className="font-headline text-lg">{budget.name}</CardTitle>
         </div>
         <Button variant="ghost" size="icon" className="h-8 w-8">

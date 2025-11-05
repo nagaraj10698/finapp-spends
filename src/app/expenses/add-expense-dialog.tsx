@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { categories } from '@/lib/data';
+import { getIconByName } from '@/lib/data';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -39,9 +39,9 @@ import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Switch } from '@/components/ui/switch';
-import { useFirebase, addDocumentNonBlocking } from '@/firebase';
+import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, Category } from '@/lib/types';
 
 
 const formSchema = z
@@ -70,6 +70,9 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
+
+  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -119,6 +122,8 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
     form.reset();
     setOpen(false);
   }
+  
+  const expenseCategories = categories?.filter(c => c.type === 'expense');
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -174,19 +179,22 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger disabled={categoriesLoading}>
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.filter(c => !['Salary', 'Freelance', 'Investment', 'Other Income'].includes(c.name)).map((cat) => (
-                        <SelectItem key={cat.id} value={cat.name}>
-                          <div className="flex items-center gap-2">
-                            <cat.icon className={cn('h-4 w-4', cat.color)} />
-                            {cat.name}
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {expenseCategories?.map((cat) => {
+                        const Icon = getIconByName(cat.icon);
+                        return (
+                          <SelectItem key={cat.id} value={cat.name}>
+                            <div className="flex items-center gap-2">
+                              <Icon className={cn('h-4 w-4', cat.color)} />
+                              {cat.name}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   <FormMessage />

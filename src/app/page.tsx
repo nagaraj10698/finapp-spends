@@ -20,7 +20,7 @@ import {
   getUpcomingBills,
 } from '@/lib/data';
 import UpcomingBills from '@/components/dashboard/upcoming-bills';
-import type { Transaction, Budget } from '@/lib/types';
+import type { Transaction, Budget, Category } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
@@ -28,9 +28,11 @@ export default function DashboardPage() {
     const { firestore, user } = useFirebase();
     const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
     const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
+    const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
     
     const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
     const { data: rawBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
+    const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
 
     // Memoize derived data to prevent re-computation on every render
@@ -40,7 +42,7 @@ export default function DashboardPage() {
     const recentTransactions = useMemo(() => getRecentTransactions(transactions ?? [], 5), [transactions]);
     const upcomingBills = useMemo(() => getUpcomingBills(transactions ?? []), [transactions]);
 
-    if (transactionsLoading || budgetsLoading) {
+    if (transactionsLoading || budgetsLoading || categoriesLoading) {
         return <div>Loading...</div>
     }
 
@@ -56,7 +58,7 @@ export default function DashboardPage() {
             <CardTitle className="font-headline">Spending Overview</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <SpendingChart data={spendingByCategory} />
+            <SpendingChart data={spendingByCategory} categories={categories ?? []}/>
           </CardContent>
         </Card>
         <Card className="lg:col-span-3">
@@ -67,7 +69,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <BudgetSummary budgets={budgets} />
+            <BudgetSummary budgets={budgets} categories={categories ?? []} />
           </CardContent>
         </Card>
       </div>
@@ -77,7 +79,7 @@ export default function DashboardPage() {
             <CardTitle className="font-headline">Recent Transactions</CardTitle>
           </CardHeader>
           <CardContent>
-            <RecentTransactions transactions={recentTransactions} />
+            <RecentTransactions transactions={recentTransactions} categories={categories ?? []} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-3">
@@ -88,7 +90,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <UpcomingBills bills={upcomingBills} />
+            <UpcomingBills bills={upcomingBills} categories={categories ?? []} />
           </CardContent>
         </Card>
       </div>

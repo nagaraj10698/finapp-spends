@@ -2,9 +2,9 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { Transaction } from '@/lib/types';
+import { Transaction, Category } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { getCategoryByName, categories } from '@/lib/data';
+import { getCategoryByName, getIconByName } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
@@ -24,7 +24,8 @@ const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 2,
   }).format(amount);
 
-export const columns: ColumnDef<Transaction>[] = [
+// This is a dynamic column definition that accepts categories
+export const getColumns = (categories: Category[]): ColumnDef<Transaction>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -56,13 +57,14 @@ export const columns: ColumnDef<Transaction>[] = [
     header: 'Category',
     cell: ({ row }) => {
       const categoryName = row.getValue('category') as string;
-      const category = getCategoryByName(categoryName);
-      if (!category) {
+      const category = getCategoryByName(categoryName, categories);
+      const Icon = category ? getIconByName(category.icon) : null;
+      if (!category || !Icon) {
         return <Badge variant="secondary">{categoryName}</Badge>;
       }
       return (
         <Badge variant="outline" className="flex w-fit items-center gap-2">
-          <category.icon className={cn('h-3 w-3', category.color)} />
+          <Icon className={cn('h-3 w-3', category.color)} />
           {categoryName}
         </Badge>
       );
@@ -167,3 +169,5 @@ export const columns: ColumnDef<Transaction>[] = [
     },
   },
 ];
+
+export const columns = getColumns([]); // export a default

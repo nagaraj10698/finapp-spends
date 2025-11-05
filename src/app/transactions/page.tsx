@@ -2,9 +2,9 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { columns } from './columns';
+import { getColumns } from './columns';
 import { DataTable } from '@/components/ui/data-table';
-import { Transaction } from '@/lib/types';
+import { Transaction, Category } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, writeBatch } from 'firebase/firestore';
@@ -15,7 +15,10 @@ export default function TransactionsPage() {
   const { firestore, user } = useFirebase();
 
   const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
-  const { data: allTransactions, isLoading } = useCollection<Transaction>(transactionsCollection);
+  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+  
+  const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
+  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const handleDelete = async (transactionsToDelete: Transaction[]) => {
     if (!user || !firestore || transactionsToDelete.length === 0) return;
@@ -42,10 +45,10 @@ export default function TransactionsPage() {
     }
   };
 
-  const tableColumns = useMemo(() => columns, []);
+  const tableColumns = useMemo(() => getColumns(categories ?? []), [categories]);
   const transactionData = useMemo(() => allTransactions?.map(t => ({...t, date: (t.date as any).toDate()})) ?? [], [allTransactions]);
 
-  if (isLoading) {
+  if (transactionsLoading || categoriesLoading) {
     return <div>Loading transactions...</div>;
   }
 
@@ -54,7 +57,7 @@ export default function TransactionsPage() {
        <div className="flex items-center justify-between">
         <h1 className="font-headline text-2xl font-semibold">All Transactions</h1>
        </div>
-      <DataTable columns={tableColumns} data={transactionData} toolbar={<DataTableToolbar onDelete={handleDelete} />} />
+      <DataTable columns={tableColumns} data={transactionData} toolbar={<DataTableToolbar onDelete={handleDelete} categories={categories ?? []} />} />
     </div>
   );
 }

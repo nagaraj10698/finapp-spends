@@ -58,7 +58,7 @@ const StatusDropdown = ({ transaction }: { transaction: Transaction }) => {
             variant="outline"
             size="sm"
             className={cn(
-                "h-8 capitalize w-20 justify-start",
+                "h-8 capitalize w-24 justify-start",
                 transaction.status === 'Paid' 
                 ? 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:text-green-800' 
                 : 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100 hover:text-red-800'
@@ -296,7 +296,3 @@ export const getColumns = (
 ];
 
 export const columns = getColumns([], () => {}, () => {}); // export a default
-
-    
-
-    

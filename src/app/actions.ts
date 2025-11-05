@@ -8,16 +8,6 @@ import { getAuth, type User } from "firebase/auth";
 import type { Transaction, Budget, Category } from "@/lib/types";
 
 
-async function getUserId(): Promise<string | null> {
-    const { auth } = initializeFirebase();
-    return new Promise((resolve) => {
-        const unsubscribe = auth.onAuthStateChanged(user => {
-            unsubscribe();
-            resolve(user?.uid || null);
-        });
-    });
-}
-
 async function getCollectionData<T>(userId: string, collectionName: string): Promise<T[]> {
     const { firestore } = initializeFirebase();
     if (!userId) return [];

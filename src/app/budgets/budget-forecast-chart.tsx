@@ -71,10 +71,10 @@ export default function BudgetForecastChart({ data }: BudgetForecastChartProps) 
             />
             <Legend />
             <Line type="monotone" dataKey="upcoming" stroke={chartConfig.upcoming.color} strokeWidth={2} activeDot={{ r: 8 }}>
-                <LabelList content={<CustomLabel />} />
+                <LabelList dataKey="upcoming" content={<CustomLabel />} />
             </Line>
             <Line type="monotone" dataKey="unpaid" stroke={chartConfig.unpaid.color} strokeWidth={2} >
-                <LabelList content={<CustomLabel />} />
+                <LabelList dataKey="unpaid" content={<CustomLabel />} />
             </Line>
         </LineChart>
       </ResponsiveContainer>

@@ -1,6 +1,6 @@
 
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { getBudgets, getBudgetForecast } from '@/lib/data';
 import BudgetCard from './budget-card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,14 @@ import { collection } from 'firebase/firestore';
 import type { Budget, Transaction, Category } from '@/lib/types';
 import BudgetForecastChart from './budget-forecast-chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DateRange } from 'react-day-picker';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format, addDays } from 'date-fns';
 
+type ForecastPeriod = 'weekly' | 'monthly';
 
 export default function BudgetsPage() {
   const { firestore, user } = useFirebase();
@@ -23,12 +30,20 @@ export default function BudgetsPage() {
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
+  const [period, setPeriod] = useState<ForecastPeriod>('monthly');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: addDays(new Date(), 30),
+  });
+
   const processedBudgets = useMemo(() => {
     if (!budgets) return [];
     return getBudgets(budgets, transactions);
   }, [budgets, transactions]);
   
-  const forecastData = useMemo(() => getBudgetForecast(transactions), [transactions]);
+  const forecastData = useMemo(() => {
+    return getBudgetForecast(transactions, period, dateRange);
+  }, [transactions, period, dateRange]);
 
 
   if (budgetsLoading || transactionsLoading || categoriesLoading) {
@@ -44,8 +59,53 @@ export default function BudgetsPage() {
 
        <Card>
         <CardHeader>
-            <CardTitle>Expense Forecast</CardTitle>
-            <CardDescription>This chart shows your unpaid and upcoming recurring expenses for the next few months.</CardDescription>
+            <div className='flex justify-between items-start'>
+                <div>
+                    <CardTitle>Expense Forecast</CardTitle>
+                    <CardDescription>This chart shows your unpaid and upcoming recurring expenses.</CardDescription>
+                </div>
+                <div className='flex items-center gap-2'>
+                     <Button variant={period === 'weekly' ? 'default' : 'outline'} size="sm" onClick={() => setPeriod('weekly')}>Weekly</Button>
+                    <Button variant={period === 'monthly' ? 'default' : 'outline'} size="sm" onClick={() => setPeriod('monthly')}>Monthly</Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <Button
+                            id="date"
+                            variant={"outline"}
+                            size="sm"
+                            className={cn(
+                            "w-[240px] justify-start text-left font-normal",
+                            !dateRange && "text-muted-foreground"
+                            )}
+                        >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dateRange?.from ? (
+                            dateRange.to ? (
+                                <>
+                                {format(dateRange.from, "LLL dd, y")} -{" "}
+                                {format(dateRange.to, "LLL dd, y")}
+                                </>
+                            ) : (
+                                format(dateRange.from, "LLL dd, y")
+                            )
+                            ) : (
+                            <span>Pick a date</span>
+                            )}
+                        </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={dateRange?.from}
+                            selected={dateRange}
+                            onSelect={setDateRange}
+                            numberOfMonths={2}
+                        />
+                        </PopoverContent>
+                    </Popover>
+                </div>
+            </div>
         </CardHeader>
         <CardContent>
             <BudgetForecastChart data={forecastData} />

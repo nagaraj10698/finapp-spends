@@ -86,10 +86,13 @@ export function getRecentTransactions(allTransactions: Transaction[], count: num
     .slice(0, count);
 }
 
-export function getUpcomingBills(allTransactions: Transaction[]): Transaction[] {
+export function getUpcomingBills(allTransactions: Transaction[], dateRange?: DateRange): Transaction[] {
     if (!allTransactions) return [];
+    
     const today = new Date();
-    const nextMonth = addMonths(today, 1);
+    today.setHours(0,0,0,0);
+    const rangeEnd = dateRange?.to ? toDate(dateRange.to) : addMonths(today, 1);
+
     const upcoming: Transaction[] = [];
     const recurring = allTransactions.filter(t => t.isRecurring && t.frequency && t.type === 'expense');
 
@@ -116,7 +119,7 @@ export function getUpcomingBills(allTransactions: Transaction[]): Transaction[] 
              }
         }
         
-        if (nextDate >= today && nextDate <= nextMonth) {
+        if (nextDate >= today && nextDate <= rangeEnd) {
             upcoming.push({
                 ...t,
                 id: `${t.id}-upcoming-${nextDate.toISOString()}`,
@@ -261,3 +264,5 @@ export function getBudgetForecast(
 
   return forecastData;
 }
+
+    

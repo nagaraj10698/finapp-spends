@@ -25,6 +25,7 @@ export interface Budget {
   name: string;
   limit: number;
   spent: number;
+  isRecurring?: boolean;
 }
 
 export interface Income {

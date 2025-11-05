@@ -11,7 +11,7 @@ import {
   LucideIcon,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Income } from './types';
-import { addWeeks, addMonths, addQuarters, addYears, parseISO } from 'date-fns';
+import { addWeeks, addMonths, addQuarters, addYears } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 
 
@@ -33,82 +33,6 @@ export const categories: Category[] = [
 
 export const getCategoryByName = (name: string) => categories.find(c => c.name === name);
 
-const transactions: Transaction[] = [
-  { id: 'txn-1', description: 'Monthly Rent', amount: -1200.0, date: new Date('2024-05-01'), category: 'Housing', isRecurring: true, frequency: 'monthly', type: 'expense' },
-  { id: 'txn-2', description: 'Trader Joe\'s', amount: -85.2, date: new Date('2024-07-02'), category: 'Groceries', type: 'expense' },
-  { id: 'txn-3', description: 'Netflix Subscription', amount: -15.49, date: new Date('2024-05-03'), category: 'Entertainment', isRecurring: true, frequency: 'monthly', type: 'expense' },
-  { id: 'txn-4', description: 'Gas Fill-up', amount: -55.6, date: new Date('2024-07-04'), category: 'Transport', type: 'expense' },
-  { id: 'txn-5', description: 'Dinner with friends', amount: -64.75, date: new Date('2024-07-05'), category: 'Dining Out', type: 'expense' },
-  { id: 'txn-6', description: 'Pharmacy', amount: -22.0, date: new Date('2024-07-06'), category: 'Health', type: 'expense' },
-  { id: 'txn-7', description: 'New T-shirt', amount: -29.99, date: new Date('2024-07-08'), category: 'Apparel', type: 'expense' },
-  { id: 'txn-8', description: 'Whole Foods', amount: -124.5, date: new Date('2024-07-09'), category: 'Groceries', type: 'expense' },
-  { id: 'txn-9', description: 'Movie Tickets', amount: -32.0, date: new Date('2024-07-11'), category: 'Entertainment', type: 'expense' },
-  { id: 'txn-10', description: 'Coursera Course', amount: -49.0, date: new Date('2024-05-12'), category: 'Education', isRecurring: true, frequency: 'quarterly', type: 'expense'},
-  { id: 'txn-11', description: 'Birthday Gift for Mom', amount: -50.0, date: new Date('2024-07-14'), category: 'Gifts', type: 'expense' },
-  { id: 'txn-12', description: 'Lunch at work', amount: -12.5, date: new Date('2024-07-15'), category: 'Dining Out', type: 'expense' },
-  { id: 'txn-13', description: 'Spotify Subscription', amount: -10.99, date: new Date('2024-05-16'), category: 'Entertainment', isRecurring: true, frequency: 'monthly', type: 'expense' },
-  { id: 'txn-14', description: 'Electricity Bill', amount: -75.0, date: new Date('2024-05-18'), category: 'Housing', isRecurring: true, frequency: 'monthly', type: 'expense' },
-  { id: 'txn-15', description: 'Farmer\'s Market', amount: -45.3, date: new Date('2024-07-20'), category: 'Groceries', type: 'expense' },
-  { id: 'txn-16', description: 'Yoga Class', amount: -25, date: new Date('2024-06-01'), category: 'Health', isRecurring: true, frequency: 'weekly', type: 'expense' },
-  { id: 'txn-17', description: 'Car Insurance', amount: -150, date: new Date('2024-01-15'), category: 'Transport', isRecurring: true, frequency: 'yearly', type: 'expense' },
-  { id: 'inc-1', description: 'Monthly Salary', amount: 5000, date: new Date('2024-07-01'), category: 'Salary', type: 'income'},
-  { id: 'inc-2', description: 'Freelance Project', amount: 750, date: new Date('2024-07-10'), category: 'Freelance', type: 'income'},
-];
-
-export function getMockIncome(): Income[] {
-    const incomeTxns = transactions.filter(t => t.type === 'income');
-    return incomeTxns.map(t => ({
-        id: t.id,
-        description: t.description,
-        amount: t.amount,
-        date: t.date,
-    })).sort((a,b) => b.date.getTime() - a.date.getTime());
-}
-
-export function getMockExpenses(): Transaction[] {
-  const expenseTxns = transactions.filter(t => t.type === 'expense');
-  const allTransactions: Transaction[] = [...expenseTxns];
-  const recurringTransactions = expenseTxns.filter(t => t.isRecurring && t.frequency);
-  const today = new Date();
-  
-  recurringTransactions.forEach(t => {
-    let nextDate = new Date(t.date);
-    
-    while(nextDate < today) {
-      let incrementedDate: Date;
-      switch (t.frequency) {
-        case 'weekly':
-          incrementedDate = addWeeks(nextDate, 1);
-          break;
-        case 'monthly':
-          incrementedDate = addMonths(nextDate, 1);
-          break;
-        case 'quarterly':
-          incrementedDate = addQuarters(nextDate, 1);
-          break;
-        case 'yearly':
-          incrementedDate = addYears(nextDate, 1);
-          break;
-        default:
-          incrementedDate = new Date(today.getFullYear() + 100, 1, 1); // stop loop
-          break;
-      }
-
-      if (incrementedDate < today) {
-          allTransactions.push({
-              ...t,
-              id: `${t.id}-${nextDate.toISOString()}`,
-              date: incrementedDate,
-          });
-      }
-      nextDate = incrementedDate;
-    }
-  });
-
-  return allTransactions.map(t => ({...t, amount: Math.abs(t.amount) * -1, type: 'expense'})).sort((a,b) => b.date.getTime() - a.date.getTime());
-}
-
-
 // --- Functions that operate on live data ---
 
 function toDate(date: Date | Timestamp): Date {
@@ -117,12 +41,14 @@ function toDate(date: Date | Timestamp): Date {
 
 
 export function getRecentTransactions(allTransactions: Transaction[], count: number): Transaction[] {
+  if (!allTransactions) return [];
   return [...allTransactions]
     .sort((a,b) => toDate(b.date).getTime() - toDate(a.date).getTime())
     .slice(0, count);
 }
 
 export function getUpcomingBills(allTransactions: Transaction[]): Transaction[] {
+    if (!allTransactions) return [];
     const today = new Date();
     const nextMonth = addMonths(today, 1);
     const upcoming: Transaction[] = [];
@@ -163,7 +89,8 @@ export function getUpcomingBills(allTransactions: Transaction[]): Transaction[] 
 }
 
 
-export function getTotals(allTransactions: Transaction[]) {
+export function getTotals(allTransactions: Transaction[] | null) {
+  if (!allTransactions) return { income: 0, expenses: 0, savings: 0 };
   const income = allTransactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -176,7 +103,8 @@ export function getTotals(allTransactions: Transaction[]) {
   return { income, expenses: Math.abs(expenses), savings };
 }
 
-export function getSpendingByCategory(allTransactions: Transaction[]) {
+export function getSpendingByCategory(allTransactions: Transaction[] | null) {
+  if (!allTransactions) return [];
   const spendingMap = new Map<string, number>();
   
   const allExpenses = allTransactions.filter(t => t.type === 'expense');
@@ -188,37 +116,29 @@ export function getSpendingByCategory(allTransactions: Transaction[]) {
   return Array.from(spendingMap.entries()).map(([name, total]) => ({ name, total }));
 }
 
-export function getBudgets(allTransactions: Transaction[]): Budget[] {
-  const today = new Date();
-  const spendingThisMonth = new Map<string, number>();
-  const currentMonthExpenses = allTransactions.filter(t => {
-    const d = toDate(t.date);
-    return d.getMonth() === today.getMonth() && 
-    d.getFullYear() === today.getFullYear() &&
-    t.type === 'expense'
-  });
+export function getBudgets(budgets: Budget[], allTransactions: Transaction[] | null): Budget[] {
+    const today = new Date();
+    if (!allTransactions || !budgets) return [];
 
-  currentMonthExpenses.forEach(t => {
-      const absAmount = Math.abs(t.amount);
-      spendingThisMonth.set(t.category, (spendingThisMonth.get(t.category) || 0) + absAmount);
-  });
+    const spendingThisMonth = new Map<string, number>();
+    const currentMonthExpenses = allTransactions.filter(t => {
+      const d = toDate(t.date);
+      return d.getMonth() === today.getMonth() && 
+      d.getFullYear() === today.getFullYear() &&
+      t.type === 'expense'
+    });
 
-  const budgetData: { [key: string]: number } = {
-    'Groceries': 400,
-    'Dining Out': 200,
-    'Transport': 150,
-    'Entertainment': 100,
-    'Housing': 1300,
-    'Health': 100,
-  };
+    currentMonthExpenses.forEach(t => {
+        const absAmount = Math.abs(t.amount);
+        spendingThisMonth.set(t.category, (spendingThisMonth.get(t.category) || 0) + absAmount);
+    });
 
-  return Object.entries(budgetData).map(([name, limit], index) => {
-    const spent = spendingThisMonth.get(name) || 0;
-    return {
-      id: `budget-${index + 1}`,
-      name,
-      limit,
-      spent,
-    };
-  });
+
+    return budgets.map((budget) => {
+        const spent = spendingThisMonth.get(budget.name) || 0;
+        return {
+          ...budget,
+          spent,
+        };
+      });
 }

@@ -32,43 +32,68 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Switch } from '@/components/ui/switch';
+import { useFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import type { Budget } from '@/lib/types';
+
 
 const formSchema = z.object({
   limit: z.coerce.number().positive('Limit must be positive.'),
-  category: z.string().min(1, 'Please select a category.'),
+  name: z.string().min(1, 'Please select a category.'),
   isRecurring: z.boolean(),
 });
 
 export default function AddBudgetDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
+  const { firestore, user } = useFirebase();
+  const [open, setOpen] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       limit: 0,
-      category: '',
+      name: '',
       isRecurring: false,
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!firestore || !user) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "You must be logged in to add a budget."
+        });
+        return;
+    }
+
+    const budgetCollection = collection(firestore, 'users', user.uid, 'budgets');
+    const newBudget: Omit<Budget, 'id' | 'spent'> = {
+        name: values.name,
+        limit: values.limit,
+        isRecurring: values.isRecurring,
+    };
+
+    await addDocumentNonBlocking(budgetCollection, newBudget);
+    
     toast({
       title: 'Budget Added',
       description: (
         <span>
-          A budget for {values.category} of <DhiramSymbol />
+          A budget for {values.name} of <DhiramSymbol />
           {values.limit} has been set.
         </span>
       ),
     });
-    // Here you would typically call a server action to save the data
+    form.reset();
+    setOpen(false);
   }
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
@@ -83,7 +108,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
-              name="category"
+              name="name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
@@ -97,7 +122,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map((cat) => (
+                      {categories.filter(c => !['Salary', 'Freelance', 'Investment', 'Other Income'].includes(c.name)).map((cat) => (
                         <SelectItem key={cat.id} value={cat.name}>
                           <div className="flex items-center gap-2">
                             <cat.icon className={cn('h-4 w-4', cat.color)} />

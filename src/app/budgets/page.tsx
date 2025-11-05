@@ -1,11 +1,33 @@
+
+'use client';
+import { useMemo } from 'react';
 import { getBudgets } from '@/lib/data';
 import BudgetCard from './budget-card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import AddBudgetDialog from './add-budget-dialog';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import type { Budget, Transaction } from '@/lib/types';
+
 
 export default function BudgetsPage() {
-  const budgets = getBudgets();
+  const { firestore, user } = useFirebase();
+  const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
+  const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
+  
+  const { data: budgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
+  const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
+
+  const processedBudgets = useMemo(() => {
+    if (!budgets) return [];
+    return getBudgets(budgets, transactions);
+  }, [budgets, transactions]);
+
+
+  if (budgetsLoading || transactionsLoading) {
+    return <div>Loading budgets...</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -19,7 +41,7 @@ export default function BudgetsPage() {
         </AddBudgetDialog>
        </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {budgets.map((budget) => (
+        {processedBudgets.map((budget) => (
           <BudgetCard key={budget.id} budget={budget} />
         ))}
       </div>

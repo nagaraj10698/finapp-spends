@@ -1,5 +1,6 @@
+
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -19,32 +20,27 @@ import {
   getUpcomingBills,
 } from '@/lib/data';
 import UpcomingBills from '@/components/dashboard/upcoming-bills';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, Budget } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
 export default function DashboardPage() {
     const { firestore, user } = useFirebase();
     const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
-    const { data: transactions, isLoading } = useCollection<Transaction>(transactionsCollection);
-
-    const allTransactions = useMemo(() => {
-        if (!transactions) return [];
-        return transactions.map(t => ({
-            ...t,
-            date: (t.date as any).toDate(), // Convert Firestore Timestamp to Date
-        }));
-    }, [transactions]);
+    const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
+    
+    const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
+    const { data: rawBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
 
 
     // Memoize derived data to prevent re-computation on every render
-    const totals = getTotals(allTransactions);
-    const spendingByCategory = getSpendingByCategory(allTransactions);
-    const budgets = getBudgets(allTransactions);
-    const recentTransactions = getRecentTransactions(allTransactions, 5);
-    const upcomingBills = getUpcomingBills(allTransactions);
+    const totals = useMemo(() => getTotals(transactions), [transactions]);
+    const spendingByCategory = useMemo(() => getSpendingByCategory(transactions), [transactions]);
+    const budgets = useMemo(() => getBudgets(rawBudgets ?? [], transactions), [rawBudgets, transactions]);
+    const recentTransactions = useMemo(() => getRecentTransactions(transactions ?? [], 5), [transactions]);
+    const upcomingBills = useMemo(() => getUpcomingBills(transactions ?? []), [transactions]);
 
-    if (isLoading) {
+    if (transactionsLoading || budgetsLoading) {
         return <div>Loading...</div>
     }
 

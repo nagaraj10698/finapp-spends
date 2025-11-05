@@ -1,3 +1,4 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -48,3 +49,16 @@ export * from './non-blocking-updates';
 export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';
+
+// Server-side initialization
+const initializeFirebaseServer = () => {
+    if (getApps().some(app => app.name === 'server')) {
+        return getSdks(getApp('server'));
+    }
+    
+    const serverApp = initializeApp(firebaseConfig, 'server');
+    return getSdks(serverApp);
+};
+
+export { initializeFirebaseServer as initializeFirebase };
+export { initializeFirebaseServer as initializeServer };

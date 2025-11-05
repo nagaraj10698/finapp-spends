@@ -36,10 +36,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { useFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import type { Transaction } from '@/lib/types';
+
 
 const formSchema = z
   .object({
@@ -49,7 +52,6 @@ const formSchema = z
     date: z.date(),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
-    bill: z.any().optional(),
   })
   .refine(
     (data) => {
@@ -66,6 +68,9 @@ const formSchema = z
 
 export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
+  const { firestore, user } = useFirebase();
+  const [open, setOpen] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -79,8 +84,29 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
 
   const isRecurring = form.watch('isRecurring');
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!firestore || !user) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "You must be logged in to add an expense."
+        });
+        return;
+    }
+    
+    const expenseCollection = collection(firestore, 'users', user.uid, 'transactions');
+    const newExpense: Omit<Transaction, 'id'> = {
+        description: values.description,
+        amount: -Math.abs(values.amount), // ensure it's negative
+        category: values.category,
+        date: values.date,
+        isRecurring: values.isRecurring,
+        frequency: values.isRecurring ? values.frequency : undefined,
+        type: 'expense'
+    };
+
+    await addDocumentNonBlocking(expenseCollection, newExpense);
+
     toast({
       title: 'Expense Added',
       description: (
@@ -90,11 +116,12 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
         </span>
       ),
     });
-    // Here you would typically call a server action to save the data
+    form.reset();
+    setOpen(false);
   }
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
@@ -152,7 +179,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map((cat) => (
+                      {categories.filter(c => !['Salary', 'Freelance', 'Investment', 'Other Income'].includes(c.name)).map((cat) => (
                         <SelectItem key={cat.id} value={cat.name}>
                           <div className="flex items-center gap-2">
                             <cat.icon className={cn('h-4 w-4', cat.color)} />
@@ -200,19 +227,6 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                       />
                     </PopoverContent>
                   </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="bill"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Upload Bill/Receipt</FormLabel>
-                  <FormControl>
-                    <Input type="file" {...field} />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

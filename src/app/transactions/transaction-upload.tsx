@@ -24,7 +24,7 @@ interface TransactionUploadProps {
 }
 
 export default function TransactionUpload({ onProcess }: TransactionUploadProps) {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -40,7 +40,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      setFile(acceptedFiles[0]);
+      setFiles(prev => [...prev, ...acceptedFiles]);
       setError(null);
     }
   }, []);
@@ -52,50 +52,63 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
       'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
     },
-    multiple: false,
+    multiple: true,
   });
 
-  const removeFile = () => {
-    setFile(null);
-    setError(null);
+  const removeFile = (fileToRemove: File) => {
+    setFiles(files.filter(file => file !== fileToRemove));
   };
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (files.length === 0) return;
 
     setLoading(true);
     setError(null);
 
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-      const response = await processTransactionsAction(formData);
-      
-      if (response.success && response.data) {
-        onProcess(response.data);
+    let allTransactions: ProcessTransactionsOutput['transactions'] = [];
+    let filesProcessed = 0;
+
+    for (const file of files) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await processTransactionsAction(formData);
+
+            if (response.success && response.data) {
+                allTransactions = [...allTransactions, ...response.data.transactions];
+                filesProcessed++;
+
+                // Add to historical list
+                const newFile: UploadedFile = {
+                    id: `${file.name}-${new Date().toISOString()}`,
+                    name: file.name,
+                    uploadDate: new Date().toLocaleDateString(),
+                };
+                const updatedFiles = [newFile, ...uploadedFiles];
+                setUploadedFiles(updatedFiles);
+                localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
+            } else {
+                setError(response.error ?? `An unknown error occurred while processing ${file.name}.`);
+                // Stop processing remaining files on first error
+                break; 
+            }
+        } catch (e: any) {
+            setError(e.message || `Failed to process ${file.name}.`);
+            // Stop processing remaining files on first error
+            break;
+        }
+    }
+    
+    if (filesProcessed > 0) {
+        onProcess({ transactions: allTransactions });
         toast({
           title: "Processing Complete",
-          description: `Successfully processed ${response.data.transactions.length} transactions from ${file.name}.`,
+          description: `Successfully processed ${allTransactions.length} transactions from ${filesProcessed} file(s).`,
         });
-
-        // Add to historical list
-        const newFile: UploadedFile = {
-          id: `${file.name}-${new Date().toISOString()}`,
-          name: file.name,
-          uploadDate: new Date().toLocaleDateString(),
-        };
-        const updatedFiles = [newFile, ...uploadedFiles];
-        setUploadedFiles(updatedFiles);
-        localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
-        setFile(null); // Clear the file only after successful processing
-      } else {
-        setError(response.error ?? 'An unknown error occurred.');
-      }
-    } catch (e: any) {
-      setError(e.message || 'Failed to process file.');
-    } finally {
-      setLoading(false);
+        setFiles([]); // Clear the files only after all are processed
     }
+
+    setLoading(false);
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -128,66 +141,74 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
         <TabsTrigger value="documents">Documents</TabsTrigger>
       </TabsList>
       <TabsContent value="upload">
-        <div className="space-y-6 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload Statement</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 py-2">
-              <div
-                {...getRootProps()}
-                className={`flex justify-center w-full rounded-lg border-2 border-dashed border-muted-foreground/25 px-1 py-1 text-center transition-colors ${
-                  isDragActive ? 'bg-accent' : 'bg-transparent'
-                } ${file ? 'cursor-default' : 'cursor-pointer'}`}
-              >
-                <input {...getInputProps()} />
-                {file ? (
-                  <div className="flex flex-col items-center gap-2 text-foreground p-1">
-                    <File className="h-6 w-6" />
-                    <p className="text-xs">{file.name}</p>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFile();
-                      }}
-                      className="mt-1 h-7"
-                      disabled={loading}
-                    >
-                      <X className="mr-2 h-3 w-3" /> Remove
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center p-2">
-                    <UploadCloud className="mx-auto h-6 w-6 text-muted-foreground" />
-                    <p className="mt-1 flex justify-center text-xs leading-6 text-muted-foreground">
-                      <span className="font-semibold text-primary">
-                        Upload a file
-                      </span>
-                      <span className="pl-1">or drag and drop</span>
-                    </p>
-                    <p className="text-xs leading-5 text-muted-foreground">
-                      CSV, XLSX, or PDF up to 10MB
-                    </p>
-                  </div>
-                )}
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Upload Statement</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div
+              {...getRootProps()}
+              className={`flex justify-center w-full rounded-lg border-2 border-dashed border-muted-foreground/25 px-6 py-10 text-center transition-colors ${
+                isDragActive ? 'bg-accent' : 'bg-transparent'
+              } ${files.length > 0 ? 'cursor-default' : 'cursor-pointer'}`}
+            >
+              <input {...getInputProps()} />
+              <div className="text-center">
+                <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                <p className="mt-4 flex justify-center text-sm leading-6 text-muted-foreground">
+                  <span className="font-semibold text-primary">
+                    Upload a file
+                  </span>
+                  <span className="pl-1">or drag and drop</span>
+                </p>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  CSV, XLSX, or PDF up to 10MB
+                </p>
               </div>
-              <Button onClick={handleUpload} disabled={!file || loading}>
-                {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
-                Process Transactions
-              </Button>
-               {error && (
-                <Alert variant="destructive">
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+
+            {files.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Selected Files</h3>
+                <div className="rounded-md border">
+                  {files.map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="flex items-center justify-between p-2 border-b last:border-b-0"
+                    >
+                      <div className="flex items-center gap-2">
+                        <File className="h-5 w-5 text-muted-foreground" />
+                        <span className="text-sm font-medium">{file.name}</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeFile(file)}
+                        className="h-6 w-6"
+                        disabled={loading}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Button onClick={handleUpload} disabled={files.length === 0 || loading}>
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Process Transactions
+            </Button>
+            {error && (
+              <Alert variant="destructive">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
       </TabsContent>
       <TabsContent value="documents">
          <Card className="mt-4">
@@ -245,3 +266,5 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
     </Tabs>
   );
 }
+
+    

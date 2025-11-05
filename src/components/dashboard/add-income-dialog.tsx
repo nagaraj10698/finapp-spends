@@ -107,7 +107,7 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
         toast({
           title: 'Income Added',
           description: (
-            <span>
+            <span className="flex items-center gap-1">
               {values.description} of <DhiramSymbol />
               {values.amount} has been added.
             </span>
@@ -165,7 +165,7 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
                   <FormControl>
                     <div className="relative">
                       <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="number" placeholder="0.00" {...field} className="pl-8" />
+                      <Input type="number" placeholder="0.00" {...field} className="pl-12" />
                     </div>
                   </FormControl>
                   <FormMessage />

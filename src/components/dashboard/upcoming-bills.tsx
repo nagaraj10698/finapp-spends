@@ -1,3 +1,4 @@
+
 import type { Transaction, Category } from '@/lib/types';
 import {
   Table,

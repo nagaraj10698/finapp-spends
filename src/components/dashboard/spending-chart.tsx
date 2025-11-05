@@ -99,8 +99,8 @@ export default function SpendingChart({ data, categories }: SpendingChartProps) 
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={110}
+                    innerRadius={60}
+                    outerRadius={120}
                     fill="#8884d8"
                     paddingAngle={2}
                     labelLine={false}
@@ -121,7 +121,7 @@ export default function SpendingChart({ data, categories }: SpendingChartProps) 
                         <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                         <span>{entry.name}</span>
                     </div>
-                    <div className="font-medium">
+                    <div className="font-medium flex items-center gap-1">
                       <span className="text-muted-foreground">AED</span> {entry.total.toFixed(2)}
                     </div>
                 </div>

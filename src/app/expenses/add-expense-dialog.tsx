@@ -115,7 +115,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
           type: 'expense',
       };
 
-      if (values.isRecurring) {
+      if (values.isRecurring && values.frequency) {
         newExpense.frequency = values.frequency;
       }
 
@@ -132,7 +132,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
       toast({
         title: 'Expense Added',
         description: (
-          <span>
+          <span className="flex items-center gap-1">
             {values.description} for <DhiramSymbol />
             {values.amount} has been added.
           </span>
@@ -190,7 +190,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                   <FormControl>
                     <div className="relative">
                       <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="number" placeholder="0.00" {...field} className="pl-8" />
+                      <Input type="number" placeholder="0.00" {...field} className="pl-12" />
                     </div>
                   </FormControl>
                   <FormMessage />

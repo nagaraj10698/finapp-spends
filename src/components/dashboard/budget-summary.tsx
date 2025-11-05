@@ -1,3 +1,4 @@
+
 import type { Budget, Category } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';

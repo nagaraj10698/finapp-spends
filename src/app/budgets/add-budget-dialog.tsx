@@ -85,7 +85,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
     toast({
       title: 'Budget Added',
       description: (
-        <span>
+        <span className="flex items-center gap-1">
           A budget for {values.name} of <DhiramSymbol />
           {values.limit} has been set.
         </span>
@@ -153,7 +153,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                   <FormControl>
                     <div className="relative">
                       <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="number" placeholder="0.00" {...field} className="pl-8" />
+                      <Input type="number" placeholder="0.00" {...field} className="pl-12" />
                     </div>
                   </FormControl>
                   <FormMessage />

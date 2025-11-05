@@ -2,7 +2,7 @@
 import type { Budget, Category } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { getCategoryByName, getIconByName } from '@/lib/data';
+import { getIconByName } from '@/lib/data';
 import { DhiramSymbol } from '../ui/dhiram-symbol';
 
 interface BudgetSummaryProps {
@@ -14,7 +14,7 @@ export default function BudgetSummary({ budgets, categories }: BudgetSummaryProp
   return (
     <div className="space-y-4">
       {budgets.map((budget) => {
-        const category = getCategoryByName(budget.name, categories);
+        const category = categories.find(c => c.name === budget.category);
         const Icon = category ? getIconByName(category.icon) : null;
         const progress = (budget.spent / budget.limit) * 100;
         return (

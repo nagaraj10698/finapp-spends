@@ -1,7 +1,7 @@
 
 'use client';
 import { useMemo } from 'react';
-import { getBudgets, getCategoryByName } from '@/lib/data';
+import { getBudgets } from '@/lib/data';
 import BudgetCard from './budget-card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -44,7 +44,7 @@ export default function BudgetsPage() {
        </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {processedBudgets.map((budget) => {
-          const category = getCategoryByName(budget.name, categories ?? []);
+          const category = categories?.find(c => c.name === budget.category);
           return (
             <BudgetCard key={budget.id} budget={budget} category={category} />
           )

@@ -31,6 +31,8 @@ export interface Budget {
   spent: number;
   type: 'Bills' | 'Subscription' | 'Expense';
   isRecurring?: boolean;
+  category: string;
+  categoryId?: string;
 }
 
 export interface Income {

@@ -147,7 +147,7 @@
           "type": "string",
           "description": "Reference to Category. (Relationship: Category 1:N Budget)"
         },
-        "budgetName": {
+        "name": {
           "type": "string",
           "description": "Name of the budget."
         },
@@ -178,8 +178,7 @@
       "required": [
         "id",
         "userId",
-        "categoryId",
-        "budgetName",
+        "name",
         "budgetAmount",
         "budgetStartDate",
         "budgetEndDate",

@@ -41,8 +41,9 @@ import type { Budget, Category } from '@/lib/types';
 
 
 const formSchema = z.object({
+  name: z.string().min(1, 'Budget name is required.'),
   limit: z.coerce.number().positive('Limit must be positive.'),
-  name: z.string().min(1, 'Please select a category.'),
+  category: z.string().min(1, 'Please select a category.'),
   isRecurring: z.boolean(),
   type: z.enum(['Bills', 'Subscription', 'Expense'], { required_error: 'Please select a type.' }),
 });
@@ -58,8 +59,9 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      limit: 0,
       name: '',
+      limit: 0,
+      category: '',
       isRecurring: false,
       type: 'Expense',
     },
@@ -74,6 +76,8 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
         });
         return;
     }
+    
+    const selectedCategory = categories?.find(c => c.name === values.category);
 
     const budgetCollection = collection(firestore, 'users', user.uid, 'budgets');
     const newBudget: Omit<Budget, 'id' | 'spent'> = {
@@ -81,6 +85,8 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
         limit: values.limit,
         isRecurring: values.isRecurring,
         type: values.type,
+        categoryId: selectedCategory?.id,
+        category: values.category,
     };
 
     await addDocumentNonBlocking(budgetCollection, newBudget);
@@ -114,9 +120,22 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <FormField
+             <FormField
               control={form.control}
               name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Budget Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Monthly Groceries" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="category"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>

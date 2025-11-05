@@ -36,7 +36,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Switch } from '@/components/ui/switch';
 import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
@@ -90,6 +90,11 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
   
   const transactionType = form.watch('type');
   const isRecurring = form.watch('isRecurring');
+
+  useEffect(() => {
+    form.resetField('category');
+  }, [transactionType, form]);
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore || !user) {
@@ -154,10 +159,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
                   <FormLabel>Transaction Type</FormLabel>
                   <FormControl>
                     <RadioGroup
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        form.setValue('category', ''); // Reset category on type change
-                      }}
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                       className="flex space-x-4"
                     >

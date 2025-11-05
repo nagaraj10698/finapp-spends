@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -28,15 +29,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { Transaction } from '@/lib/types';
+import { Trash2 } from 'lucide-react';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  onDelete: (transactionsToDelete: TData[]) => void;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends { id: string }, TValue>({
   columns,
   data,
+  onDelete,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'date', desc: true },
@@ -64,6 +69,13 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  const handleDeleteSelected = () => {
+    const selectedRowsData = table.getFilteredSelectedRowModel().rows.map(row => row.original);
+    onDelete(selectedRowsData);
+    table.resetRowSelection();
+  };
+
+
   return (
     <div>
       <div className="flex items-center justify-between py-4">
@@ -77,8 +89,16 @@ export function DataTable<TData, TValue>({
           }
           className="max-w-sm"
         />
-        <div className="text-sm text-muted-foreground">
-            Total Transactions: {data.length}
+        <div className="flex items-center gap-2">
+            {table.getFilteredSelectedRowModel().rows.length > 0 && (
+                <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Selected ({table.getFilteredSelectedRowModel().rows.length})
+                </Button>
+            )}
+             <div className="text-sm text-muted-foreground">
+                Total Transactions: {data.length}
+            </div>
         </div>
       </div>
       <div className="rounded-md border">

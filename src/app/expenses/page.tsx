@@ -1,18 +1,21 @@
 
 'use client';
 
-import { useMemo } from 'react';
-import { columns } from '../transactions/columns';
+import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/ui/data-table';
 import AddExpenseDialog from './add-expense-dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import type { Transaction, Category } from '@/lib/types';
-import { collection, writeBatch, doc } from 'firebase/firestore';
+import { collection, writeBatch, doc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { DataTableToolbar } from '../transactions/data-table-toolbar';
+import { DataTableToolbar } from './data-table-toolbar';
 import { getColumns } from '../transactions/columns';
+import EditTransactionDialog from '../transactions/edit-transaction-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
+import { buttonVariants } from '@/components/ui/button';
 
 export default function ExpensesPage() {
     const { toast } = useToast();
@@ -24,6 +27,10 @@ export default function ExpensesPage() {
     const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
+    const [isEditOpen, setEditOpen] = useState(false);
+    const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
+    const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+
 
     const expenseData = useMemo(() => {
         if (!allTransactions) return [];
@@ -32,6 +39,15 @@ export default function ExpensesPage() {
             .map(t => ({ ...t, date: (t.date as any).toDate() }))
             .sort((a,b) => b.date.getTime() - a.date.getTime());
     }, [allTransactions]);
+
+    const handleEdit = (transaction: Transaction) => {
+        setTransactionToEdit(transaction);
+        setEditOpen(true);
+    };
+
+    const handleDeleteRequest = (transaction: Transaction) => {
+        setTransactionToDelete(transaction);
+    };
     
     const handleDelete = async (transactionsToDelete: Transaction[]) => {
         if (!user || !firestore || transactionsToDelete.length === 0) return;
@@ -57,8 +73,27 @@ export default function ExpensesPage() {
         console.error("Error deleting transactions: ", error);
         }
     };
+
+    const handleDeleteConfirm = async () => {
+        if (!transactionToDelete || !user || !firestore) return;
+        try {
+          await deleteDoc(doc(firestore, 'users', user.uid, 'transactions', transactionToDelete.id));
+          toast({
+            title: 'Transaction Deleted',
+            description: `The transaction has been deleted.`,
+          });
+        } catch (error) {
+          toast({
+            variant: 'destructive',
+            title: 'Delete Failed',
+            description: 'Could not delete the transaction.',
+          });
+        } finally {
+          setTransactionToDelete(null);
+        }
+      };
     
-    const tableColumns = useMemo(() => getColumns(categories ?? []), [categories]);
+    const tableColumns = useMemo(() => getColumns(categories ?? [], handleEdit, handleDeleteRequest), [categories]);
 
 
     if (transactionsLoading || categoriesLoading) {
@@ -66,6 +101,7 @@ export default function ExpensesPage() {
     }
 
   return (
+    <>
     <div className="space-y-4">
        <div className="flex items-center justify-between">
         <h1 className="font-headline text-2xl font-semibold">Expenses</h1>
@@ -78,5 +114,33 @@ export default function ExpensesPage() {
        </div>
       <DataTable columns={tableColumns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDelete} categories={categories ?? []}/>} />
     </div>
+    {transactionToEdit && (
+        <EditTransactionDialog
+            isOpen={isEditOpen}
+            onClose={() => {
+            setEditOpen(false);
+            setTransactionToEdit(null);
+            }}
+            transaction={transactionToEdit}
+        />
+    )}
+
+    <AlertDialog open={!!transactionToDelete} onOpenChange={(open) => !open && setTransactionToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure you want to delete this transaction?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the transaction.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setTransactionToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteConfirm} className={cn(buttonVariants({variant: 'destructive'}))}>
+                    Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

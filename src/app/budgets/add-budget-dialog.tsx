@@ -34,10 +34,12 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { Switch } from '@/components/ui/switch';
 
 const formSchema = z.object({
   limit: z.coerce.number().positive('Limit must be positive.'),
   category: z.string().min(1, 'Please select a category.'),
+  isRecurring: z.boolean(),
 });
 
 export default function AddBudgetDialog({children}: {children: ReactNode}) {
@@ -47,6 +49,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
     defaultValues: {
       limit: 0,
       category: '',
+      isRecurring: false,
     },
   });
 
@@ -121,6 +124,26 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                     </div>
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="isRecurring"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Recurring Budget</FormLabel>
+                     <p className="text-xs text-muted-foreground">
+                      Is this a recurring budget?
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

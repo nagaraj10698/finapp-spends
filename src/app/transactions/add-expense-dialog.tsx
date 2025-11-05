@@ -38,12 +38,16 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   description: z.string().min(2, 'Description must be at least 2 characters.'),
   amount: z.coerce.number().positive('Amount must be positive.'),
   category: z.string().min(1, 'Please select a category.'),
   date: z.date(),
+  isRecurring: z.boolean(),
+  bill: z.any().optional(),
 });
 
 export default function AddExpenseDialog({children}: {children: ReactNode}) {
@@ -55,6 +59,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
       amount: 0,
       category: '',
       date: new Date(),
+      isRecurring: false,
     },
   });
 
@@ -180,6 +185,39 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="bill"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Upload Bill/Receipt</FormLabel>
+                  <FormControl>
+                    <Input type="file" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="isRecurring"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Recurring Expense</FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Is this a recurring bill or loan?
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

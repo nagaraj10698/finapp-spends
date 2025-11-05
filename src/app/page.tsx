@@ -14,13 +14,16 @@ import {
   getRecentTransactions,
   getSpendingByCategory,
   getTotals,
+  getUpcomingBills,
 } from '@/lib/data';
+import UpcomingBills from '@/components/dashboard/upcoming-bills';
 
 export default function DashboardPage() {
   const totals = getTotals();
   const spendingByCategory = getSpendingByCategory();
   const budgets = getBudgets();
   const recentTransactions = getRecentTransactions(5);
+  const upcomingBills = getUpcomingBills();
 
   return (
     <div className="flex flex-col gap-4">
@@ -49,14 +52,27 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Recent Transactions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RecentTransactions transactions={recentTransactions} />
-        </CardContent>
-      </Card>
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="lg:col-span-4">
+          <CardHeader>
+            <CardTitle className="font-headline">Recent Transactions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RecentTransactions transactions={recentTransactions} />
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="font-headline">Upcoming Bills</CardTitle>
+             <CardDescription>
+              Your upcoming recurring payments.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <UpcomingBills bills={upcomingBills} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

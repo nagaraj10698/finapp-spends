@@ -35,7 +35,11 @@ export interface Budget {
   type: 'Bills' | 'Subscription' | 'Expense';
   category: string;
   categoryId?: string;
+  // These are calculated fields, not in Firestore
+  spent?: number;
+  limit?: number;
 }
+
 
 export interface Income {
   id: string;

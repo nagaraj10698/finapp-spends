@@ -16,7 +16,9 @@ export default function BudgetSummary({ budgets, categories }: BudgetSummaryProp
       {budgets.map((budget) => {
         const category = categories.find(c => c.name === budget.category);
         const Icon = category ? getIconByName(category.icon) : null;
-        const progress = (budget.spent / budget.limit) * 100;
+        const spent = budget.spent ?? 0;
+        const limit = budget.limit ?? 0;
+        const progress = limit > 0 ? (spent / limit) * 100 : 0;
         return (
           <div key={budget.id} className="space-y-1">
             <div className="flex justify-between items-center">
@@ -25,7 +27,7 @@ export default function BudgetSummary({ budgets, categories }: BudgetSummaryProp
                 <span className="font-medium">{budget.name}</span>
               </div>
               <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <DhiramSymbol className="h-3 w-3" />{budget.spent.toFixed(0)} / <DhiramSymbol className="h-3 w-3" />{budget.limit}
+                <DhiramSymbol className="h-3 w-3" />{spent.toFixed(0)} / <DhiramSymbol className="h-3 w-3" />{limit}
               </span>
             </div>
             <Progress value={progress} />

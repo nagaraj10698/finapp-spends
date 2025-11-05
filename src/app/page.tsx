@@ -15,6 +15,7 @@ import {
   getSpendingByCategory,
   getTotals,
   getUpcomingBills,
+  getBudgets
 } from '@/lib/data';
 import type { Transaction, Budget, Category } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
@@ -29,6 +30,8 @@ import { cn } from '@/lib/utils';
 import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
 import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
 import UpcomingBillsTimeline from '@/components/dashboard/upcoming-bills-timeline';
+import BudgetSummary from '@/components/dashboard/budget-summary';
+import RecentTransactions from '@/components/dashboard/recent-transactions';
 
 const PRESET_RANGES = [
     { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
@@ -49,9 +52,11 @@ export default function DashboardPage() {
     const { firestore, user } = useFirebase();
     const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
     const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+    const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
     
     const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
+    const { data: allBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
 
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
       from: startOfMonth(new Date()),
@@ -93,8 +98,11 @@ export default function DashboardPage() {
     const totals = useMemo(() => getTotals(filteredTransactions), [filteredTransactions]);
     const spendingByCategory = useMemo(() => getSpendingByCategory(filteredTransactions), [filteredTransactions]);
     const upcomingBills = useMemo(() => getUpcomingBills(allTransactions), [allTransactions]);
+    const recentTransactions = useMemo(() => getRecentTransactions(allTransactions, 5), [allTransactions]);
+    const budgetData = useMemo(() => getBudgets(allBudgets, allTransactions), [allBudgets, allTransactions]);
 
-    if (transactionsLoading || categoriesLoading) {
+
+    if (transactionsLoading || categoriesLoading || budgetsLoading) {
         return <div>Loading...</div>
     }
 
@@ -181,8 +189,8 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <OverviewCards totals={totals} />
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle className="font-headline">Spent by category</CardTitle>
           </CardHeader>
@@ -190,16 +198,38 @@ export default function DashboardPage() {
             <SpendingChart data={spendingByCategory} categories={categories ?? []}/>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="lg:col-span-3 h-full flex flex-col">
           <CardHeader>
             <CardTitle className="font-headline">Upcoming Bills</CardTitle>
              <CardDescription>
               Your upcoming recurring payments.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-grow">
             <UpcomingBillsTimeline bills={upcomingBills} categories={categories ?? []} />
           </CardContent>
+        </Card>
+      </div>
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+         <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="font-headline">Budget</CardTitle>
+             <CardDescription>
+              Your spending budget for this month.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BudgetSummary budgets={budgetData} categories={categories ?? []} />
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-4">
+            <CardHeader>
+                <CardTitle className="font-headline">Recent Transactions</CardTitle>
+                <CardDescription>Your most recent transactions.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <RecentTransactions transactions={recentTransactions} categories={categories ?? []} />
+            </CardContent>
         </Card>
       </div>
     </div>

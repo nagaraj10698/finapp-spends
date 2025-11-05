@@ -59,7 +59,7 @@ export default function RecentTransactions({
                 <DhiramSymbol />{Math.abs(amount).toFixed(2)}
               </TableCell>
               <TableCell className="hidden sm:table-cell">
-                {transaction.date.toLocaleDateString()}
+                {(transaction.date as Date).toLocaleDateString()}
               </TableCell>
             </TableRow>
           );
@@ -68,4 +68,3 @@ export default function RecentTransactions({
     </Table>
   );
 }
-

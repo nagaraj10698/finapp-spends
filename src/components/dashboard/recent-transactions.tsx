@@ -10,6 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { getCategoryByName } from '@/lib/data';
 import { cn } from '@/lib/utils';
+import { DhiramSymbol } from '../ui/dhiram-symbol';
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
@@ -47,8 +48,8 @@ export default function RecentTransactions({
                   </Badge>
                 )}
               </TableCell>
-              <TableCell className="text-right">
-                د.إ{transaction.amount.toFixed(2)}
+              <TableCell className="text-right flex items-center justify-end gap-1">
+                <DhiramSymbol />{transaction.amount.toFixed(2)}
               </TableCell>
               <TableCell className="hidden sm:table-cell">
                 {transaction.date.toLocaleDateString()}

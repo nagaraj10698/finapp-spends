@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
@@ -15,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 
 export const columns: ColumnDef<Transaction>[] = [
   {
@@ -71,12 +73,12 @@ export const columns: ColumnDef<Transaction>[] = [
     ),
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue('amount'));
-      const formatted = new Intl.NumberFormat('ar-AE', {
-        style: 'currency',
-        currency: 'AED',
+      const formatted = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       }).format(amount);
 
-      return <div className="text-right font-medium pr-4">{formatted}</div>;
+      return <div className="text-right font-medium pr-4 flex items-center justify-end gap-1"><DhiramSymbol />{formatted}</div>;
     },
   },
   {

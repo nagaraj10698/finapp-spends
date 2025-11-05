@@ -12,6 +12,7 @@ import type { Budget } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 
 interface BudgetCardProps {
   budget: Budget;
@@ -39,16 +40,16 @@ export default function BudgetCard({ budget }: BudgetCardProps) {
           <span>Limit</span>
         </div>
         <div className="flex justify-between font-medium">
-          <span>د.إ{budget.spent.toFixed(2)}</span>
-          <span>د.إ{budget.limit.toFixed(2)}</span>
+          <span className="flex items-center gap-1"><DhiramSymbol />{budget.spent.toFixed(2)}</span>
+          <span className="flex items-center gap-1"><DhiramSymbol />{budget.limit.toFixed(2)}</span>
         </div>
         <Progress value={progress} />
       </CardContent>
       <CardFooter>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
           {remaining >= 0
-            ? `د.إ${remaining.toFixed(2)} remaining`
-            : `د.إ${Math.abs(remaining).toFixed(2)} over budget`}
+            ? <><DhiramSymbol className="h-3 w-3" />{remaining.toFixed(2)} remaining</>
+            : <><DhiramSymbol className="h-3 w-3" />{Math.abs(remaining).toFixed(2)} over budget</>}
         </p>
       </CardFooter>
     </Card>

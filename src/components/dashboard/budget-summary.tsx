@@ -2,6 +2,7 @@ import type { Budget } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { getCategoryByName } from '@/lib/data';
+import { DhiramSymbol } from '../ui/dhiram-symbol';
 
 interface BudgetSummaryProps {
   budgets: Budget[];
@@ -20,8 +21,8 @@ export default function BudgetSummary({ budgets }: BudgetSummaryProps) {
                 {category && <category.icon className={cn("h-4 w-4", category.color)} />}
                 <span className="font-medium">{budget.name}</span>
               </div>
-              <span className="text-sm text-muted-foreground">
-                د.إ{budget.spent.toFixed(0)} / د.إ{budget.limit}
+              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <DhiramSymbol className="h-3 w-3" />{budget.spent.toFixed(0)} / <DhiramSymbol className="h-3 w-3" />{budget.limit}
               </span>
             </div>
             <Progress value={progress} />

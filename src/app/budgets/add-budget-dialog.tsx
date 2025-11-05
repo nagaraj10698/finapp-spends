@@ -33,6 +33,7 @@ import { z } from 'zod';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode } from 'react';
+import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 
 const formSchema = z.object({
   limit: z.coerce.number().positive('Limit must be positive.'),
@@ -53,7 +54,12 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
     console.log(values);
     toast({
       title: 'Budget Added',
-      description: `A budget for ${values.category} of د.إ${values.limit} has been set.`,
+      description: (
+        <span>
+          A budget for {values.category} of <DhiramSymbol />
+          {values.limit} has been set.
+        </span>
+      ),
     });
     // Here you would typically call a server action to save the data
   }
@@ -109,7 +115,10 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                 <FormItem>
                   <FormLabel>Spending Limit</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="0.00" {...field} />
+                    <div className="relative">
+                      <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input type="number" placeholder="0.00" {...field} className="pl-8" />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

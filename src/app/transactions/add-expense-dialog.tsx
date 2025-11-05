@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,12 +31,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode } from 'react';
+import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 
 const formSchema = z.object({
   description: z.string().min(2, 'Description must be at least 2 characters.'),
@@ -60,7 +62,12 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
     console.log(values);
     toast({
       title: 'Expense Added',
-      description: `${values.description} for د.إ${values.amount} has been added.`,
+      description: (
+        <span>
+          {values.description} for <DhiramSymbol />
+          {values.amount} has been added.
+        </span>
+      ),
     });
     // Here you would typically call a server action to save the data
   }
@@ -99,7 +106,10 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                 <FormItem>
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="0.00" {...field} />
+                    <div className="relative">
+                      <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input type="number" placeholder="0.00" {...field} className="pl-8" />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
@@ -5,6 +6,7 @@ import {
   ChartContainer,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { DhiramSymbol } from '../ui/dhiram-symbol';
 
 interface SpendingChartProps {
   data: {
@@ -18,6 +20,29 @@ const chartConfig = {
     label: "Total",
   },
 };
+
+const CustomTooltipContent = (props: any) => {
+  if (!props.active || !props.payload || props.payload.length === 0) {
+    return null;
+  }
+  const { payload, label } = props;
+  const value = payload[0].value;
+
+  return (
+    <div className="rounded-lg border bg-background p-2 shadow-sm">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col space-y-1">
+          <span className="text-[0.70rem] uppercase text-muted-foreground">{label}</span>
+          <span className="font-bold text-muted-foreground flex items-center gap-1">
+            <DhiramSymbol />
+            {Number(value).toFixed(2)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 export default function SpendingChart({ data }: SpendingChartProps) {
   return (
@@ -45,14 +70,15 @@ export default function SpendingChart({ data }: SpendingChartProps) {
             fontSize={12}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value) => `د.إ${value}`}
+            tickFormatter={(value) => {
+              const num = Number(value);
+              if (num >= 1000) return `Dh${(num/1000).toFixed(0)}k`
+              return `Dh${value}`
+            }}
           />
           <Tooltip
             cursor={false}
-            content={<ChartTooltipContent
-              labelFormatter={(label) => { return data.find(d => d.name === label)?.name; }}
-              formatter={(value) => `د.إ${Number(value).toFixed(2)}`}
-            />}
+            content={<CustomTooltipContent />}
             
           />
           <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />

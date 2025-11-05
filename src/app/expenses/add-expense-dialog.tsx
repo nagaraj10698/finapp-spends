@@ -42,6 +42,8 @@ import { Switch } from '@/components/ui/switch';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 
 const formSchema = z
@@ -52,7 +54,8 @@ const formSchema = z
     date: z.date(),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
-    bill: z.any().optional(),
+    attachment: z.instanceof(File).optional(),
+    status: z.enum(['Paid', 'Un-paid']).optional(),
   })
   .refine(
     (data) => {
@@ -69,8 +72,9 @@ const formSchema = z
 
 export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
-  const { firestore, user } = useFirebase();
+  const { firestore, user, firebaseApp } = useFirebase();
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -83,13 +87,14 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
       category: '',
       date: new Date(),
       isRecurring: false,
+      status: 'Paid',
     },
   });
 
   const isRecurring = form.watch('isRecurring');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !user) {
+    if (!firestore || !user || !firebaseApp) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -97,33 +102,57 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
         });
         return;
     }
+    setIsSubmitting(true);
     
-    const expenseCollection = collection(firestore, 'users', user.uid, 'transactions');
-    const newExpenseRef = doc(expenseCollection);
+    try {
+        const expenseCollection = collection(firestore, 'users', user.uid, 'transactions');
+        const newExpenseRef = doc(expenseCollection);
 
-    const newExpense: Omit<Transaction, 'id'> = {
-        description: values.description,
-        amount: -Math.abs(values.amount), // ensure it's negative
-        category: values.category,
-        date: values.date,
-        isRecurring: values.isRecurring,
-        frequency: values.frequency,
-        type: 'expense',
-    };
+        const newExpense: Omit<Transaction, 'id'> = {
+            description: values.description,
+            amount: -Math.abs(values.amount), // ensure it's negative
+            category: values.category,
+            date: values.date,
+            isRecurring: values.isRecurring,
+            frequency: values.frequency,
+            type: 'expense',
+            status: values.status,
+        };
+        
+        if (values.attachment) {
+            const storage = getStorage(firebaseApp);
+            const storageRef = ref(storage, `user_uploads/${user.uid}/${newExpenseRef.id}/${values.attachment.name}`);
+            const snapshot = await uploadBytes(storageRef, values.attachment);
+            const fileURL = await getDownloadURL(snapshot.ref);
+            if (fileURL) {
+                newExpense.fileURL = fileURL;
+                newExpense.fileName = values.attachment.name;
+            }
+        }
 
-    await setDoc(newExpenseRef, newExpense);
+        await setDoc(newExpenseRef, newExpense);
 
-    toast({
-      title: 'Expense Added',
-      description: (
-        <span className="flex items-center gap-1">
-          {values.description} for <DhiramSymbol />
-          {values.amount} has been added.
-        </span>
-      ),
-    });
-    form.reset();
-    setOpen(false);
+        toast({
+          title: 'Expense Added',
+          description: (
+            <span className="flex items-center gap-1">
+              {values.description} for <DhiramSymbol />
+              {values.amount} has been added.
+            </span>
+          ),
+        });
+        form.reset();
+        setOpen(false);
+    } catch (error) {
+        console.error("Error adding expense:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to add expense. Please try again."
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
   
   const expenseCategories = categories?.filter(c => c.type === 'expense');
@@ -142,6 +171,36 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Status</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="Paid" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Paid</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="Un-paid" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Un-paid</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="description"
@@ -244,12 +303,18 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             />
              <FormField
               control={form.control}
-              name="bill"
+              name="attachment"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Upload Bill/Receipt</FormLabel>
                   <FormControl>
-                    <Input type="file" {...field} />
+                     <Input 
+                      type="file" 
+                      accept="image/*,.pdf,.xls,.xlsx"
+                      onChange={(e) => {
+                        field.onChange(e.target.files ? e.target.files[0] : undefined);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -304,7 +369,9 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
               />
             )}
             <DialogFooter>
-              <Button type="submit">Save changes</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save Expense'}
+                </Button>
             </DialogFooter>
           </form>
         </Form>

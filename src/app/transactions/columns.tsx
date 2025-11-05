@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { getCategoryByName, getIconByName } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
+import { ArrowUpDown, MoreHorizontal, Check, Circle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,14 +15,65 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent
 } from '@/components/ui/dropdown-menu';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
-import { Checkbox } from "@/components/ui/checkbox"
+import { Checkbox } from "@/components/ui/checkbox";
+import { updateTransactionStatus } from '../actions';
+import { useFirebase } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
+  
+const StatusDropdown = ({ transaction }: { transaction: Transaction }) => {
+    const { user } = useFirebase();
+    const { toast } = useToast();
+  
+    const handleStatusChange = async (status: 'Paid' | 'Un-paid') => {
+      if (!user) return;
+      
+      const result = await updateTransactionStatus(transaction.id, status, user.uid);
+      if (result.success) {
+        toast({
+          title: "Status Updated",
+          description: `Transaction status changed to ${status}.`,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Update Failed",
+          description: result.error,
+        });
+      }
+    };
+  
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-max p-0 px-2 flex gap-2">
+            <Badge variant={transaction.status === 'Paid' ? 'default' : 'destructive'} className="capitalize">{transaction.status}</Badge>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => handleStatusChange('Paid')}>
+            <Check className="mr-2 h-4 w-4" />
+            Paid
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => handleStatusChange('Un-paid')}>
+            <Circle className="mr-2 h-4 w-4" />
+            Un-paid
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+};
 
 // This is a dynamic column definition that accepts categories
 export const getColumns = (categories: Category[]): ColumnDef<Transaction>[] => [
@@ -106,6 +157,19 @@ export const getColumns = (categories: Category[]): ColumnDef<Transaction>[] => 
     },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id))
+    },
+  },
+  {
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ row }) => {
+      const transaction = row.original;
+      if (transaction.type !== 'expense' || !transaction.status) return null;
+      
+      return <StatusDropdown transaction={transaction} />;
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
     },
   },
   {

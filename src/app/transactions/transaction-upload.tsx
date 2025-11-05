@@ -29,7 +29,7 @@ export default function TransactionUpload() {
     accept: {
       'text/csv': ['.csv'],
       'application/pdf': ['.pdf'],
-      'text/plain': ['.txt'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
     },
     multiple: false,
   });
@@ -105,7 +105,7 @@ export default function TransactionUpload() {
                   <span className="pl-1">or drag and drop</span>
                 </p>
                 <p className="text-xs leading-5 text-muted-foreground">
-                  CSV, TXT, or PDF up to 10MB
+                  CSV, XLSX, or PDF up to 10MB
                 </p>
               </div>
             )}

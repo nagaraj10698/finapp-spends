@@ -181,68 +181,102 @@ export function getBudgetForecast(
   const today = new Date();
   const range = dateRange?.from && dateRange.to ? { start: dateRange.from, end: dateRange.to } : { start: startOfMonth(today), end: endOfMonth(addMonths(today, 3)) };
   
-  let periods: {start: Date, end: Date}[];
-  let formatString: string;
-
-  if (period === 'daily') {
-    periods = eachDayOfInterval(range).map(d => ({ start: d, end: d }));
-    formatString = 'dd MMM';
-  } else if (period === 'weekly') {
-      periods = eachWeekOfInterval(range, { weekStartsOn: 1 }).map(d => ({start: d, end: endOfWeek(d, { weekStartsOn: 1 })}));
-      formatString = 'dd MMM';
-  } else { // monthly
-      periods = eachMonthOfInterval(range).map(d => ({start: d, end: endOfMonth(d)}));
-      formatString = 'MMM yyyy';
-  }
-  
   const forecastData: { name: string; upcoming: number; unpaid: number }[] = [];
-
   const unpaidExpenses = allTransactions.filter(t => t.type === 'expense' && t.status === 'Un-paid');
   const recurringExpenses = allTransactions.filter(t => t.type === 'expense' && t.isRecurring && t.frequency);
 
-  periods.forEach(interval => {
-    const periodName = format(interval.start, formatString);
-    
-    // Calculate total unpaid expenses for the current period
-    const unpaidForPeriod = unpaidExpenses
-      .filter(t => isWithinInterval(toDate(t.date), interval))
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-      
-    // Calculate total upcoming recurring expenses for the period
-    let upcomingForPeriod = 0;
+  if (period === 'daily') {
+    // Show individual items for daily view
+    const dailyItems: { date: Date; type: 'unpaid' | 'upcoming'; amount: number }[] = [];
+
+    // Add individual unpaid expenses
+    unpaidExpenses.forEach(t => {
+      const transactionDate = toDate(t.date);
+      if (isWithinInterval(transactionDate, range)) {
+        dailyItems.push({ date: transactionDate, type: 'unpaid', amount: Math.abs(t.amount) });
+      }
+    });
+
+    // Add individual upcoming recurring expenses
     recurringExpenses.forEach(t => {
       let nextDate = toDate(t.date);
-      while(nextDate <= interval.end) {
-        if (nextDate >= interval.start) {
-          upcomingForPeriod += Math.abs(t.amount);
+      while(nextDate <= range.end) {
+        if (nextDate >= range.start) {
+          dailyItems.push({ date: nextDate, type: 'upcoming', amount: Math.abs(t.amount) });
         }
-        
         switch (t.frequency) {
             case 'weekly': nextDate = addWeeks(nextDate, 1); break;
             case 'monthly': nextDate = addMonths(nextDate, 1); break;
             case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
             case 'yearly': nextDate = addYears(nextDate, 1); break;
-            default: nextDate = addYears(interval.end, 1); // Break loop
+            default: nextDate = addYears(range.end, 1);
         }
       }
     });
 
-    if (unpaidForPeriod > 0 || upcomingForPeriod > 0) {
-        forecastData.push({ name: periodName, unpaid: unpaidForPeriod, upcoming: upcomingForPeriod });
-    }
-  });
+    // Sort by date and format for the chart
+    dailyItems.sort((a,b) => a.date.getTime() - b.date.getTime()).forEach(item => {
+        forecastData.push({
+            name: format(item.date, 'dd MMM'),
+            unpaid: item.type === 'unpaid' ? item.amount : 0,
+            upcoming: item.type === 'upcoming' ? item.amount : 0,
+        });
+    });
 
-  // Add a bucket for all past-due unpaid items if not in custom range
-  if (!dateRange) {
+  } else {
+    // Aggregate for weekly or monthly view
+    let periods: {start: Date, end: Date}[];
+    let formatString: string;
+    
+    if (period === 'weekly') {
+        periods = eachWeekOfInterval(range, { weekStartsOn: 1 }).map(d => ({start: d, end: endOfWeek(d, { weekStartsOn: 1 })}));
+        formatString = 'dd MMM';
+    } else { // monthly
+        periods = eachMonthOfInterval(range).map(d => ({start: d, end: endOfMonth(d)}));
+        formatString = 'MMM yyyy';
+    }
+
+    periods.forEach(interval => {
+      const periodName = format(interval.start, formatString);
+      
+      const unpaidForPeriod = unpaidExpenses
+        .filter(t => isWithinInterval(toDate(t.date), interval))
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        
+      let upcomingForPeriod = 0;
+      recurringExpenses.forEach(t => {
+        let nextDate = toDate(t.date);
+        while(nextDate <= interval.end) {
+          if (nextDate >= interval.start) {
+            upcomingForPeriod += Math.abs(t.amount);
+          }
+          switch (t.frequency) {
+              case 'weekly': nextDate = addWeeks(nextDate, 1); break;
+              case 'monthly': nextDate = addMonths(nextDate, 1); break;
+              case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
+              case 'yearly': nextDate = addYears(nextDate, 1); break;
+              default: nextDate = addYears(interval.end, 1);
+          }
+        }
+      });
+
+      if (unpaidForPeriod > 0 || upcomingForPeriod > 0) {
+          forecastData.push({ name: periodName, unpaid: unpaidForPeriod, upcoming: upcomingForPeriod });
+      }
+    });
+  }
+
+  // Add a bucket for all past-due unpaid items if not in a custom range with a start date before today
+  if (!dateRange || (dateRange.from && dateRange.from <= today)) {
+    const pastDueStart = dateRange?.from ? dateRange.from : startOfMonth(today);
     const pastDueUnpaid = unpaidExpenses
-        .filter(t => toDate(t.date) < startOfMonth(today))
+        .filter(t => toDate(t.date) < pastDueStart)
         .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
     if (pastDueUnpaid > 0) {
         forecastData.unshift({ name: "Past Due", unpaid: pastDueUnpaid, upcoming: 0 });
     }
   }
-
-
+  
   return forecastData;
 }

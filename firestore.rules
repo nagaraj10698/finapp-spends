@@ -1,32 +1,4 @@
 
-/**
- * @fileoverview Firestore Security Rules for the Spends application.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model. Each user's data (accounts,
- * transactions, categories, budgets, reminders, and file uploads) is stored
- * under their specific user ID, ensuring data isolation.
- *
- * Data Structure:
- * The database is structured with user-specific data nested under the `/users/{userId}` path.
- * For example:
- * - /users/{userId} (User profile)
- * - /users/{userId}/transactions/{transactionId}
- * - /users/{userId}/categories/{categoryId}
- * - /users/{userId}/budgets/{budgetId}
- * - /users/{userId}/reminders/{reminderId}
- * - /users/{userId}/fileUploads/{fileUploadId}
- *
- * Key Security Decisions:
- * - All data is strictly owned by the user. No shared access or roles are implemented.
- * - Listing of user profiles (the `/users` collection) is disallowed to protect user privacy.
- * - The rules explicitly deny any unauthorized access attempt, ensuring a secure environment.
- *
- * Denormalization for Authorization:
- * The data structure inherently supports easy authorization due to the path-based ownership model.
- * No denormalization is needed. The `userId` parameter in the path is sufficient to determine
- * ownership.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {

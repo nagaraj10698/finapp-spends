@@ -2,12 +2,10 @@
 'use server';
 
 import { getSpendingInsights, type SpendingInsightsInput } from "@/ai/flows/spending-insights";
-import { processTransactions } from "@/ai/flows/process-transactions";
-import { parseFile } from "@/lib/file-parser";
 import { getFirestore, collection, getDocs, doc } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase/index.server";
 import { getAuth, type User } from "firebase/auth";
-import type { ProcessTransactionsInput, Transaction, Budget, Category } from "@/lib/types";
+import type { Transaction, Budget, Category } from "@/lib/types";
 
 
 async function getUserId(): Promise<string | null> {
@@ -64,42 +62,4 @@ export async function getSpendingInsightsAction(userId: string) {
     console.error(error);
     return { success: false, error: 'Failed to get spending insights.' };
   }
-}
-
-
-export async function processTransactionsAction(formData: FormData, userId: string) {
-    try {
-        if (!userId) {
-            return { success: false, error: 'Authentication required. User state not available on the server. Please sign in and try again.' };
-        }
-
-        const file = formData.get('file') as File;
-        if (!file) {
-            return { success: false, error: 'No file uploaded.' };
-        }
-
-        const fileContent = await parseFile(file);
-        
-        const categories = await getCollectionData<Category>(userId, 'categories');
-        const expenseCategories = categories.filter(c => c.type === 'expense').map(c => c.name);
-        const incomeCategories = categories.filter(c => c.type === 'income').map(c => c.name);
-
-        if (expenseCategories.length === 0 && incomeCategories.length === 0) {
-            return { success: false, error: 'No categories found for this user. Cannot process transactions.' };
-        }
-
-        const input: ProcessTransactionsInput = {
-            fileContent,
-            categories: expenseCategories,
-            incomeCategories: incomeCategories,
-        };
-
-        const result = await processTransactions(input);
-        
-        return { success: true, data: result };
-
-    } catch (error: any) {
-        console.error('Error in processTransactionsAction:', error);
-        return { success: false, error: error.message || 'Failed to process transactions.' };
-    }
 }

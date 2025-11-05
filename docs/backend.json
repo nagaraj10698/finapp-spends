@@ -203,52 +203,6 @@
         "reminderAmount",
         "isPaid"
       ]
-    },
-    "FileUpload": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "FileUpload",
-      "type": "object",
-      "description": "Represents a file uploaded by the user.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the FileUpload entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N FileUpload)"
-        },
-        "fileName": {
-          "type": "string",
-          "description": "Name of the file."
-        },
-        "fileType": {
-          "type": "string",
-          "description": "Type of the file (e.g., PDF, JPG)."
-        },
-        "fileSize": {
-          "type": "number",
-          "description": "Size of the file in bytes."
-        },
-        "uploadDate": {
-          "type": "string",
-          "description": "Date when the file was uploaded.",
-          "format": "date-time"
-        },
-        "fileUrl": {
-          "type": "string",
-          "description": "URL where the file is stored."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "fileName",
-        "fileType",
-        "fileSize",
-        "uploadDate",
-        "fileUrl"
-      ]
     }
   },
   "auth": {
@@ -353,28 +307,8 @@
             }
           ]
         }
-      },
-      {
-        "path": "/users/{userId}/fileUploads/{fileUploadId}",
-        "definition": {
-          "entityName": "FileUpload",
-          "schema": {
-            "$ref": "#/backend/entities/FileUpload"
-          },
-          "description": "Stores files uploaded by the user. Accessible only by the user themselves.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "fileUploadId",
-              "description": "The unique identifier of the file upload."
-            }
-          ]
-        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure data isolation and ownership based on the user. Each user has their own collection of transactions, categories, budgets, reminders, and file uploads. Transactions are stored as a subcollection of accounts, ensuring that transactions are always associated with a specific account owned by the user.\n\nThis design ensures Authorization Independence by storing all user-specific data under paths specific to the user's ID.  There are no dependencies on parent documents (no `get()` calls are needed in the rules). The database adheres to the principle that Rules are not Filters (QAPs). Data segregation by path enables secure `list` operations, as rules can simply verify that `request.auth.uid` matches the `userId` in the path. Because data is segregated by user ID, listing accounts, categories, and other entities will only return data for the authenticated user.\n"
+    "reasoning": "The Firestore structure is designed to ensure data isolation and ownership based on the user. Each user has their own collection of transactions, categories, budgets, and reminders. Transactions are stored as a subcollection of accounts, ensuring that transactions are always associated with a specific account owned by the user.\n\nThis design ensures Authorization Independence by storing all user-specific data under paths specific to the user's ID.  There are no dependencies on parent documents (no `get()` calls are needed in the rules). The database adheres to the principle that Rules are not Filters (QAPs). Data segregation by path enables secure `list` operations, as rules can simply verify that `request.auth.uid` matches the `userId` in the path. Because data is segregated by user ID, listing accounts, categories, and other entities will only return data for the authenticated user.\n"
   }
 }

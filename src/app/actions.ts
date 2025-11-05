@@ -46,8 +46,8 @@ export async function processTransactionsAction(fileContent: string) {
         };
         const result = await processTransactions(input);
         return { success: true, data: result };
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        return { success: false, error: 'Failed to process transactions.' };
+        return { success: false, error: error.message || 'Failed to process transactions.' };
     }
 }

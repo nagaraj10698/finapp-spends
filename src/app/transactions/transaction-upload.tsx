@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -6,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UploadCloud, File, X, Loader2 } from 'lucide-react';
 import { processTransactionsAction } from '../actions';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { DataTable } from './data-table';
-import { columns } from './columns';
 import type { ProcessTransactionsOutput } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,11 +16,14 @@ interface UploadedFile {
   uploadDate: string;
 }
 
-export default function TransactionUpload() {
+interface TransactionUploadProps {
+  onProcess: (data: ProcessTransactionsOutput) => void;
+}
+
+export default function TransactionUpload({ onProcess }: TransactionUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<ProcessTransactionsOutput | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   useEffect(() => {
@@ -34,7 +36,6 @@ export default function TransactionUpload() {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0]);
-      setResult(null);
       setError(null);
     }
   }, []);
@@ -51,7 +52,6 @@ export default function TransactionUpload() {
 
   const removeFile = () => {
     setFile(null);
-    setResult(null);
     setError(null);
   };
 
@@ -60,14 +60,13 @@ export default function TransactionUpload() {
 
     setLoading(true);
     setError(null);
-    setResult(null);
-
+    
     const reader = new FileReader();
     reader.onload = async (event) => {
       const fileContent = event.target?.result as string;
       const response = await processTransactionsAction(fileContent);
       if (response.success) {
-        setResult(response.data);
+        onProcess(response.data);
         // Add to historical list
         const newFile: UploadedFile = {
           name: file.name,
@@ -152,19 +151,6 @@ export default function TransactionUpload() {
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-          )}
-          {result && result.transactions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Processed Transactions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DataTable
-                  columns={columns}
-                  data={result.transactions.map(t => ({...t, amount: t.amount, date: new Date(t.date), id: t.description + t.date}))}
-                />
-              </CardContent>
-            </Card>
           )}
         </div>
       </TabsContent>

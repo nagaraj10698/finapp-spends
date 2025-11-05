@@ -10,7 +10,7 @@ import {
   Gift,
   LucideIcon,
 } from 'lucide-react';
-import type { Category, Transaction, Budget } from './types';
+import type { Category, Transaction, Budget, Income } from './types';
 import { addWeeks, addMonths, addQuarters, addYears } from 'date-fns';
 
 export const categories: Category[] = [
@@ -46,6 +46,16 @@ const transactions: Transaction[] = [
   { id: 'txn-16', description: 'Yoga Class', amount: 25, date: new Date('2024-06-01'), category: 'Health', isRecurring: true, frequency: 'weekly' },
   { id: 'txn-17', description: 'Car Insurance', amount: 150, date: new Date('2024-01-15'), category: 'Transport', isRecurring: true, frequency: 'yearly' },
 ];
+
+const income: Income[] = [
+    { id: 'inc-1', description: 'Monthly Salary', amount: 5000, date: new Date('2024-07-01')},
+    { id: 'inc-2', description: 'Freelance Project', amount: 750, date: new Date('2024-07-10')},
+];
+
+
+export function getMockIncome(): Income[] {
+    return income.sort((a,b) => b.date.getTime() - a.date.getTime());
+}
 
 export function getMockExpenses(): Transaction[] {
   const allTransactions: Transaction[] = [...transactions];
@@ -133,9 +143,11 @@ export function getUpcomingBills(): Transaction[] {
 
 
 export function getTotals() {
-  const income = 5000;
-  // Consider only expenses from the current month for totals
   const today = new Date();
+  const currentMonthIncome = getMockIncome().filter(i => i.date.getMonth() === today.getMonth() && i.date.getFullYear() === today.getFullYear());
+  const income = currentMonthIncome.reduce((sum, i) => sum + i.amount, 0);
+
+  // Consider only expenses from the current month for totals
   const currentMonthExpenses = getMockExpenses().filter(t => t.date.getMonth() === today.getMonth() && t.date.getFullYear() === today.getFullYear())
   const expenses = currentMonthExpenses.reduce((sum, t) => sum + t.amount, 0);
   const savings = income - expenses;

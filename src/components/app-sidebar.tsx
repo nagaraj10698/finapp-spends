@@ -11,6 +11,7 @@ import {
   HelpCircle,
   PlusCircle,
   MinusCircle,
+  TrendingUp,
 } from 'lucide-react';
 import {
   SidebarContent,
@@ -28,7 +29,8 @@ import { Button } from '@/components/ui/button';
 
 const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/transactions', label: 'Transactions', icon: Landmark },
+  { href: '/expenses', label: 'Expenses', icon: Landmark },
+  { href: '/income', label: 'Income', icon: TrendingUp },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
   { href: '/insights', label: 'Insights', icon: FilePieChart },
 ];

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
+import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList } from 'recharts';
 import {
   ChartContainer,
   ChartTooltipContent,
@@ -27,12 +27,22 @@ const chartConfig = {
   },
 };
 
+const CustomLabel = (props: any) => {
+    const { x, y, stroke, value } = props;
+    if (value === 0) return null;
+    return (
+      <text x={x} y={y} dy={-4} fill={stroke} fontSize={10} textAnchor="middle">
+        {value}
+      </text>
+    );
+};
+
 export default function BudgetForecastChart({ data }: BudgetForecastChartProps) {
 
   return (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+        <LineChart data={data} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
                 dataKey="name"
@@ -60,8 +70,12 @@ export default function BudgetForecastChart({ data }: BudgetForecastChartProps) 
                 />}
             />
             <Legend />
-            <Line type="monotone" dataKey="upcoming" stroke={chartConfig.upcoming.color} strokeWidth={2} activeDot={{ r: 8 }} />
-            <Line type="monotone" dataKey="unpaid" stroke={chartConfig.unpaid.color} strokeWidth={2} />
+            <Line type="monotone" dataKey="upcoming" stroke={chartConfig.upcoming.color} strokeWidth={2} activeDot={{ r: 8 }}>
+                <LabelList content={<CustomLabel />} />
+            </Line>
+            <Line type="monotone" dataKey="unpaid" stroke={chartConfig.unpaid.color} strokeWidth={2} >
+                <LabelList content={<CustomLabel />} />
+            </Line>
         </LineChart>
       </ResponsiveContainer>
     </ChartContainer>

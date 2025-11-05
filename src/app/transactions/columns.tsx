@@ -55,9 +55,8 @@ const StatusDropdown = ({ transaction }: { transaction: Transaction }) => {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-max p-0 px-2 flex gap-2">
-            <Badge variant={transaction.status === 'Paid' ? 'default' : 'destructive'} className="capitalize">{transaction.status}</Badge>
-            <MoreHorizontal className="h-4 w-4" />
+          <Button variant="outline" size="sm" className={cn("h-8 capitalize", transaction.status === 'Paid' ? 'border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700' : 'border-red-600 text-red-600 hover:bg-red-50 hover:text-red-700')}>
+            {transaction.status}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

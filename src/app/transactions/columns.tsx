@@ -4,7 +4,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Transaction } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { getCategoryByName } from '@/lib/data';
+import { getCategoryByName, categories } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
@@ -18,6 +18,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Checkbox } from "@/components/ui/checkbox"
+
+const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 
 export const columns: ColumnDef<Transaction>[] = [
   {
@@ -62,6 +67,9 @@ export const columns: ColumnDef<Transaction>[] = [
         </Badge>
       );
     },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
   },
   {
     accessorKey: 'date',
@@ -81,29 +89,44 @@ export const columns: ColumnDef<Transaction>[] = [
       return <div className="pl-4">{date.toLocaleDateString()}</div>;
     },
   },
-  {
-    accessorKey: 'amount',
-    header: ({ column }) => (
-      <div className="text-right">
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Amount
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-    ),
+   {
+    accessorKey: 'type',
+    header: 'Type',
     cell: ({ row }) => {
-      const amount = parseFloat(row.getValue('amount'));
-
-      const formatted = new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(amount);
-
-      return <div className={`text-right font-medium pr-4 flex items-center justify-end gap-1 ${amount < 0 ? 'text-red-500' : 'text-green-500'}`}><DhiramSymbol />{formatted}</div>;
+      const type = row.getValue('type') as string;
+      return <Badge variant={type === 'income' ? 'default' : 'destructive'} className="capitalize">{type}</Badge>;
     },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
+  },
+  {
+    accessorKey: 'credit',
+    header: () => <div className="text-right">Credit</div>,
+    cell: ({ row }) => {
+      const amount = parseFloat(row.original.amount as any);
+      if (amount <= 0) return null;
+      const formatted = formatCurrency(amount);
+      return (
+        <div className="text-right font-medium text-green-500 pr-4 flex items-center justify-end gap-1">
+          <DhiramSymbol />{formatted}
+        </div>
+      );
+    }
+  },
+    {
+    accessorKey: 'debit',
+    header: () => <div className="text-right">Debit</div>,
+    cell: ({ row }) => {
+      const amount = parseFloat(row.original.amount as any);
+      if (amount >= 0) return null;
+      const formatted = formatCurrency(Math.abs(amount));
+      return (
+        <div className="text-right font-medium text-red-500 pr-4 flex items-center justify-end gap-1">
+          <DhiramSymbol />{formatted}
+        </div>
+      );
+    }
   },
   {
     id: 'actions',

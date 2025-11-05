@@ -29,8 +29,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Transaction } from '@/lib/types';
-import { Trash2 } from 'lucide-react';
+import { DataTableFacetedFilter } from './data-table-faceted-filter';
+import { categories } from '@/lib/data';
+import { Calendar as CalendarIcon, Trash2 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { DateRange } from 'react-day-picker';
+import { addDays, format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -50,7 +56,7 @@ export function DataTable<TData extends { id: string }, TValue>({
     []
   );
   const [rowSelection, setRowSelection] = React.useState({})
-
+  const [date, setDate] = React.useState<DateRange | undefined>();
 
   const table = useReactTable({
     data,
@@ -62,6 +68,8 @@ export function DataTable<TData extends { id: string }, TValue>({
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     onRowSelectionChange: setRowSelection,
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
     state: {
       sorting,
       columnFilters,
@@ -74,11 +82,19 @@ export function DataTable<TData extends { id: string }, TValue>({
     onDelete(selectedRowsData);
     table.resetRowSelection();
   };
+  
+  React.useEffect(() => {
+    if (date?.from && date?.to) {
+      table.getColumn('date')?.setFilterValue([date.from, date.to]);
+    }
+  }, [date, table]);
 
+  const categoryOptions = categories.map(c => ({ value: c.name, label: c.name, icon: c.icon }));
+  const typeOptions = [{value: 'income', label: 'Income'}, {value: 'expense', label: 'Expense'}];
 
   return (
     <div>
-      <div className="flex items-center justify-between py-4">
+       <div className="flex items-center justify-between py-4 gap-2 flex-wrap">
         <Input
           placeholder="Filter descriptions..."
           value={
@@ -89,6 +105,63 @@ export function DataTable<TData extends { id: string }, TValue>({
           }
           className="max-w-sm"
         />
+         <div className="flex items-center gap-2">
+            {table.getColumn("category") && (
+              <DataTableFacetedFilter
+                column={table.getColumn("category")}
+                title="Category"
+                options={categoryOptions}
+              />
+            )}
+            {table.getColumn("type") && (
+                <DataTableFacetedFilter
+                    column={table.getColumn("type")}
+                    title="Type"
+                    options={typeOptions}
+                />
+            )}
+             <Popover>
+                <PopoverTrigger asChild>
+                <Button
+                    id="date"
+                    variant={"outline"}
+                    className={cn(
+                    "w-[300px] justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                    )}
+                >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date?.from ? (
+                    date.to ? (
+                        <>
+                        {format(date.from, "LLL dd, y")} -{" "}
+                        {format(date.to, "LLL dd, y")}
+                        </>
+                    ) : (
+                        format(date.from, "LLL dd, y")
+                    )
+                    ) : (
+                    <span>Pick a date range</span>
+                    )}
+                </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={date?.from}
+                    selected={date}
+                    onSelect={setDate}
+                    numberOfMonths={2}
+                />
+                </PopoverContent>
+            </Popover>
+         </div>
+      </div>
+      <div className="flex items-center justify-between py-4">
+        <div className="text-sm text-muted-foreground">
+            Total Transactions: {data.length}
+        </div>
         <div className="flex items-center gap-2">
             {table.getFilteredSelectedRowModel().rows.length > 0 && (
                 <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
@@ -96,9 +169,6 @@ export function DataTable<TData extends { id: string }, TValue>({
                     Delete Selected ({table.getFilteredSelectedRowModel().rows.length})
                 </Button>
             )}
-             <div className="text-sm text-muted-foreground">
-                Total Transactions: {data.length}
-            </div>
         </div>
       </div>
       <div className="rounded-md border">

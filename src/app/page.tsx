@@ -23,7 +23,7 @@ import type { Transaction, Budget, Category } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import BudgetForecastChart from '@/app/budgets/budget-forecast-chart';
-import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDays, format, isSameMonth } from 'date-fns';
+import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDays, format, isSameMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -45,7 +45,11 @@ const PRESET_RANGES = [
         const lastMonth = subMonths(new Date(), 1);
         return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
     }},
+    { label: 'This Quarter', getRange: () => ({ from: startOfQuarter(new Date()), to: endOfQuarter(new Date()) }) },
+    { label: 'Last 6 Months', getRange: () => ({ from: subMonths(new Date(), 6), to: new Date() }) },
+    { label: 'This Year', getRange: () => ({ from: startOfYear(new Date()), to: endOfYear(new Date()) }) },
 ];
+
 
 export default function DashboardPage() {
     const { firestore, user } = useFirebase();

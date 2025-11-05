@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDays, isSameMonth } from 'date-fns';
+import { format, addDays, startOfMonth, endOfMonth, subMonths, isSameDay, differenceInDays, isSameMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
 import { Button } from '@/components/ui/button';
 
 type ForecastPeriod = 'daily' | 'monthly';
@@ -26,7 +26,11 @@ const PRESET_RANGES = [
         const lastMonth = subMonths(new Date(), 1);
         return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
     }},
+    { label: 'This Quarter', getRange: () => ({ from: startOfQuarter(new Date()), to: endOfQuarter(new Date()) }) },
+    { label: 'Last 6 Months', getRange: () => ({ from: subMonths(new Date(), 6), to: new Date() }) },
+    { label: 'This Year', getRange: () => ({ from: startOfYear(new Date()), to: endOfYear(new Date()) }) },
 ];
+
 
 
 export default function BudgetsPage() {

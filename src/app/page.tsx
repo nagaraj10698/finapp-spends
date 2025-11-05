@@ -198,20 +198,7 @@ export default function DashboardPage() {
             <SpendingChart data={spendingByCategory} categories={categories ?? []}/>
           </CardContent>
         </Card>
-        <Card className="lg:col-span-3 h-full flex flex-col">
-          <CardHeader>
-            <CardTitle className="font-headline">Upcoming Bills</CardTitle>
-             <CardDescription>
-              Your upcoming recurring payments.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow">
-            <UpcomingBillsTimeline bills={upcomingBills} categories={categories ?? []} />
-          </CardContent>
-        </Card>
-      </div>
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-         <Card className="lg:col-span-3">
+        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle className="font-headline">Budget</CardTitle>
              <CardDescription>
@@ -220,6 +207,19 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <BudgetSummary budgets={budgetData} categories={categories ?? []} />
+          </CardContent>
+        </Card>
+      </div>
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+         <Card className="lg:col-span-3 h-full flex flex-col">
+          <CardHeader>
+            <CardTitle className="font-headline">Upcoming Bills</CardTitle>
+             <CardDescription>
+              Your upcoming recurring payments.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <UpcomingBillsTimeline bills={upcomingBills} categories={categories ?? []} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-4">

@@ -107,32 +107,34 @@ export const columns: ColumnDef<Transaction>[] = [
     },
   },
   {
-    accessorKey: 'credit',
-    header: () => <div className="text-right">Credit</div>,
+    accessorKey: 'amount',
+    header: ({ column }) => (
+      <div className="text-right">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Amount
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    ),
     cell: ({ row }) => {
-      const amount = parseFloat(row.original.amount as any);
-      if (amount <= 0) return null;
-      const formatted = formatCurrency(amount);
-      return (
-        <div className="text-right font-medium text-green-500 pr-4 flex items-center justify-end gap-1">
-          <DhiramSymbol />{formatted}
-        </div>
-      );
-    }
-  },
-    {
-    accessorKey: 'debit',
-    header: () => <div className="text-right">Debit</div>,
-    cell: ({ row }) => {
-      const amount = parseFloat(row.original.amount as any);
-      if (amount >= 0) return null;
+      const amount = parseFloat(row.getValue('amount'));
       const formatted = formatCurrency(Math.abs(amount));
+
       return (
-        <div className="text-right font-medium text-red-500 pr-4 flex items-center justify-end gap-1">
-          <DhiramSymbol />{formatted}
+        <div
+          className={cn(
+            'text-right font-medium pr-4 flex items-center justify-end gap-1',
+            amount < 0 ? 'text-red-500' : 'text-green-500'
+          )}
+        >
+          <DhiramSymbol />
+          {formatted}
         </div>
       );
-    }
+    },
   },
   {
     id: 'actions',

@@ -9,6 +9,8 @@ import {
   FilePieChart,
   Settings,
   HelpCircle,
+  PlusCircle,
+  MinusCircle,
 } from 'lucide-react';
 import {
   SidebarContent,
@@ -20,6 +22,9 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import Logo from './logo';
+import AddExpenseDialog from '@/app/transactions/add-expense-dialog';
+import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
+import { Button } from '@/components/ui/button';
 
 const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -42,6 +47,18 @@ export default function AppSidebar() {
         <Logo />
       </SidebarHeader>
       <SidebarContent>
+        <div className="flex flex-col gap-2 px-2 py-2">
+          <AddIncomeDialog>
+            <Button size="sm" className="w-full">
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Income
+            </Button>
+          </AddIncomeDialog>
+          <AddExpenseDialog>
+             <Button variant="secondary" size="sm" className="w-full">
+                <MinusCircle className="mr-2 h-4 w-4" /> Add Expense
+            </Button>
+          </AddExpenseDialog>
+        </div>
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>

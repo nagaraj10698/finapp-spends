@@ -10,19 +10,20 @@ import {
 } from '@/components/ui/card';
 import OverviewCards from '@/components/dashboard/overview-cards';
 import SpendingChart from '@/components/dashboard/spending-chart';
-import BudgetSummary from '@/components/dashboard/budget-summary';
 import RecentTransactions from '@/components/dashboard/recent-transactions';
 import {
-  getBudgets,
   getRecentTransactions,
   getSpendingByCategory,
   getTotals,
   getUpcomingBills,
+  getBudgetForecast,
 } from '@/lib/data';
 import UpcomingBills from '@/components/dashboard/upcoming-bills';
 import type { Transaction, Budget, Category } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
+import BudgetForecastChart from '@/app/budgets/budget-forecast-chart';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 export default function DashboardPage() {
     const { firestore, user } = useFirebase();
@@ -38,9 +39,17 @@ export default function DashboardPage() {
     // Memoize derived data to prevent re-computation on every render
     const totals = useMemo(() => getTotals(transactions), [transactions]);
     const spendingByCategory = useMemo(() => getSpendingByCategory(transactions), [transactions]);
-    const budgets = useMemo(() => getBudgets(rawBudgets ?? [], transactions), [rawBudgets, transactions]);
     const recentTransactions = useMemo(() => getRecentTransactions(transactions ?? [], 5), [transactions]);
     const upcomingBills = useMemo(() => getUpcomingBills(transactions ?? []), [transactions]);
+
+    const budgetForecastData = useMemo(() => {
+        const thisMonth = {
+            from: startOfMonth(new Date()),
+            to: endOfMonth(new Date()),
+        };
+        return getBudgetForecast(transactions, 'weekly', thisMonth);
+    }, [transactions]);
+
 
     if (transactionsLoading || budgetsLoading || categoriesLoading) {
         return <div>Loading...</div>
@@ -62,15 +71,15 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="font-headline">Budget Summary</CardTitle>
-            <CardDescription>
-              Your spending progress for this month.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BudgetSummary budgets={budgets} categories={categories ?? []} />
-          </CardContent>
+            <CardHeader>
+                <CardTitle className="font-headline">Budget Forecast</CardTitle>
+                <CardDescription>
+                Your expense forecast for this month.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <BudgetForecastChart data={budgetForecastData} />
+            </CardContent>
         </Card>
       </div>
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">

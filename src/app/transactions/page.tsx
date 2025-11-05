@@ -1,30 +1,28 @@
 
-'use client';
-
-import { useState } from 'react';
-import TransactionUpload from "./transaction-upload";
-import type { ProcessTransactionsOutput } from '@/lib/types';
-import TransactionsTable from './transactions-table';
+import { getMockExpenses, getMockIncome } from '@/lib/data';
+import { columns } from './columns';
+import { DataTable } from './data-table';
+import { Transaction } from '@/lib/types';
 
 export default function TransactionsPage() {
-    const [processedTransactions, setProcessedTransactions] = useState<ProcessTransactionsOutput['transactions']>([]);
+  const expenses = getMockExpenses().map(e => ({...e, type: 'expense' as const}));
+  const income = getMockIncome().map(i => ({
+      id: i.id,
+      description: i.description,
+      amount: i.amount,
+      date: i.date,
+      category: 'Income',
+      type: 'income' as const
+  }));
 
-    const handleTransactionsProcessed = (data: ProcessTransactionsOutput) => {
-        setProcessedTransactions(prev => [...prev, ...data.transactions]);
-    };
+  const allTransactions: Transaction[] = [...expenses, ...income].sort((a,b) => b.date.getTime() - a.date.getTime());
 
-    return (
-        <div className="space-y-4">
-            <div className="space-y-1">
-                <h1 className="font-headline text-2xl font-semibold">Transactions</h1>
-                <p className="text-muted-foreground">
-                    Upload your bank statement to automatically categorize your transactions.
-                </p>
-            </div>
-            <TransactionUpload onProcess={handleTransactionsProcessed} />
-            {processedTransactions.length > 0 && (
-                <TransactionsTable transactions={processedTransactions} />
-            )}
-        </div>
-    );
+  return (
+    <div className="space-y-4">
+       <div className="flex items-center justify-between">
+        <h1 className="font-headline text-2xl font-semibold">All Transactions</h1>
+       </div>
+      <DataTable columns={columns} data={allTransactions} />
+    </div>
+  );
 }

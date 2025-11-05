@@ -8,7 +8,6 @@ import { UploadCloud, File, X, Loader2 } from 'lucide-react';
 import { processTransactionsAction } from '../actions';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { ProcessTransactionsOutput } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
 
 interface UploadedFile {
   id: string;
@@ -24,7 +23,6 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -93,10 +91,6 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
         localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
 
         onProcess({ transactions: allTransactions });
-        toast({
-          title: "Processing Complete",
-          description: `Successfully processed ${allTransactions.length} transactions from ${filesProcessed} file(s).`,
-        });
         setFiles([]); // Clear the files only after all are processed
     }
 
@@ -175,5 +169,3 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
         </Card>
   );
 }
-
-    

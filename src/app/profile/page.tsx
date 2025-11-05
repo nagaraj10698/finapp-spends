@@ -33,7 +33,7 @@ const formSchema = z.object({
 
 export default function ProfilePage() {
   const { toast } = useToast();
-  const { user, auth, firestore } = useFirebase();
+  const { user, auth, firestore, firebaseApp } = useFirebase();
   const [photoURL, setPhotoURL] = useState(user?.photoURL);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,14 +66,14 @@ export default function ProfilePage() {
   };
 
   const handleSaveCroppedImage = async (croppedImageBlob: Blob | null) => {
-    if (!croppedImageBlob || !user || !firestore) {
+    if (!croppedImageBlob || !user || !firestore || !firebaseApp) {
         setCropperOpen(false);
         return;
     }
     setIsUploading(true);
     setCropperOpen(false);
 
-    const storage = getStorage();
+    const storage = getStorage(firebaseApp);
     const storageRef = ref(storage, `profile-pictures/${user.uid}`);
     const imageFile = new File([croppedImageBlob], "profile_picture.jpeg", { type: "image/jpeg" });
 
@@ -82,7 +82,9 @@ export default function ProfilePage() {
         const newPhotoURL = await getDownloadURL(storageRef);
         setPhotoURL(newPhotoURL);
         
-        await updateProfile(user, { photoURL: newPhotoURL });
+        if (auth.currentUser) {
+          await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
+        }
         const userDocRef = doc(firestore, 'users', user.uid);
         await updateDoc(userDocRef, { photoURL: newPhotoURL });
         
@@ -106,7 +108,7 @@ export default function ProfilePage() {
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !firestore) {
+    if (!user || !firestore || !auth.currentUser) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -117,7 +119,7 @@ export default function ProfilePage() {
 
     try {
       // Update Firebase Auth display name
-      await updateProfile(user, {
+      await updateProfile(auth.currentUser, {
         displayName: `${values.firstName} ${values.lastName}`,
       });
 

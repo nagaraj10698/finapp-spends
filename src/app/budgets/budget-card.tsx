@@ -7,13 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { getCategoryByName, getIconByName } from '@/lib/data';
+import { getIconByName } from '@/lib/data';
 import type { Budget, Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { format } from 'date-fns';
 
 interface BudgetCardProps {
   budget: Budget;
@@ -22,38 +22,46 @@ interface BudgetCardProps {
 
 export default function BudgetCard({ budget, category }: BudgetCardProps) {
   const Icon = category ? getIconByName(category.icon) : null;
-  const progress = (budget.spent / budget.limit) * 100;
-  const remaining = budget.limit - budget.spent;
+
+  const toDate = (date: any) => {
+    if (date.toDate) return date.toDate();
+    return new Date(date);
+  }
+
+  const startDate = toDate(budget.budgetStartDate);
+  const endDate = toDate(budget.budgetEndDate);
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div className="flex items-center gap-2">
-          {category && Icon && <Icon className={cn('h-6 w-6', category.color)} />}
-          <CardTitle className="font-headline text-lg">{budget.name}</CardTitle>
+      <CardHeader className="flex flex-row items-start justify-between pb-2">
+        <div className="space-y-1">
+            <div className="flex items-center gap-2">
+                {category && Icon && <Icon className={cn('h-5 w-5', category.color)} />}
+                <CardTitle className="font-headline text-lg">{budget.name}</CardTitle>
+            </div>
+            <CardDescription>{budget.type}</CardDescription>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
             <MoreVertical className="h-4 w-4" />
         </Button>
       </CardHeader>
       <CardContent className="space-y-2">
-        <div className="flex justify-between text-sm text-muted-foreground">
-          <span>Spent</span>
-          <span>Limit</span>
+        <div className="text-3xl font-bold flex items-center gap-1">
+            <DhiramSymbol className="h-7 w-7" />
+            {budget.budgetAmount.toFixed(2)}
         </div>
-        <div className="flex justify-between font-medium">
-          <span className="flex items-center gap-1"><DhiramSymbol />{budget.spent.toFixed(2)}</span>
-          <span className="flex items-center gap-1"><DhiramSymbol />{budget.limit.toFixed(2)}</span>
+        <div className="text-xs text-muted-foreground">
+            {budget.isRecurring ? 'Recurring' : `From ${format(startDate, 'LLL dd')} to ${format(endDate, 'LLL dd')}`}
         </div>
-        <Progress value={progress} />
       </CardContent>
-      <CardFooter>
-        <p className="text-xs text-muted-foreground flex items-center gap-1">
-          {remaining >= 0
-            ? <><DhiramSymbol className="h-3 w-3" />{remaining.toFixed(2)} remaining</>
-            : <><DhiramSymbol className="h-3 w-3" />{Math.abs(remaining).toFixed(2)} over budget</>}
-        </p>
-      </CardFooter>
+      {budget.isRecurring && (
+        <CardFooter>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Repeat className="h-3 w-3" />
+                <span>This is a recurring planned expense.</span>
+            </div>
+        </CardFooter>
+      )}
     </Card>
   );
 }

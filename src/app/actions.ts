@@ -51,7 +51,7 @@ export async function getSpendingInsightsAction(userId: string) {
       income: income,
       budget: budgets.map(b => ({
         category: b.name,
-        amount: b.limit,
+        amount: b.budgetAmount,
       })),
       financialGoals: ['Save for a vacation', 'Pay off credit card debt'],
     };

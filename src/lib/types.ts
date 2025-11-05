@@ -27,10 +27,11 @@ export interface Transaction {
 export interface Budget {
   id: string;
   name: string;
-  limit: number;
-  spent: number;
-  type: 'Bills' | 'Subscription' | 'Expense';
+  budgetAmount: number;
+  budgetStartDate: Date | Timestamp;
+  budgetEndDate: Date | Timestamp;
   isRecurring?: boolean;
+  type: 'Bills' | 'Subscription' | 'Expense';
   category: string;
   categoryId?: string;
 }
@@ -41,3 +42,4 @@ export interface Income {
   amount: number;
   date: Date | Timestamp;
 }
+

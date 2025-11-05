@@ -156,27 +156,14 @@ export function getSpendingByCategory(allTransactions: Transaction[] | null) {
 
 
 export function getBudgets(budgets: Budget[], allTransactions: Transaction[] | null): Budget[] {
-    const today = new Date();
-    if (!allTransactions || !budgets) return [];
+    if (!budgets) return [];
 
-    const spendingThisMonth = new Map<string, number>();
-    const currentMonthExpenses = allTransactions.filter(t => {
-      const d = toDate(t.date);
-      return d.getMonth() === today.getMonth() && 
-      d.getFullYear() === today.getFullYear() &&
-      t.type === 'expense'
-    });
-
-    currentMonthExpenses.forEach(t => {
-        spendingThisMonth.set(t.category, (spendingThisMonth.get(t.category) || 0) + t.amount);
-    });
-
-
-    return budgets.map((budget) => {
-        const spent = spendingThisMonth.get(budget.category) || 0;
-        return {
-          ...budget,
-          spent: Math.abs(spent),
-        };
-      });
+    // The new logic simply returns the budgets as they are planned expenses.
+    // The `spent` calculation is no longer needed for forecasting.
+    return budgets.map(budget => ({
+        ...budget,
+        // Ensure dates are JS Date objects
+        budgetStartDate: toDate(budget.budgetStartDate),
+        budgetEndDate: toDate(budget.budgetEndDate),
+    }));
 }

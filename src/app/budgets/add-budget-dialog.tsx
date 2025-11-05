@@ -38,12 +38,18 @@ import { Switch } from '@/components/ui/switch';
 import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Budget, Category } from '@/lib/types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 
 
 const formSchema = z.object({
   name: z.string().min(1, 'Budget name is required.'),
-  limit: z.coerce.number().positive('Limit must be positive.'),
+  budgetAmount: z.coerce.number().positive('Amount must be positive.'),
   category: z.string().min(1, 'Please select a category.'),
+  budgetStartDate: z.date({ required_error: 'Start date is required.' }),
+  budgetEndDate: z.date({ required_error: 'End date is required.' }),
   isRecurring: z.boolean(),
   type: z.enum(['Bills', 'Subscription', 'Expense'], { required_error: 'Please select a type.' }),
 });
@@ -60,8 +66,10 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      limit: 0,
+      budgetAmount: 0,
       category: '',
+      budgetStartDate: new Date(),
+      budgetEndDate: new Date(),
       isRecurring: false,
       type: 'Expense',
     },
@@ -80,9 +88,11 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
     const selectedCategory = categories?.find(c => c.name === values.category);
 
     const budgetCollection = collection(firestore, 'users', user.uid, 'budgets');
-    const newBudget: Omit<Budget, 'id' | 'spent'> = {
+    const newBudget: Omit<Budget, 'id'> = {
         name: values.name,
-        limit: values.limit,
+        budgetAmount: values.budgetAmount,
+        budgetStartDate: values.budgetStartDate,
+        budgetEndDate: values.budgetEndDate,
         isRecurring: values.isRecurring,
         type: values.type,
         categoryId: selectedCategory?.id,
@@ -96,7 +106,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
       description: (
         <span className="flex items-center gap-1">
           A budget for {values.name} of <DhiramSymbol />
-          {values.limit} has been set.
+          {values.budgetAmount} has been set.
         </span>
       ),
     });
@@ -115,7 +125,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
         <DialogHeader>
           <DialogTitle>Add New Budget</DialogTitle>
           <DialogDescription>
-            Set a spending limit for a category.
+            Set a planned expense for forecasting.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -127,7 +137,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                 <FormItem>
                   <FormLabel>Budget Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Monthly Groceries" {...field} />
+                    <Input placeholder="e.g., Monthly Netflix Subscription" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -168,10 +178,10 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
             />
             <FormField
               control={form.control}
-              name="limit"
+              name="budgetAmount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Spending Limit</FormLabel>
+                  <FormLabel>Amount</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -182,6 +192,66 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="budgetStartDate"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>Start Date</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={'outline'}
+                            className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                            )}
+                            >
+                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="budgetEndDate"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>End Date</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={'outline'}
+                            className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                            )}
+                            >
+                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
              <FormField
               control={form.control}
               name="type"

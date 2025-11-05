@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import {
   ChartContainer,
   ChartTooltipContent,
@@ -32,7 +32,8 @@ export default function BudgetForecastChart({ data }: BudgetForecastChartProps) 
   return (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} >
+        <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
             <XAxis
                 dataKey="name"
                 stroke="#888888"
@@ -58,9 +59,10 @@ export default function BudgetForecastChart({ data }: BudgetForecastChartProps) 
                     )}
                 />}
             />
-            <Bar dataKey="upcoming" stackId="a" fill={chartConfig.upcoming.color} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="unpaid" stackId="a" fill={chartConfig.unpaid.color} radius={[4, 4, 0, 0]} />
-        </BarChart>
+            <Legend />
+            <Line type="monotone" dataKey="upcoming" stroke={chartConfig.upcoming.color} strokeWidth={2} activeDot={{ r: 8 }} />
+            <Line type="monotone" dataKey="unpaid" stroke={chartConfig.unpaid.color} strokeWidth={2} />
+        </LineChart>
       </ResponsiveContainer>
     </ChartContainer>
   );

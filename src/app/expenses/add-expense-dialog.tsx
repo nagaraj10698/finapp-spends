@@ -156,8 +156,6 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
   
   const expenseCategories = categories?.filter(c => c.type === 'expense');
 
-  const fileRef = form.register("attachment");
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -282,7 +280,6 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                     <Input 
                       type="file" 
                       accept="image/*,.pdf,.xls,.xlsx"
-                      {...fileRef}
                       onChange={(e) => {
                         field.onChange(e.target.files ? e.target.files[0] : undefined);
                       }}

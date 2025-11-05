@@ -133,7 +133,6 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
   }
 
   const incomeCategories = categories?.filter(c => c.type === 'income');
-  const fileRef = form.register("attachment");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -259,7 +258,6 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
                     <Input 
                       type="file" 
                       accept="image/*,.pdf,.xls,.xlsx"
-                      {...fileRef}
                       onChange={(e) => {
                         field.onChange(e.target.files ? e.target.files[0] : undefined);
                       }}

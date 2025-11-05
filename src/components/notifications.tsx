@@ -1,6 +1,6 @@
 
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Bell } from 'lucide-react';
 import {
   Popover,
@@ -19,6 +19,7 @@ import { ScrollArea } from './ui/scroll-area';
 
 export default function Notifications() {
   const { firestore, user } = useFirebase();
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
 
   const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
   const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
@@ -26,9 +27,22 @@ export default function Notifications() {
   const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
   const { data: allBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
 
-  const notifications = useMemo(() => {
+  const allNotifications = useMemo(() => {
     return getNotifications(allTransactions, allBudgets);
   }, [allTransactions, allBudgets]);
+
+  const unreadNotifications = useMemo(() => {
+    return allNotifications.filter(n => !readNotificationIds.includes(n.id));
+  }, [allNotifications, readNotificationIds]);
+
+  const handleMarkAllRead = () => {
+    const allIds = allNotifications.map(n => n.id);
+    setReadNotificationIds(prev => [...new Set([...prev, ...allIds])]);
+  };
+  
+  const handleMarkAsRead = (notificationId: string) => {
+    setReadNotificationIds(prev => [...new Set([...prev, notificationId])]);
+  };
 
 
   if (transactionsLoading || budgetsLoading) {
@@ -39,7 +53,7 @@ export default function Notifications() {
     )
   }
   
-  const hasUnread = notifications.length > 0;
+  const hasUnread = unreadNotifications.length > 0;
 
   return (
     <Popover>
@@ -56,10 +70,10 @@ export default function Notifications() {
             Notifications
         </div>
          <ScrollArea className="h-[300px]">
-            {notifications.length > 0 ? (
+            {hasUnread ? (
                 <div className="divide-y">
-                    {notifications.map((notif) => (
-                        <Link key={notif.id} href={notif.href} className="block hover:bg-muted">
+                    {unreadNotifications.map((notif) => (
+                        <Link key={notif.id} href={notif.href} className="block hover:bg-muted" onClick={() => handleMarkAsRead(notif.id)}>
                             <div className="p-4 space-y-1">
                                 <p className={cn("font-semibold text-sm", notif.type === 'overdue' && 'text-destructive')}>{notif.title}</p>
                                 <p className="text-xs text-muted-foreground">{notif.description}</p>
@@ -73,9 +87,11 @@ export default function Notifications() {
                 </div>
             )}
          </ScrollArea>
-         <div className='p-2 border-t'>
-            <Button variant="link" size="sm" className="w-full">Mark all as read</Button>
-         </div>
+         {hasUnread && (
+            <div className='p-2 border-t'>
+                <Button variant="link" size="sm" className="w-full" onClick={handleMarkAllRead}>Mark all as read</Button>
+            </div>
+         )}
       </PopoverContent>
     </Popover>
   );

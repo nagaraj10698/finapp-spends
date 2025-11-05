@@ -109,7 +109,7 @@ export const getColumns = (
     cell: ({ row }) => {
       const type = row.getValue('type') as string;
        const label = type === 'income' ? 'Credit' : 'Debit';
-      return <Badge variant={type === 'income' ? 'default' : 'destructive'} className="capitalize">{label}</Badge>;
+      return <div className="capitalize">{label}</div>;
     },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id))

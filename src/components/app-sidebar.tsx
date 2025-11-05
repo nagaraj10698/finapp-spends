@@ -36,7 +36,6 @@ const menuItems = [
   { href: '/expenses', label: 'Expenses', icon: Landmark },
   { href: '/income', label: 'Income', icon: TrendingUp },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
-  { href: '/insights', label: 'Insights', icon: FilePieChart },
 ];
 
 const bottomMenuItems = [

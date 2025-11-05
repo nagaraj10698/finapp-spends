@@ -16,7 +16,7 @@ export interface Transaction {
   category: string;
   isRecurring?: boolean;
   frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
-  type?: 'income' | 'expense';
+  type: 'income' | 'expense';
 }
 
 export interface Budget {

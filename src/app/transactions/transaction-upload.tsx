@@ -7,6 +7,7 @@ import { UploadCloud, File, X, Loader2 } from 'lucide-react';
 import { processTransactionsAction } from '../actions';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { ProcessTransactionsOutput, UploadedFile, Transaction } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface TransactionUploadProps {
   onProcess: (data: ProcessTransactionsOutput) => void;
@@ -16,6 +17,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -45,8 +47,9 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
     setError(null);
 
     let allTransactions: ProcessTransactionsOutput['transactions'] = [];
-    let filesProcessed = 0;
     const newUploadedFiles: UploadedFile[] = [];
+    const errors: string[] = [];
+    let totalProcessedCount = 0;
 
     for (const file of files) {
         try {
@@ -56,7 +59,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
 
             if (response.success && response.data) {
                 allTransactions = [...allTransactions, ...response.data.transactions];
-                filesProcessed++;
+                totalProcessedCount += response.data.transactions.length;
 
                 const newFile: UploadedFile = {
                     id: `${file.name}-${new Date().toISOString()}`,
@@ -65,16 +68,18 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
                 };
                 newUploadedFiles.push(newFile);
             } else {
-                setError(response.error ?? `An unknown error occurred while processing ${file.name}.`);
-                break; 
+                errors.push(response.error ?? `An unknown error occurred while processing ${file.name}.`);
             }
         } catch (e: any) {
-            setError(e.message || `Failed to process ${file.name}.`);
-            break;
+            errors.push(e.message || `Failed to process ${file.name}.`);
         }
     }
+
+    if (errors.length > 0) {
+      setError(errors.join('\n'));
+    }
     
-    if (filesProcessed > 0) {
+    if (newUploadedFiles.length > 0) {
         // Persist uploaded files history
         const storedFilesString = localStorage.getItem('uploadedFiles');
         const storedFiles: UploadedFile[] = storedFilesString ? JSON.parse(storedFilesString) : [];
@@ -88,7 +93,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
         const newTxs: Transaction[] = allTransactions.map(t => ({
           id: `txn-${Date.now()}-${Math.random()}`,
           description: t.description,
-          amount: Math.abs(t.amount),
+          amount: t.amount,
           date: new Date(t.date),
           category: t.category,
           type: t.amount < 0 ? 'expense' : 'income'
@@ -97,6 +102,11 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
         const updatedTransactions = [...newTxs, ...storedTransactions];
         localStorage.setItem('processedTransactions', JSON.stringify(updatedTransactions));
 
+        toast({
+          title: "Processing Complete",
+          description: `Successfully processed ${totalProcessedCount} transactions from ${newUploadedFiles.length} file(s).`
+        });
+        
         onProcess({ transactions: allTransactions });
         setFiles([]);
     }

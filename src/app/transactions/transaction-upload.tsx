@@ -10,7 +10,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { ProcessTransactionsOutput, UploadedFile, Transaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
-import { collection, writeBatch, serverTimestamp, doc } from 'firebase/firestore';
+import { collection, writeBatch, doc } from 'firebase/firestore';
 
 interface TransactionUploadProps {
   onProcess: (data: ProcessTransactionsOutput) => void;
@@ -68,7 +68,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
                 const fileUploadRef = doc(collection(firestore, 'users', user.uid, 'fileUploads'));
                 const newFile: Omit<UploadedFile, 'id'> = {
                     name: file.name,
-                    uploadDate: serverTimestamp(),
+                    uploadDate: new Date(),
                     fileSize: file.size,
                     fileType: file.type,
                 }

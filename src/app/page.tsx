@@ -15,12 +15,13 @@ import {
   getSpendingByCategory,
   getTotals,
   getUpcomingBills,
-  getBudgets
+  getBudgets,
+  getBudgetForecast
 } from '@/lib/data';
 import type { Transaction, Budget, Category } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, format, isSameMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
+import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, format, isSameMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, differenceInDays } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ import { cn } from '@/lib/utils';
 import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
 import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
 import UpcomingBillsTimeline from '@/components/dashboard/upcoming-bills-timeline';
-import BudgetSummary from '@/components/dashboard/budget-summary';
+import BudgetForecastChart from '@/app/budgets/budget-forecast-chart';
 import RecentTransactions from '@/components/dashboard/recent-transactions';
 
 const PRESET_RANGES = [
@@ -52,11 +53,9 @@ export default function DashboardPage() {
     const { firestore, user } = useFirebase();
     const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
     const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
-    const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
     
     const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
-    const { data: allBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
 
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
       from: startOfMonth(new Date()),
@@ -64,14 +63,18 @@ export default function DashboardPage() {
     });
     const [activePreset, setActivePreset] = useState<string | null>('This Month');
     const [isDatePopoverOpen, setDatePopoverOpen] = useState(false);
+    const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
 
     useEffect(() => {
-        if (dateRange?.from && dateRange?.to) {
+        if (dateRange?.from && dateRange.to) {
           const matchedPreset = PRESET_RANGES.find(p => {
             const range = p.getRange();
             return range.from && range.to && dateRange.from && dateRange.to && isSameDay(range.from, dateRange.from) && isSameDay(range.to, dateRange.to)
           });
           setActivePreset(matchedPreset ? matchedPreset.label : 'Custom');
+          
+          const diff = differenceInDays(dateRange.to, dateRange.from);
+          setPeriod(diff > 31 ? 'monthly' : 'daily');
         } else {
             setActivePreset(null);
         }
@@ -97,12 +100,12 @@ export default function DashboardPage() {
 
     const totals = useMemo(() => getTotals(filteredTransactions), [filteredTransactions]);
     const spendingByCategory = useMemo(() => getSpendingByCategory(filteredTransactions), [filteredTransactions]);
-    const upcomingBills = useMemo(() => getUpcomingBills(allTransactions), [allTransactions]);
+    const upcomingBills = useMemo(() => getUpcomingBills(allTransactions, dateRange), [allTransactions, dateRange]);
     const recentTransactions = useMemo(() => getRecentTransactions(allTransactions, 5), [allTransactions]);
-    const budgetData = useMemo(() => getBudgets(allBudgets, allTransactions), [allBudgets, allTransactions]);
+    const forecastData = useMemo(() => getBudgetForecast(allTransactions, period, dateRange), [allTransactions, period, dateRange]);
 
 
-    if (transactionsLoading || categoriesLoading || budgetsLoading) {
+    if (transactionsLoading || categoriesLoading) {
         return <div>Loading...</div>
     }
 
@@ -200,13 +203,13 @@ export default function DashboardPage() {
         </Card>
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle className="font-headline">Budget</CardTitle>
+            <CardTitle className="font-headline">Expense Forecast</CardTitle>
              <CardDescription>
-              Your spending budget for this month.
+              A projection of your upcoming and unpaid expenses.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <BudgetSummary budgets={budgetData} categories={categories ?? []} />
+            <BudgetForecastChart data={forecastData} />
           </CardContent>
         </Card>
       </div>
@@ -219,7 +222,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow">
-            <UpcomingBillsTimeline bills={upcomingBills} categories={categories ?? []} />
+            <UpcomingBillsTimeline bills={upcomingBills.bills} categories={categories ?? []} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-4">
@@ -235,3 +238,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

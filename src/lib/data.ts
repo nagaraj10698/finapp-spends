@@ -20,7 +20,7 @@ import {
   Wallet,
   TrendingUp,
 } from 'lucide-react';
-import type { Category, Transaction, Budget, Income } from './types';
+import type { Category, Transaction, Budget } from './types';
 import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
@@ -86,15 +86,21 @@ export function getRecentTransactions(allTransactions: Transaction[] | null, cou
     .slice(0, count);
 }
 
-export function getUpcomingBills(allTransactions: Transaction[] | null): Transaction[] {
-  if (!allTransactions) return [];
+export function getUpcomingBills(
+  allTransactions: Transaction[] | null,
+  dateRange?: DateRange
+) {
+  if (!allTransactions) return { bills: [], upcomingCount: 0, overdueCount: 0 };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const rangeEnd = addMonths(today, 3); // Look ahead 3 months
+  const rangeEnd = dateRange?.to ? toDate(dateRange.to) : endOfMonth(addMonths(today, 3));
+  const rangeStart = dateRange?.from ? toDate(dateRange.from) : today;
 
   const upcoming: Transaction[] = [];
+  let upcomingCount = 0;
+  let overdueCount = 0;
 
   const unpaidExpenses = allTransactions.filter(
     (t) => t.type === 'expense' && t.status === 'Un-paid'
@@ -103,61 +109,48 @@ export function getUpcomingBills(allTransactions: Transaction[] | null): Transac
   unpaidExpenses.forEach((t) => {
     const expenseDate = toDate(t.date);
     if (!t.isRecurring) {
-      if (isWithinInterval(expenseDate, { start: today, end: rangeEnd })) {
+      if (isWithinInterval(expenseDate, { start: rangeStart, end: rangeEnd })) {
         upcoming.push({ ...t, date: expenseDate });
+        if (isBefore(expenseDate, today)) {
+          overdueCount++;
+        } else {
+          upcomingCount++;
+        }
       }
     } else {
-      // Handle recurring bills
       let nextDate = expenseDate;
-      while (isBefore(nextDate, today)) {
-        // Find the next occurrence from today
+      // Find the first occurrence that is not in the past (before range start)
+      while (isBefore(nextDate, rangeStart)) {
         switch (t.frequency) {
-          case 'weekly':
-            nextDate = addWeeks(nextDate, 1);
-            break;
-          case 'monthly':
-            nextDate = addMonths(nextDate, 1);
-            break;
-          case 'quarterly':
-            nextDate = addQuarters(nextDate, 1);
-            break;
-          case 'yearly':
-            nextDate = addYears(nextDate, 1);
-            break;
-          default:
-            nextDate = addYears(rangeEnd, 1); // Move way into the future to exit loop
+          case 'weekly': nextDate = addWeeks(nextDate, 1); break;
+          case 'monthly': nextDate = addMonths(nextDate, 1); break;
+          case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
+          case 'yearly': nextDate = addYears(nextDate, 1); break;
+          default: nextDate = addYears(rangeEnd, 1);
         }
       }
 
-      // Add all occurrences within the next 3 months
-      while (isWithinInterval(nextDate, { start: today, end: rangeEnd })) {
-        upcoming.push({
-          ...t,
-          id: `${t.id}-upcoming-${nextDate.toISOString()}`,
-          date: nextDate,
-        });
+      while (isWithinInterval(nextDate, { start: rangeStart, end: rangeEnd })) {
+        upcoming.push({ ...t, id: `${t.id}-${nextDate.toISOString()}`, date: nextDate });
+        if (isBefore(nextDate, today)) {
+          overdueCount++;
+        } else {
+          upcomingCount++;
+        }
 
         switch (t.frequency) {
-          case 'weekly':
-            nextDate = addWeeks(nextDate, 1);
-            break;
-          case 'monthly':
-            nextDate = addMonths(nextDate, 1);
-            break;
-          case 'quarterly':
-            nextDate = addQuarters(nextDate, 1);
-            break;
-          case 'yearly':
-            nextDate = addYears(nextDate, 1);
-            break;
-          default:
-            nextDate = addYears(rangeEnd, 1); // Exit loop
+          case 'weekly': nextDate = addWeeks(nextDate, 1); break;
+          case 'monthly': nextDate = addMonths(nextDate, 1); break;
+          case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
+          case 'yearly': nextDate = addYears(nextDate, 1); break;
+          default: nextDate = addYears(rangeEnd, 1);
         }
       }
     }
   });
 
-  return upcoming.sort((a, b) => toDate(a.date).getTime() - toDate(b.date).getTime());
+  const sortedBills = upcoming.sort((a, b) => toDate(a.date).getTime() - toDate(b.date).getTime());
+  return { bills: sortedBills, upcomingCount, overdueCount };
 }
 
 
@@ -266,6 +259,7 @@ export function getBudgetForecast(
                       const amount = Math.abs(t.amount);
                       // Treat all future recurring items as "open" for forecasting
                       if (isBefore(nextDate, today)) {
+                        // For recurring, we might not have a per-instance status, so we forecast based on date
                         overdueForPeriod += amount;
                       } else {
                         openForPeriod += amount;
@@ -293,3 +287,5 @@ export function getBudgetForecast(
 
   return forecastData;
 }
+
+    

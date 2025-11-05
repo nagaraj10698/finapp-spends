@@ -2,7 +2,7 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { Income } from '@/lib/types';
+import { Income, Transaction } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
 import {
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import StatusDropdown from './status-dropdown';
 
 export const columns: ColumnDef<Income>[] = [
   {
@@ -36,6 +37,17 @@ export const columns: ColumnDef<Income>[] = [
     cell: ({ row }) => {
       const date = row.getValue('date') as Date;
       return <div className="pl-4">{date.toLocaleDateString()}</div>;
+    },
+  },
+  {
+    accessorKey: 'status',
+    header: 'Payment Status',
+    cell: ({ row }) => {
+      const transaction = row.original;
+      return <StatusDropdown transaction={transaction as Transaction} />;
+    },
+     filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
     },
   },
   {

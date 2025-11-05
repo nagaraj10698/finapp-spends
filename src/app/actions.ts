@@ -29,3 +29,18 @@ export async function updateTransactionStatus(transactionId: string, status: 'Pa
         return { success: false, error: 'Failed to update transaction status.' };
     }
 }
+
+export async function updateIncomeStatus(transactionId: string, status: 'Received' | 'Pending', userId: string) {
+    if (!userId) {
+        return { success: false, error: 'Authentication required.' };
+    }
+    try {
+        const { firestore } = initializeFirebase();
+        const transactionRef = doc(firestore, 'users', userId, 'transactions', transactionId);
+        await updateDoc(transactionRef, { status: status });
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating transaction status:", error);
+        return { success: false, error: 'Failed to update transaction status.' };
+    }
+}

@@ -9,12 +9,13 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import type { Transaction, Income, Category } from '@/lib/types';
 import { collection, writeBatch, doc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { DataTableToolbar } from '../transactions/data-table-toolbar';
-import { getColumns } from '../transactions/columns';
+import { DataTableToolbar } from './data-table-toolbar';
+import { getColumns } from './columns';
 import EditTransactionDialog from '../transactions/edit-transaction-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
+import { columns } from './columns';
 
 
 export default function IncomePage() {
@@ -22,9 +23,7 @@ export default function IncomePage() {
   const { firestore, user } = useFirebase();
 
   const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
-  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
-  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const [isEditOpen, setEditOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
@@ -91,9 +90,7 @@ export default function IncomePage() {
     }
   };
 
-  const tableColumns = useMemo(() => getColumns(categories ?? [], handleEdit, handleDeleteRequest), [categories]);
-  
-  if (transactionsLoading || categoriesLoading) {
+  if (transactionsLoading) {
     return <div>Loading...</div>;
   }
 
@@ -109,7 +106,7 @@ export default function IncomePage() {
             </Button>
         </AddIncomeDialog>
        </div>
-      <DataTable columns={tableColumns} data={incomeData} toolbar={<DataTableToolbar onDelete={handleDelete as any} categories={categories ?? []}/>} />
+      <DataTable columns={columns} data={incomeData} toolbar={<DataTableToolbar onDelete={handleDelete as any}/>} />
     </div>
     {transactionToEdit && (
         <EditTransactionDialog

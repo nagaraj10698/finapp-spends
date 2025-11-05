@@ -22,7 +22,7 @@ export interface Transaction {
   type: 'income' | 'expense';
   fileURL?: string;
   fileName?: string;
-  status?: 'Paid' | 'Un-paid';
+  status?: 'Paid' | 'Un-paid' | 'Received' | 'Pending';
 }
 
 export interface Budget {
@@ -42,4 +42,5 @@ export interface Income {
   description: string;
   amount: number;
   date: Date | Timestamp;
+  status?: 'Received' | 'Pending';
 }

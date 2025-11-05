@@ -42,6 +42,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 const formSchema = z.object({
@@ -50,6 +51,7 @@ const formSchema = z.object({
   category: z.string().min(1, 'Please select a category.'),
   date: z.date(),
   attachment: z.instanceof(File).optional(),
+  status: z.enum(['Received', 'Pending']).optional(),
 });
 
 export default function AddIncomeDialog({children}: {children: ReactNode}) {
@@ -68,6 +70,7 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
       description: '',
       category: 'Salary',
       date: new Date(),
+      status: 'Received',
     },
   });
 
@@ -92,6 +95,7 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
             category: values.category,
             date: values.date,
             type: 'income',
+            status: values.status,
         };
         
         if (values.attachment) {
@@ -143,6 +147,36 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+             <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Status</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="Received" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Received</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="Pending" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Pending</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
              <FormField
               control={form.control}
               name="description"

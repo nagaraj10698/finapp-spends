@@ -47,6 +47,7 @@ export * from './firestore/use-collection';
 export * from './firestore/use-doc';
 export * from './non-blocking-updates';
 export * from './non-blocking-login';
+export * from './auth/use-user';
 export * from './errors';
 export * from './error-emitter';
 
@@ -60,5 +61,4 @@ const initializeFirebaseServer = () => {
     return getSdks(serverApp);
 };
 
-export { initializeFirebaseServer as initializeFirebase };
-export { initializeFirebaseServer as initializeServer };
+export { initializeFirebaseServer as initializeFirebase, initializeFirebaseServer as initializeServer };

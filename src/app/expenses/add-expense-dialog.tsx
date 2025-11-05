@@ -87,7 +87,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
       category: '',
       date: new Date(),
       isRecurring: false,
-      status: 'Paid',
+      status: 'Un-paid',
     },
   });
 

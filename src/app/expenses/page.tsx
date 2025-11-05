@@ -11,7 +11,8 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import type { Transaction, Category } from '@/lib/types';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { DataTableToolbar } from './data-table-toolbar';
+import { DataTableToolbar } from '../transactions/data-table-toolbar';
+import { getColumns } from '../transactions/columns';
 
 export default function ExpensesPage() {
     const { toast } = useToast();
@@ -56,6 +57,8 @@ export default function ExpensesPage() {
         console.error("Error deleting transactions: ", error);
         }
     };
+    
+    const tableColumns = useMemo(() => getColumns(categories ?? []), [categories]);
 
 
     if (transactionsLoading || categoriesLoading) {
@@ -73,7 +76,7 @@ export default function ExpensesPage() {
             </Button>
         </AddExpenseDialog>
        </div>
-      <DataTable columns={columns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDelete} categories={categories ?? []}/>} />
+      <DataTable columns={tableColumns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDelete} categories={categories ?? []}/>} />
     </div>
   );
 }

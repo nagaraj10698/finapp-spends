@@ -1,16 +1,16 @@
 
 'use client';
 import { useMemo } from 'react';
-import { columns } from './columns';
 import { DataTable } from '@/components/ui/data-table';
 import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import type { Transaction, Income } from '@/lib/types';
+import type { Transaction, Income, Category } from '@/lib/types';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { DataTableToolbar } from './data-table-toolbar';
+import { DataTableToolbar } from '../transactions/data-table-toolbar';
+import { getColumns } from '../transactions/columns';
 
 
 export default function IncomePage() {
@@ -18,7 +18,9 @@ export default function IncomePage() {
   const { firestore, user } = useFirebase();
 
   const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
-  const { data: allTransactions, isLoading } = useCollection<Transaction>(transactionsCollection);
+  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+  const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
+  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const incomeData = useMemo(() => {
     if (!allTransactions) return [];
@@ -52,8 +54,10 @@ export default function IncomePage() {
       console.error("Error deleting transactions: ", error);
     }
   };
+
+  const tableColumns = useMemo(() => getColumns(categories ?? []), [categories]);
   
-  if (isLoading) {
+  if (transactionsLoading || categoriesLoading) {
     return <div>Loading...</div>;
   }
 
@@ -68,7 +72,7 @@ export default function IncomePage() {
             </Button>
         </AddIncomeDialog>
        </div>
-      <DataTable columns={columns} data={incomeData as unknown as Income[]} toolbar={<DataTableToolbar onDelete={handleDelete as any}/>} />
+      <DataTable columns={tableColumns} data={incomeData} toolbar={<DataTableToolbar onDelete={handleDelete as any} categories={categories ?? []}/>} />
     </div>
   );
 }

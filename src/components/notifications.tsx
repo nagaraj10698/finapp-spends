@@ -31,8 +31,8 @@ export default function Notifications() {
     return getNotifications(allTransactions, allBudgets);
   }, [allTransactions, allBudgets]);
 
-  const unreadNotifications = useMemo(() => {
-    return allNotifications.filter(n => !readNotificationIds.includes(n.id));
+  const unreadNotificationsCount = useMemo(() => {
+    return allNotifications.filter(n => !readNotificationIds.includes(n.id)).length;
   }, [allNotifications, readNotificationIds]);
 
   const handleMarkAllRead = () => {
@@ -53,7 +53,8 @@ export default function Notifications() {
     )
   }
   
-  const hasUnread = unreadNotifications.length > 0;
+  const hasUnread = unreadNotificationsCount > 0;
+  const hasNotifications = allNotifications.length > 0;
 
   return (
     <Popover>
@@ -66,32 +67,39 @@ export default function Notifications() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-        <div className="p-4 font-medium border-b">
-            Notifications
+        <div className="p-4 font-medium border-b flex justify-between items-center">
+            <span>Notifications</span>
+            {hasUnread && (
+              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={handleMarkAllRead}>Mark all as read</Button>
+            )}
         </div>
          <ScrollArea className="h-[300px]">
-            {hasUnread ? (
+            {hasNotifications ? (
                 <div className="divide-y">
-                    {unreadNotifications.map((notif) => (
-                        <Link key={notif.id} href={notif.href} className="block hover:bg-muted" onClick={() => handleMarkAsRead(notif.id)}>
-                            <div className="p-4 space-y-1">
-                                <p className={cn("font-semibold text-sm", notif.type === 'overdue' && 'text-destructive')}>{notif.title}</p>
-                                <p className="text-xs text-muted-foreground">{notif.description}</p>
-                            </div>
-                        </Link>
-                    ))}
+                    {allNotifications.map((notif) => {
+                        const isRead = readNotificationIds.includes(notif.id);
+                        return (
+                            <Link 
+                                key={notif.id} 
+                                href={notif.href} 
+                                className={cn("block hover:bg-muted/50 transition-colors", isRead && "opacity-60")}
+                                onClick={() => handleMarkAsRead(notif.id)}
+                            >
+                                <div className={cn("p-4 space-y-1 relative", !isRead && "bg-accent/50")}>
+                                    {!isRead && <span className="absolute left-2 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-primary" />}
+                                    <p className={cn("font-semibold text-sm", notif.type === 'overdue' && 'text-destructive')}>{notif.title}</p>
+                                    <p className="text-xs text-muted-foreground">{notif.description}</p>
+                                </div>
+                            </Link>
+                        )
+                    })}
                 </div>
             ): (
                 <div className="p-4 text-sm text-center text-muted-foreground">
-                    You&apos;re all caught up!
+                    You're all caught up!
                 </div>
             )}
          </ScrollArea>
-         {hasUnread && (
-            <div className='p-2 border-t'>
-                <Button variant="link" size="sm" className="w-full" onClick={handleMarkAllRead}>Mark all as read</Button>
-            </div>
-         )}
       </PopoverContent>
     </Popover>
   );

@@ -48,6 +48,7 @@ export default function BudgetsPage() {
     to: endOfMonth(addMonths(new Date(), 2)),
   });
   const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [isDatePopoverOpen, setDatePopoverOpen] = useState(false);
 
   useEffect(() => {
     if (dateRange?.from && dateRange?.to) {
@@ -102,7 +103,7 @@ export default function BudgetsPage() {
                     <CardDescription>This chart shows your unpaid and upcoming recurring expenses.</CardDescription>
                 </div>
                 <div className='flex items-center gap-2'>
-                    <Popover>
+                    <Popover open={isDatePopoverOpen} onOpenChange={setDatePopoverOpen}>
                         <PopoverTrigger asChild>
                         <Button
                             id="date"
@@ -128,34 +129,39 @@ export default function BudgetsPage() {
                             )}
                         </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 flex" align="end">
-                            <div className="flex flex-col space-y-1 p-2 border-r">
-                                {PRESET_RANGES.map(({label, getRange}) => (
-                                     <Button 
-                                        key={label}
-                                        variant={activePreset === label ? 'default': 'ghost'} 
-                                        className="justify-start" 
-                                        onClick={() => handlePresetClick(label, getRange)}
+                        <PopoverContent className="w-auto p-0 flex flex-col" align="end">
+                            <div className='flex'>
+                                <div className="flex flex-col space-y-1 p-2 border-r">
+                                    {PRESET_RANGES.map(({label, getRange}) => (
+                                        <Button 
+                                            key={label}
+                                            variant={activePreset === label ? 'default': 'ghost'} 
+                                            className="justify-start" 
+                                            onClick={() => handlePresetClick(label, getRange)}
+                                        >
+                                            {label}
+                                        </Button>
+                                    ))}
+                                    <Button
+                                        variant={activePreset === 'Custom' ? 'default': 'ghost'}
+                                        className="justify-start"
+                                        onClick={() => handlePresetClick('Custom')}
                                     >
-                                        {label}
+                                        Custom
                                     </Button>
-                                ))}
-                                <Button
-                                    variant={activePreset === 'Custom' ? 'default': 'ghost'}
-                                    className="justify-start"
-                                    onClick={() => handlePresetClick('Custom')}
-                                >
-                                    Custom
-                                </Button>
+                                </div>
+                                <Calendar
+                                    initialFocus
+                                    mode="range"
+                                    defaultMonth={dateRange?.from}
+                                    selected={dateRange}
+                                    onSelect={setDateRange}
+                                    numberOfMonths={2}
+                                />
                             </div>
-                            <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={dateRange?.from}
-                                selected={dateRange}
-                                onSelect={setDateRange}
-                                numberOfMonths={2}
-                            />
+                            <div className="flex justify-end p-2 border-t">
+                                <Button size="sm" onClick={() => setDatePopoverOpen(false)}>Apply</Button>
+                            </div>
                         </PopoverContent>
                     </Popover>
                 </div>

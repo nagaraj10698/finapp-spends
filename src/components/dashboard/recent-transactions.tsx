@@ -1,3 +1,4 @@
+
 import type { Transaction, Category } from '@/lib/types';
 import {
   Table,
@@ -42,7 +43,7 @@ export default function RecentTransactions({
                 {transaction.description}
               </TableCell>
               <TableCell>
-                {category && Icon && (
+                {category && Icon ? (
                   <Badge
                     variant="outline"
                     className="flex w-fit items-center gap-2"
@@ -50,6 +51,8 @@ export default function RecentTransactions({
                     <Icon className={cn('h-3 w-3', category.color)} />
                     {transaction.category}
                   </Badge>
+                ) : (
+                  <Badge variant="secondary">{transaction.category}</Badge>
                 )}
               </TableCell>
               <TableCell className={cn("text-right flex items-center justify-end gap-1", amount < 0 ? 'text-red-500' : 'text-green-500')}>
@@ -65,3 +68,4 @@ export default function RecentTransactions({
     </Table>
   );
 }
+

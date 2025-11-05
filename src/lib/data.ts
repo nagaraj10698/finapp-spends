@@ -1,3 +1,4 @@
+
 import {
   ShoppingBag,
   HeartPulse,
@@ -78,7 +79,8 @@ function toDate(date: Date | Timestamp): Date {
 export function getRecentTransactions(allTransactions: Transaction[], count: number): Transaction[] {
   if (!allTransactions) return [];
   return [...allTransactions]
-    .sort((a,b) => toDate(b.date).getTime() - toDate(a.date).getTime())
+    .map(t => ({...t, date: toDate(t.date)}))
+    .sort((a,b) => b.date.getTime() - a.date.getTime())
     .slice(0, count);
 }
 
@@ -177,3 +179,4 @@ export function getBudgets(budgets: Budget[], allTransactions: Transaction[] | n
         };
       });
 }
+

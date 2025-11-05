@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { Transaction, Category } from '@/lib/types';
@@ -23,8 +22,8 @@ export default function UpcomingBillsTimeline({ bills, categories }: UpcomingBil
   const { user } = useFirebase();
   const dateButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  const [today, setToday] = useState(startOfDay(new Date()));
-  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [today, setToday] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
   useEffect(() => {
     const todayDate = startOfDay(new Date());
@@ -42,10 +41,12 @@ export default function UpcomingBillsTimeline({ bills, categories }: UpcomingBil
 
 
   const dates = useMemo(() => {
+    if (!today) return [];
     return Array.from({ length: 14 }, (_, i) => addDays(today, i));
   }, [today]);
 
   const billsByDate = useMemo(() => {
+    if (!today) return new Map();
     const map = new Map<string, { upcoming: Transaction[], overdue: Transaction[] }>();
     bills.forEach(bill => {
       const billDate = startOfDay(bill.date as Date);
@@ -65,6 +66,7 @@ export default function UpcomingBillsTimeline({ bills, categories }: UpcomingBil
   }, [bills, today]);
 
   const selectedDayBills = useMemo(() => {
+    if (!selectedDate) return [];
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const dayData = billsByDate.get(dateStr);
     return dayData ? [...dayData.overdue, ...dayData.upcoming] : [];
@@ -93,6 +95,11 @@ export default function UpcomingBillsTimeline({ bills, categories }: UpcomingBil
         });
     }
   };
+  
+  if (!today || !selectedDate) {
+    // Render a placeholder or loader while waiting for the client-side mount
+    return <div className="h-[250px] w-full animate-pulse rounded-lg bg-muted" />;
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -173,5 +180,3 @@ export default function UpcomingBillsTimeline({ bills, categories }: UpcomingBil
     </div>
   );
 }
-
-    

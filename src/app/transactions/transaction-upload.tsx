@@ -108,15 +108,15 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
             <CardContent className="space-y-4">
               <div
                 {...getRootProps()}
-                className={`flex justify-center w-full rounded-lg border-2 border-dashed border-muted-foreground/25 px-6 py-6 text-center transition-colors ${
+                className={`flex justify-center w-full rounded-lg border-2 border-dashed border-muted-foreground/25 px-2 py-2 text-center transition-colors ${
                   isDragActive ? 'bg-accent' : 'bg-transparent'
                 } ${file ? 'cursor-default' : 'cursor-pointer'}`}
               >
                 <input {...getInputProps()} />
                 {file ? (
                   <div className="flex flex-col items-center gap-2 text-foreground">
-                    <File className="h-10 w-10" />
-                    <p>{file.name}</p>
+                    <File className="h-8 w-8" />
+                    <p className="text-sm">{file.name}</p>
                     <Button
                       variant="destructive"
                       size="sm"
@@ -124,7 +124,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
                         e.stopPropagation();
                         removeFile();
                       }}
-                      className="mt-2"
+                      className="mt-1"
                       disabled={loading}
                     >
                       <X className="mr-2 h-4 w-4" /> Remove
@@ -132,8 +132,8 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
                   </div>
                 ) : (
                   <div className="text-center">
-                    <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground" />
-                    <p className="mt-2 flex justify-center text-sm leading-6 text-muted-foreground">
+                    <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <p className="mt-1 flex justify-center text-xs leading-6 text-muted-foreground">
                       <span className="font-semibold text-primary">
                         Upload a file
                       </span>

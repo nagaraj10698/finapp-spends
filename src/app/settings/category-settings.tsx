@@ -1,11 +1,11 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import type { Category } from '@/lib/types';
 import {
   DropdownMenu,
@@ -13,11 +13,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { getIconByName } from '@/lib/data';
+import { defaultCategories, getIconByName } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { AddCategoryDialog } from './add-category-dialog';
 import { EditCategoryDialog } from './edit-category-dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 
 function CategoryList({ title, categories, onEdit, onDelete }: { title: string, categories: Category[], onEdit: (cat: Category) => void, onDelete: (cat: Category) => void }) {
@@ -25,7 +25,7 @@ function CategoryList({ title, categories, onEdit, onDelete }: { title: string, 
     <div className="space-y-2">
       <h3 className="font-semibold">{title}</h3>
       <div className="rounded-md border">
-        {categories.map((cat) => {
+        {categories.length > 0 ? categories.map((cat) => {
           const Icon = getIconByName(cat.icon);
           return (
             <div key={cat.id} className="flex items-center justify-between p-3 border-b last:border-b-0">
@@ -52,7 +52,9 @@ function CategoryList({ title, categories, onEdit, onDelete }: { title: string, 
               </DropdownMenu>
             </div>
           );
-        })}
+        }) : (
+          <div className="p-3 text-center text-sm text-muted-foreground">No categories found.</div>
+        )}
       </div>
     </div>
   );
@@ -68,6 +70,32 @@ export default function CategorySettings() {
   const [isEditOpen, setEditOpen] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+
+  useEffect(() => {
+    // One-time check to populate default categories for existing users
+    if (user && firestore && !isLoading && categories && categories.length === 0) {
+      const batch = writeBatch(firestore);
+      const userCategoriesRef = collection(firestore, 'users', user.uid, 'categories');
+      defaultCategories.forEach(category => {
+        const newCatRef = doc(userCategoriesRef);
+        batch.set(newCatRef, category);
+      });
+      batch.commit().then(() => {
+        toast({
+          title: "Default Categories Added",
+          description: "We've added some default categories to get you started.",
+        });
+      }).catch(err => {
+        console.error("Failed to add default categories:", err);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not add default categories."
+        })
+      });
+    }
+  }, [user, firestore, isLoading, categories, toast]);
+
 
   const incomeCategories = categories?.filter(c => c.type === 'income') ?? [];
   const expenseCategories = categories?.filter(c => c.type === 'expense') ?? [];

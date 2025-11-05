@@ -61,26 +61,10 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
     setLoading(true);
     setError(null);
 
-    const readFileAsText = (file: File): Promise<string> => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            resolve(event.target.result as string);
-          } else {
-            reject(new Error("Failed to read file."));
-          }
-        };
-        reader.onerror = () => {
-          reject(new Error("Failed to read file."));
-        };
-        reader.readAsText(file);
-      });
-    };
-
     try {
-      const fileContent = await readFileAsText(file);
-      const response = await processTransactionsAction(fileContent);
+        const formData = new FormData();
+        formData.append('file', file);
+      const response = await processTransactionsAction(formData);
       
       if (response.success && response.data) {
         onProcess(response.data);

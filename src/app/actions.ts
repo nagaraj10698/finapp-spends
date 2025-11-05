@@ -5,6 +5,7 @@ import { getSpendingInsights, type SpendingInsightsInput } from "@/ai/flows/spen
 import { processTransactions } from "@/ai/flows/process-transactions";
 import { categories, getBudgets, getMockExpenses, getMockIncome, getTotals } from "@/lib/data";
 import type { ProcessTransactionsInput } from "@/lib/types";
+import { parseFile } from "@/lib/file-parser";
 
 export async function getSpendingInsightsAction() {
   try {
@@ -37,8 +38,15 @@ export async function getSpendingInsightsAction() {
 }
 
 
-export async function processTransactionsAction(fileContent: string) {
+export async function processTransactionsAction(formData: FormData) {
     try {
+        const file = formData.get('file') as File;
+        if (!file) {
+            return { success: false, error: 'No file uploaded.' };
+        }
+
+        const fileContent = await parseFile(file);
+
         const input: ProcessTransactionsInput = {
             fileContent,
             categories: categories.map(c => c.name),

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -91,10 +90,10 @@ export default function SignupPage() {
       });
 
       // Create default categories for the user
-      const categoriesCollection = collection(firestore, 'users', user.uid, 'categories');
+      const categoriesRef = collection(firestore, `users/${user.uid}/categories`);
       defaultCategories.forEach(category => {
-          const categoryRef = doc(categoriesCollection);
-          batch.set(categoryRef, category);
+          const categoryDoc = doc(categoriesRef);
+          batch.set(categoryDoc, category);
       });
       
       await batch.commit();

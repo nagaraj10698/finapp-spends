@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
     ],
   },
   serverActions: {
-    bodySizeLimit: '2mb', // Default is 1mb
+    bodySizeLimit: '6mb',
     maxDuration: 30, // Default is 60s, but for some providers it's less. Let's set it explicitly.
   },
 };

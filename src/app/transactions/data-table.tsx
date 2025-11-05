@@ -70,7 +70,7 @@ export function DataTable<TData, TValue>({
           className="max-w-sm"
         />
         <div className="text-sm text-muted-foreground">
-            Total Transactions: {table.getFilteredRowModel().rows.length}
+            Total Transactions: {data.length}
         </div>
       </div>
       <div className="rounded-md border">

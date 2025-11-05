@@ -13,7 +13,7 @@ import { Check, Circle } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
-import { updateIncomeStatus } from '../actions';
+import { updateTransactionStatus } from '../actions';
 
 
 export default function StatusDropdown({ transaction }: { transaction: Transaction }) {
@@ -30,7 +30,7 @@ export default function StatusDropdown({ transaction }: { transaction: Transacti
         return
       };
       
-      const result = await updateIncomeStatus(transaction.id, status, user.uid);
+      const result = await updateTransactionStatus(transaction.id, status, user.uid);
       if (result.success) {
         toast({
             title: "Status Updated",
@@ -40,9 +40,8 @@ export default function StatusDropdown({ transaction }: { transaction: Transacti
          toast({
           variant: "destructive",
           title: "Update Failed",
-          description: "Could not update transaction status.",
+          description: result.error,
         });
-        console.error("Error updating status:", result.error);
       }
     };
     

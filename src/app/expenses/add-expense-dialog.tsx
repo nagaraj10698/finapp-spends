@@ -55,7 +55,7 @@ const formSchema = z
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
     attachment: z.instanceof(File).optional(),
-    status: z.enum(['Paid', 'Un-paid']).optional(),
+    status: z.enum(['Paid', 'Un-paid']),
   })
   .refine(
     (data) => {

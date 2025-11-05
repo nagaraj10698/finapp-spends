@@ -175,7 +175,7 @@ export const getColumns = (
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: 'Payment Status',
     cell: ({ row }) => {
       const transaction = row.original;
       if (transaction.type !== 'expense' || !transaction.status) return null;

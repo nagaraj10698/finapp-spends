@@ -108,7 +108,7 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
             <CardContent className="space-y-4">
               <div
                 {...getRootProps()}
-                className={`flex justify-center w-full rounded-lg border-2 border-dashed border-muted-foreground/25 px-6 py-10 text-center transition-colors ${
+                className={`flex justify-center w-full rounded-lg border-2 border-dashed border-muted-foreground/25 px-6 py-6 text-center transition-colors ${
                   isDragActive ? 'bg-accent' : 'bg-transparent'
                 } ${file ? 'cursor-default' : 'cursor-pointer'}`}
               >
@@ -132,8 +132,8 @@ export default function TransactionUpload({ onProcess }: TransactionUploadProps)
                   </div>
                 ) : (
                   <div className="text-center">
-                    <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-4 flex justify-center text-sm leading-6 text-muted-foreground">
+                    <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground" />
+                    <p className="mt-2 flex justify-center text-sm leading-6 text-muted-foreground">
                       <span className="font-semibold text-primary">
                         Upload a file
                       </span>

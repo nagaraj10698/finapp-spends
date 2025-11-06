@@ -55,6 +55,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDatePickerOpen, setDatePickerOpen] = useState(false);
   
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -205,7 +206,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date</FormLabel>
-                  <Popover>
+                  <Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -228,7 +229,10 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setDatePickerOpen(false);
+                        }}
                         initialFocus
                       />
                     </PopoverContent>

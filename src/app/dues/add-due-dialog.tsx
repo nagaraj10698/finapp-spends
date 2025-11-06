@@ -25,25 +25,61 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
-import { useFirebase, addDocumentNonBlocking } from '@/firebase';
+import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import type { Due } from '@/lib/types';
+import type { Due, Category } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getIconByName } from '@/lib/data';
 
-const formSchema = z.object({
-  dueName: z.string().min(1, 'Due name is required.'),
-  dueAmount: z.coerce.number().positive('Amount must be positive.'),
-  dueDate: z.date({ required_error: 'Due date is required.' }),
-});
+const formSchema = z
+  .object({
+    dueName: z.string().min(1, 'Due name is required.'),
+    dueAmount: z.coerce.number().positive('Amount must be positive.'),
+    dueDate: z.date({ required_error: 'Start date is required.' }),
+    category: z.string().min(1, 'Please select a category.'),
+    isRecurring: z.boolean(),
+    frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
+    recurrenceEndDate: z.date().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.isRecurring && !data.frequency) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: 'Please select a frequency for recurring dues.',
+      path: ['frequency'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.isRecurring && !data.recurrenceEndDate) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: 'End date is required for recurring dues.',
+      path: ['recurrenceEndDate'],
+    }
+  );
+
 
 export default function AddDueDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
+
+  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,8 +87,12 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
       dueName: '',
       dueAmount: 0,
       dueDate: new Date(),
+      isRecurring: false,
+      category: ''
     },
   });
+
+  const isRecurring = form.watch('isRecurring');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore || !user) {
@@ -64,13 +104,20 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
         return;
     }
     
+    const selectedCategory = categories?.find(c => c.name === values.category);
+
     const dueCollection = collection(firestore, 'users', user.uid, 'dues');
     const newDue: Omit<Due, 'id'> = {
         userId: user.uid,
         dueName: values.dueName,
         dueAmount: values.dueAmount,
         dueDate: values.dueDate,
-        isPaid: false,
+        isPaid: false, // This field might be deprecated based on new logic
+        isRecurring: values.isRecurring,
+        category: values.category,
+        categoryId: selectedCategory?.id || null,
+        frequency: values.frequency,
+        recurrenceEndDate: values.recurrenceEndDate
     };
 
     await addDocumentNonBlocking(dueCollection, newDue);
@@ -83,6 +130,8 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
     setOpen(false);
   }
 
+  const expenseCategories = categories?.filter(c => c.type === 'expense');
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -92,7 +141,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
         <DialogHeader>
           <DialogTitle>Add New Due</DialogTitle>
           <DialogDescription>
-            Set up a due for an upcoming payment.
+            Set up a due for an upcoming bill or subscription.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -110,6 +159,41 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger disabled={categoriesLoading}>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {expenseCategories?.map((cat) => {
+                        const Icon = getIconByName(cat.icon);
+                        return (
+                          <SelectItem key={cat.id} value={cat.name}>
+                            <div className="flex items-center gap-2">
+                              <Icon className={cn('h-4 w-4', cat.color)} />
+                              {cat.name}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             <FormField
               control={form.control}
               name="dueAmount"
@@ -126,12 +210,63 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="isRecurring"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Recurring Due</FormLabel>
+                     <p className="text-xs text-muted-foreground">
+                      Is this a recurring payment?
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {isRecurring && (
+              <FormField
+                control={form.control}
+                name="frequency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Frequency</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a frequency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
             <FormField
               control={form.control}
               name="dueDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Due Date</FormLabel>
+                  <FormLabel>{isRecurring ? 'First Due Date' : 'Due Date'}</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -155,6 +290,39 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
                 </FormItem>
               )}
             />
+
+            {isRecurring && (
+               <FormField
+                control={form.control}
+                name="recurrenceEndDate"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>End Date</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={'outline'}
+                            className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                            )}
+                            >
+                            {field.value ? format(field.value, 'PPP') : <span>Pick an end date</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            )}
+
             <DialogFooter>
               <Button type="submit">Save Due</Button>
             </DialogFooter>

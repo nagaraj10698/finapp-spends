@@ -54,8 +54,16 @@ export interface Due {
     userId: string;
     dueName: string;
     dueAmount: number;
-    dueDate: Date | Timestamp;
+    dueDate: Date | Timestamp; // Represents the START date for recurring dues
     isPaid: boolean;
+    isRecurring: boolean;
+    frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+    recurrenceEndDate?: Date | Timestamp;
+    category: string;
+    categoryId: string | null;
+    // For recurring instances
+    instanceDate?: Date; // The specific date for this instance of a recurring due
+    paidDate?: Date | Timestamp | null;
 }
 
 export interface Notification {

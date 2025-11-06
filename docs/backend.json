@@ -210,7 +210,7 @@
         },
         "dueDate": {
           "type": "string",
-          "description": "Date of the due.",
+          "description": "Start date of the due.",
           "format": "date-time"
         },
         "dueAmount": {
@@ -220,6 +220,28 @@
         "isPaid": {
           "type": "boolean",
           "description": "Whether the due has been paid."
+        },
+        "isRecurring": {
+          "type": "boolean",
+          "description": "Whether the due is recurring."
+        },
+        "frequency": {
+            "type": "string",
+            "description": "Frequency of recurring due.",
+            "enum": ["weekly", "monthly", "quarterly", "yearly"]
+        },
+        "recurrenceEndDate": {
+            "type": "string",
+            "description": "End date for the recurring due.",
+            "format": "date-time"
+        },
+        "categoryId": {
+          "type": ["string", "null"],
+          "description": "Reference to Category."
+        },
+        "category": {
+          "type": "string",
+          "description": "Name of the category for the due."
         }
       },
       "required": [
@@ -228,7 +250,8 @@
         "dueName",
         "dueDate",
         "dueAmount",
-        "isPaid"
+        "category",
+        "categoryId"
       ]
     }
   },

@@ -10,10 +10,12 @@ import {
 } from '@/components/ui/card';
 import type { Due } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Check, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
+import { Check, Calendar as CalendarIcon, AlertTriangle, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { format, isBefore, startOfToday } from 'date-fns';
+import { toDate } from '@/lib/data';
+
 
 interface DueCardProps {
   due: Due;
@@ -21,13 +23,8 @@ interface DueCardProps {
 }
 
 export default function DueCard({ due, onTogglePaid }: DueCardProps) {
-    const toDate = (date: any): Date => {
-        if (date.toDate) return date.toDate();
-        return new Date(date);
-    };
-
-    const dueDate = toDate(due.dueDate);
-    const isOverdue = !due.isPaid && isBefore(dueDate, startOfToday());
+    const displayDate = due.instanceDate ? toDate(due.instanceDate) : toDate(due.dueDate);
+    const isOverdue = !due.isPaid && isBefore(displayDate, startOfToday());
     
   return (
     <Card className={cn(
@@ -36,7 +33,15 @@ export default function DueCard({ due, onTogglePaid }: DueCardProps) {
         isOverdue && "border-destructive/50 bg-destructive/5"
     )}>
       <CardHeader className="flex-row items-center justify-between pb-2">
-        <CardTitle className="font-headline text-lg">{due.dueName}</CardTitle>
+        <div className='space-y-1.5'>
+            <CardTitle className="font-headline text-lg">{due.dueName}</CardTitle>
+            {due.isRecurring && (
+                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Repeat className="h-3 w-3" />
+                    <span>Recurring {due.frequency}</span>
+                </div>
+            )}
+        </div>
         {isOverdue && <AlertTriangle className="h-5 w-5 text-destructive" />}
       </CardHeader>
       <CardContent className="space-y-2">
@@ -46,7 +51,7 @@ export default function DueCard({ due, onTogglePaid }: DueCardProps) {
         </div>
         <div className="text-xs text-muted-foreground flex items-center gap-1.5">
             <CalendarIcon className="h-3 w-3" />
-            <span>Due on {format(dueDate, 'LLL dd, yyyy')}</span>
+            <span>Due on {format(displayDate, 'LLL dd, yyyy')}</span>
         </div>
       </CardContent>
       <CardFooter className="mt-auto">
@@ -54,9 +59,19 @@ export default function DueCard({ due, onTogglePaid }: DueCardProps) {
             className="w-full" 
             variant={due.isPaid ? 'secondary' : 'default'}
             onClick={() => onTogglePaid(due)}
+            disabled={due.isPaid}
         >
-            <Check className="mr-2 h-4 w-4" />
-            {due.isPaid ? 'Mark as Unpaid' : 'Mark as Paid'}
+            {due.isPaid ? (
+                <>
+                    <Check className="mr-2 h-4 w-4" />
+                    Paid on {due.paidDate ? format(toDate(due.paidDate), 'LLL dd') : ''}
+                </>
+            ) : (
+                <>
+                    <Check className="mr-2 h-4 w-4" />
+                    Mark as Paid
+                </>
+            )}
         </Button>
       </CardFooter>
     </Card>

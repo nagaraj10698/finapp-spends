@@ -20,7 +20,7 @@ import {
   Wallet,
   TrendingUp,
 } from 'lucide-react';
-import type { Category, Transaction, Budget, Notification } from './types';
+import type { Category, Transaction, Budget, Notification, Due } from './types';
 import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, addDays, isAfter, startOfDay } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
@@ -73,7 +73,7 @@ export const getCategoryByName = (name: string, categories: Category[]) => categ
 
 // --- Functions that operate on live data ---
 
-function toDate(date: Date | Timestamp): Date {
+export function toDate(date: Date | Timestamp): Date {
     return date instanceof Date ? date : (date as Timestamp).toDate();
 }
 
@@ -119,8 +119,10 @@ export function getUpcomingBills(
       }
     } else {
       let nextDate = expenseDate;
-      // Find the first occurrence that is not in the past (before range start)
+      const recurrenceEndDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : addYears(rangeEnd, 1);
+      
       while (isBefore(nextDate, rangeStart)) {
+        if(isAfter(nextDate, recurrenceEndDate)) break;
         switch (t.frequency) {
           case 'weekly': nextDate = addWeeks(nextDate, 1); break;
           case 'monthly': nextDate = addMonths(nextDate, 1); break;
@@ -130,7 +132,7 @@ export function getUpcomingBills(
         }
       }
 
-      while (isWithinInterval(nextDate, { start: rangeStart, end: rangeEnd })) {
+      while (isWithinInterval(nextDate, { start: rangeStart, end: rangeEnd }) && isBefore(nextDate, recurrenceEndDate)) {
         upcoming.push({ ...t, id: `${t.id}-${nextDate.toISOString()}`, date: nextDate });
         if (isBefore(nextDate, today)) {
           overdueCount++;
@@ -198,6 +200,65 @@ export function getBudgets(budgets: Budget[] | null, allTransactions: Transactio
     });
 }
 
+export function generateDueInstances(dues: Due[] | null): Due[] {
+    if (!dues) return [];
+    
+    const instances: Due[] = [];
+    const today = startOfDay(new Date());
+    const rangeEnd = endOfMonth(addMonths(today, 6)); // Look 6 months into the future
+
+    dues.forEach(due => {
+        const startDate = toDate(due.dueDate);
+        
+        if (!due.isRecurring) {
+            // One-time due
+            if (!due.isPaid || (due.paidDate && isWithinInterval(toDate(due.paidDate), {start: today, end: rangeEnd}))) {
+                instances.push({
+                    ...due,
+                    instanceDate: startDate,
+                });
+            }
+        } else {
+            // Recurring due
+            const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : addYears(rangeEnd, 1);
+            let nextDate = startDate;
+
+            // Find first occurrence within or after today
+            while(isBefore(nextDate, today) && isBefore(nextDate, recurrenceEndDate)) {
+                switch (due.frequency) {
+                    case 'weekly': nextDate = addWeeks(nextDate, 1); break;
+                    case 'monthly': nextDate = addMonths(nextDate, 1); break;
+                    case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
+                    case 'yearly': nextDate = addYears(nextDate, 1); break;
+                    default: nextDate = addYears(rangeEnd, 1);
+                }
+            }
+            
+            // Generate instances until the end of the range
+            while (isBefore(nextDate, rangeEnd) && isBefore(nextDate, recurrenceEndDate)) {
+                const instanceDateStr = nextDate.toISOString().split('T')[0];
+                const isInstancePaid = !!(due as any).paidInstances?.[instanceDateStr];
+                
+                instances.push({
+                    ...due,
+                    instanceDate: nextDate,
+                    isPaid: isInstancePaid,
+                    paidDate: isInstancePaid ? nextDate : null,
+                });
+
+                switch (due.frequency) {
+                    case 'weekly': nextDate = addWeeks(nextDate, 1); break;
+                    case 'monthly': nextDate = addMonths(nextDate, 1); break;
+                    case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
+                    case 'yearly': nextDate = addYears(nextDate, 1); break;
+                    default: nextDate = addYears(rangeEnd, 1);
+                }
+            }
+        }
+    });
+    return instances;
+}
+
 
 export function getBudgetForecast(
   allTransactions: Transaction[] | null,
@@ -249,7 +310,9 @@ export function getBudgetForecast(
           .filter(t => t.isRecurring && t.frequency)
           .forEach(t => {
               let nextDate = toDate(t.date);
-              while(nextDate <= interval.end) {
+              const recurrenceEndDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : addYears(range.end, 1);
+
+              while(nextDate <= interval.end && nextDate <= recurrenceEndDate) {
                   if (nextDate >= interval.start) {
                       const amount = Math.abs(t.amount);
                       // Treat all future recurring items as "open" for forecasting
@@ -285,12 +348,41 @@ export function getBudgetForecast(
 
 export function getNotifications(
   allTransactions: Transaction[] | null,
-  allBudgets: Budget[] | null
+  allBudgets: Budget[] | null,
+  allDues: Due[] | null,
 ): Notification[] {
   const notifications: Notification[] = [];
-  if (!allTransactions && !allBudgets) return [];
+  if (!allBudgets && !allDues) return [];
 
   const today = startOfDay(new Date());
+
+  // Due alerts
+  if (allDues) {
+    const dueInstances = generateDueInstances(allDues);
+    dueInstances.forEach(due => {
+      const instanceDate = toDate(due.instanceDate || due.dueDate);
+      if (!due.isPaid) {
+        if (isBefore(instanceDate, today)) {
+           notifications.push({
+            id: `due-overdue-${due.id}-${format(instanceDate, 'yyyy-MM-dd')}`,
+            type: 'overdue',
+            title: 'Overdue Due',
+            description: `'${due.dueName}' was due on ${format(instanceDate, 'LLL dd')}.`,
+            href: '/dues',
+          });
+        } else if (differenceInDays(instanceDate, today) <= 7) {
+          notifications.push({
+            id: `due-upcoming-${due.id}-${format(instanceDate, 'yyyy-MM-dd')}`,
+            type: 'upcoming',
+            title: 'Upcoming Due',
+            description: `'${due.dueName}' is due on ${format(instanceDate, 'LLL dd')}.`,
+            href: '/dues',
+          });
+        }
+      }
+    });
+  }
+
 
   // Budget alerts
   if (allBudgets && allTransactions) {
@@ -318,4 +410,3 @@ export function getNotifications(
     return 0;
   });
 }
-    

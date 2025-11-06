@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import {
@@ -117,15 +116,15 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
     const selectedCategory = categories?.find(c => c.name === values.category);
 
     const dataToUpdate: Partial<Due> = {
-      id: due.id,
+      id: due.id, // Pass the ID for the update operation
       dueName: values.dueName,
       dueAmount: values.dueAmount,
       dueDate: new Date(values.dueDate),
       category: values.category,
       categoryId: selectedCategory?.id || null,
       isRecurring: values.isRecurring,
-      frequency: values.isRecurring ? values.frequency : undefined,
-      recurrenceEndDate: values.isRecurring ? (values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null) : undefined,
+      frequency: values.frequency,
+      recurrenceEndDate: values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null,
     };
     
     try {

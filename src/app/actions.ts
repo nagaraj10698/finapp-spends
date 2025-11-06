@@ -65,8 +65,10 @@ export async function saveDue(userId: string, dueData: Partial<Due>) {
 
     if (dueData.isRecurring) {
         dataToSave.frequency = dueData.frequency;
+        // Ensure recurrenceEndDate is either a valid date or null
         dataToSave.recurrenceEndDate = dueData.recurrenceEndDate || null;
     } else {
+        // Use deleteField for fields that should be removed
         dataToSave.frequency = deleteField();
         dataToSave.recurrenceEndDate = deleteField();
         dataToSave.paidInstances = deleteField();
@@ -81,4 +83,3 @@ export async function saveDue(userId: string, dueData: Partial<Due>) {
         await addDoc(duesCollection, dataToSave);
     }
 }
-

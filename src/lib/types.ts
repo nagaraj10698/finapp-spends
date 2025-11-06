@@ -18,6 +18,7 @@ export interface Transaction {
   amount: number;
   date: Date | Timestamp;
   category: string;
+  categoryId?: string;
   isRecurring?: boolean;
   frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
   type: 'income' | 'expense';

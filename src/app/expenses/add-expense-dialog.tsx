@@ -108,10 +108,13 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
         const expenseCollection = collection(firestore, 'users', user.uid, 'transactions');
         const newExpenseRef = doc(expenseCollection);
 
+        const selectedCategory = categories?.find(c => c.name === values.category);
+
         const newExpense: Omit<Transaction, 'id'> = {
             description: values.description,
             amount: -Math.abs(values.amount), // ensure it's negative
             category: values.category,
+            categoryId: selectedCategory?.id,
             date: values.date,
             isRecurring: values.isRecurring,
             frequency: values.frequency,

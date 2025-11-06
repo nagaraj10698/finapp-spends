@@ -40,9 +40,9 @@ import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Switch } from '@/components/ui/switch';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, doc, setDoc } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
-import { addExpenseAction } from '../actions';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 
 const formSchema = z
@@ -91,7 +91,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const isRecurring = form.watch('isRecurring');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
+    if (!firestore || !user || !firebaseApp) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -102,9 +102,12 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
     setIsSubmitting(true);
     
     try {
+        const expenseCollectionRef = collection(firestore, 'users', user.uid, 'transactions');
+        const newExpenseRef = doc(expenseCollectionRef);
+
         const selectedCategory = categories?.find(c => c.name === values.category);
 
-        const expenseData: Omit<Transaction, 'id' | 'fileURL' | 'fileName'> = {
+        const newExpense: Omit<Transaction, 'id'> = {
             description: values.description,
             amount: -Math.abs(values.amount),
             category: values.category,
@@ -115,23 +118,31 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             type: 'expense',
         };
         
-        const result = await addExpenseAction(user.uid, expenseData, values.attachment);
-
-        if (result.success) {
-            toast({
-              title: 'Expense Added',
-              description: (
-                <span className="flex items-center gap-1">
-                  {values.description} for <DhiramSymbol />
-                  {values.amount} has been added.
-                </span>
-              ),
-            });
-            form.reset();
-            setOpen(false);
-        } else {
-            throw new Error(result.error);
+        if (values.attachment) {
+            const storage = getStorage(firebaseApp);
+            const storageRef = ref(storage, `user_uploads/${user.uid}/${newExpenseRef.id}/${values.attachment.name}`);
+            const snapshot = await uploadBytes(storageRef, values.attachment);
+            const fileURL = await getDownloadURL(snapshot.ref);
+            if (fileURL) {
+                newExpense.fileURL = fileURL;
+                newExpense.fileName = values.attachment.name;
+            }
         }
+
+        await setDoc(newExpenseRef, newExpense);
+        
+        toast({
+          title: 'Expense Added',
+          description: (
+            <span className="flex items-center gap-1">
+              {values.description} for <DhiramSymbol />
+              {values.amount} has been added.
+            </span>
+          ),
+        });
+        form.reset();
+        setOpen(false);
+
     } catch (error) {
         console.error("Error adding expense:", error);
         toast({

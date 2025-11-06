@@ -11,19 +11,19 @@ import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 interface BudgetForecastChartProps {
   data: {
     name: string;
-    spent: number;
-    budget: number;
+    actual: number;
+    expected: number;
   }[];
 }
 
 const chartConfig = {
-  spent: {
-    label: "Spent",
-    color: "hsl(var(--chart-2))",
-  },
-  budget: {
-    label: "Budget",
+  expected: {
+    label: "Expected",
     color: "hsl(var(--chart-1))",
+  },
+  actual: {
+    label: "Actual",
+    color: "hsl(var(--chart-2))",
   },
 };
 
@@ -60,8 +60,8 @@ export default function BudgetForecastChart({ data }: BudgetForecastChartProps) 
                 />}
             />
             <Legend />
-            <Bar dataKey="budget" fill={chartConfig.budget.color} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="spent" fill={chartConfig.spent.color} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="expected" fill={chartConfig.expected.color} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="actual" fill={chartConfig.actual.color} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </ChartContainer>

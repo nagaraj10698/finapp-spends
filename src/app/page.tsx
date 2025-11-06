@@ -14,10 +14,10 @@ import {
   getRecentTransactions,
   getSpendingByCategory,
   getTotals,
-  getUpcomingBills,
-  getBudgetForecast
+  getBudgetForecast,
+  generateDueInstances,
 } from '@/lib/data';
-import type { Transaction, Category } from '@/lib/types';
+import type { Transaction, Category, Due } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, format, differenceInDays, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
@@ -53,9 +53,11 @@ export default function DashboardPage() {
     const { firestore, user } = useFirebase();
     const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
     const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+    const duesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'dues') : null, [firestore, user]);
     
     const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
+    const { data: allDues, isLoading: duesLoading } = useCollection<Due>(duesCollection);
 
     const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
         return { from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
@@ -99,12 +101,32 @@ export default function DashboardPage() {
 
     const totals = useMemo(() => getTotals(filteredTransactions), [filteredTransactions]);
     const spendingByCategory = useMemo(() => getSpendingByCategory(filteredTransactions), [filteredTransactions]);
-    const upcomingBills = useMemo(() => getUpcomingBills(allTransactions), [allTransactions]);
+    const upcomingBills = useMemo(() => generateDueInstances(allDues), [allDues]);
     const recentTransactions = useMemo(() => getRecentTransactions(allTransactions, 5), [allTransactions]);
-    const forecastData = useMemo(() => getBudgetForecast(allTransactions, period, dateRange), [allTransactions, period, dateRange]);
+    const forecastData = useMemo(() => getBudgetForecast(allTransactions, allDues ?? [], period, dateRange), [allTransactions, allDues, period, dateRange]);
+
+    const overdueCount = useMemo(() => {
+        const today = startOfDay(new Date());
+        return upcomingBills.filter(bill => {
+            const instanceDate = toDate(bill.instanceDate || bill.dueDate);
+            const instanceDateStr = instanceDate.toISOString().split('T')[0];
+            const isPaid = bill.isPaid || (bill.isRecurring && bill.paidInstances?.[instanceDateStr]);
+            return !isPaid && isBefore(instanceDate, today);
+        }).length;
+    }, [upcomingBills]);
+
+    const upcomingCount = useMemo(() => {
+        const today = startOfDay(new Date());
+        return upcomingBills.filter(bill => {
+            const instanceDate = toDate(bill.instanceDate || bill.dueDate);
+            const instanceDateStr = instanceDate.toISOString().split('T')[0];
+            const isPaid = bill.isPaid || (bill.isRecurring && bill.paidInstances?.[instanceDateStr]);
+            return !isPaid && !isBefore(instanceDate, today);
+        }).length;
+    }, [upcomingBills]);
 
 
-    if (transactionsLoading || categoriesLoading) {
+    if (transactionsLoading || categoriesLoading || duesLoading) {
         return <div>Loading...</div>
     }
 
@@ -121,7 +143,7 @@ export default function DashboardPage() {
                   </Button>
               </AddIncomeDialog>
               <AddExpenseDialog>
-                  <Button variant="secondary" className="bg-orange-400 text-white hover:bg-orange-500 w-full">
+                  <Button variant="secondary" className="w-full">
                       <MinusCircle className="mr-2 h-4 w-4" />
                       Add Expense
                   </Button>
@@ -190,7 +212,7 @@ export default function DashboardPage() {
             </Popover>
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <OverviewCards totals={totals} />
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -221,13 +243,13 @@ export default function DashboardPage() {
              <CardDescription className='flex items-center gap-4'>
                 <span>Your upcoming recurring payments.</span>
                 <div className='flex items-center gap-4 text-xs'>
-                  <span className='flex items-center gap-1.5'><span className='h-2 w-2 rounded-full bg-primary' />Upcoming ({upcomingBills.upcomingCount})</span>
-                  <span className='flex items-center gap-1.5'><span className='h-2 w-2 rounded-full bg-destructive' />Overdue ({upcomingBills.overdueCount})</span>
+                  <span className='flex items-center gap-1.5'><span className='h-2 w-2 rounded-full bg-primary' />Upcoming ({upcomingCount})</span>
+                  <span className='flex items-center gap-1.5'><span className='h-2 w-2 rounded-full bg-destructive' />Overdue ({overdueCount})</span>
                 </div>
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow">
-            <UpcomingBillsTimeline bills={upcomingBills.bills} categories={categories ?? []} />
+            <UpcomingBillsTimeline bills={upcomingBills} categories={categories ?? []} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-4">

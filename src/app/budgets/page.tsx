@@ -9,6 +9,8 @@ import { getBudgets } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import AddBudgetDialog from './add-budget-dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import BudgetForecastChart from './budget-forecast-chart';
 
 export default function BudgetsPage() {
   const { firestore, user } = useFirebase();
@@ -24,6 +26,14 @@ export default function BudgetsPage() {
   const budgetsWithSpent = useMemo(() => {
     return getBudgets(allBudgets, allTransactions);
   }, [allBudgets, allTransactions]);
+  
+  const forecastData = useMemo(() => {
+    return budgetsWithSpent.map(b => ({
+      name: b.name,
+      actual: b.spent ?? 0,
+      expected: b.budgetAmount,
+    }));
+  }, [budgetsWithSpent]);
 
 
   if (budgetsLoading || transactionsLoading || categoriesLoading) {
@@ -44,14 +54,25 @@ export default function BudgetsPage() {
           </Button>
         </AddBudgetDialog>
       </div>
-
+      
        {budgetsWithSpent && budgetsWithSpent.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {budgetsWithSpent.map(budget => {
-            const category = categories?.find(c => c.id === budget.categoryId);
-            return <BudgetCard key={budget.id} budget={budget} category={category} />
-          })}
-        </div>
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Budget vs Actual</CardTitle>
+                    <CardDescription>How your spending compares to your budgets this month.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <BudgetForecastChart data={forecastData} />
+                </CardContent>
+            </Card>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {budgetsWithSpent.map(budget => {
+                const category = categories?.find(c => c.id === budget.categoryId);
+                return <BudgetCard key={budget.id} budget={budget} category={category} />
+            })}
+            </div>
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
             <h3 className="text-lg font-semibold text-muted-foreground">No budgets created yet</h3>

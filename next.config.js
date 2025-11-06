@@ -29,10 +29,6 @@ const nextConfig = {
       },
     ],
   },
-  serverActions: {
-    bodySizeLimit: '6mb',
-    maxDuration: 30, // Default is 60s, but for some providers it's less. Let's set it explicitly.
-  },
 };
 
 module.exports = nextConfig;

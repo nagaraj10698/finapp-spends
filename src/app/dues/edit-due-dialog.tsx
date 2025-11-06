@@ -33,17 +33,20 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getIconByName, toDate } from '@/lib/data';
 import { updateDue } from '../actions';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
 
 
 const formSchema = z
   .object({
     dueName: z.string().min(1, 'Due name is required.'),
     dueAmount: z.coerce.number().positive('Amount must be positive.'),
-    dueDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Start date is required." }),
+    dueDate: z.date({ required_error: "Start date is required." }),
     category: z.string().min(1, 'Please select a category.'),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
-    recurrenceEndDate: z.string().optional().nullable(),
+    recurrenceEndDate: z.date().optional().nullable(),
   })
   .refine(
     (data) => {
@@ -57,7 +60,7 @@ const formSchema = z
       path: ['frequency'],
     }
   )
-  .refine(data => !data.isRecurring || !data.recurrenceEndDate || new Date(data.recurrenceEndDate) > new Date(data.dueDate), {
+  .refine(data => !data.isRecurring || !data.recurrenceEndDate || data.recurrenceEndDate > data.dueDate, {
     message: "End date must be after the start date.",
     path: ["recurrenceEndDate"],
   });
@@ -72,6 +75,8 @@ interface EditDueDialogProps {
 export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps) {
   const { toast } = useToast();
   const { user, firestore } = useFirebase();
+  const [isDueDateOpen, setDueDateOpen] = useState(false);
+  const [isRecurrenceEndDateOpen, setRecurrenceEndDateOpen] = useState(false);
 
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -87,11 +92,11 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         form.reset({
             dueName: due.dueName,
             dueAmount: due.dueAmount,
-            dueDate: format(toDate(due.dueDate), 'yyyy-MM-dd'),
+            dueDate: toDate(due.dueDate),
             category: due.category,
             isRecurring: due.isRecurring,
             frequency: due.frequency,
-            recurrenceEndDate: due.recurrenceEndDate ? format(toDate(due.recurrenceEndDate), 'yyyy-MM-dd') : null,
+            recurrenceEndDate: due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : null,
         });
     }
   }, [due, form]);
@@ -113,12 +118,12 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
       id: due.id,
       dueName: values.dueName,
       dueAmount: values.dueAmount,
-      dueDate: new Date(values.dueDate),
+      dueDate: values.dueDate,
       category: values.category,
       categoryId: selectedCategory?.id || null,
       isRecurring: values.isRecurring,
       frequency: values.frequency,
-      recurrenceEndDate: values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null,
+      recurrenceEndDate: values.recurrenceEndDate || null,
     };
 
     try {
@@ -270,9 +275,37 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>{isRecurring ? 'First Due Date' : 'Due Date'}</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
+                  <Popover open={isDueDateOpen} onOpenChange={setDueDateOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={'outline'}
+                          className={cn(
+                            'w-full pl-3 text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, 'PPP')
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setDueDateOpen(false);
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
@@ -285,9 +318,37 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
                     <FormLabel>End Date (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} value={field.value ?? ''} />
-                    </FormControl>
+                    <Popover open={isRecurrenceEndDateOpen} onOpenChange={setRecurrenceEndDateOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={'outline'}
+                            className={cn(
+                              'w-full pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground'
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, 'PPP')
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            setRecurrenceEndDateOpen(false);
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                     </FormItem>
                 )}

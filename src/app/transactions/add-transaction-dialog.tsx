@@ -38,7 +38,6 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
-import { Switch } from '@/components/ui/switch';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -46,29 +45,14 @@ import type { Transaction, Category } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
-const formSchema = z
-  .object({
+const formSchema = z.object({
     type: z.enum(['income', 'expense']),
     description: z.string().min(2, 'Description must be at least 2 characters.'),
     amount: z.coerce.number().positive('Amount must be positive.'),
     category: z.string().min(1, 'Please select a category.'),
     date: z.date(),
-    isRecurring: z.boolean(),
-    frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
     attachment: z.instanceof(File).optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.isRecurring && !data.frequency) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: 'Please select a frequency for recurring transactions.',
-      path: ['frequency'],
-    }
-  );
+  });
 
 export default function AddTransactionDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
@@ -87,12 +71,10 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
       amount: 0,
       category: '',
       date: new Date(),
-      isRecurring: false,
     },
   });
   
   const transactionType = form.watch('type');
-  const isRecurring = form.watch('isRecurring');
 
   useEffect(() => {
     form.resetField('category', { defaultValue: '' });
@@ -123,14 +105,9 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
             category: values.category,
             categoryId: selectedCategory?.id || null,
             date: values.date,
-            isRecurring: values.isRecurring,
             type: values.type,
         };
         
-        if (values.isRecurring && values.frequency) {
-            newTransaction.frequency = values.frequency;
-        }
-
         if (values.attachment) {
             const storage = getStorage(firebaseApp);
             const storageRef = ref(storage, `user_uploads/${user.uid}/${newTransactionRef.id}/${values.attachment.name}`);
@@ -332,54 +309,6 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
                 </FormItem>
               )}
             />
-             <FormField
-              control={form.control}
-              name="isRecurring"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Recurring Transaction</FormLabel>
-                     <p className="text-xs text-muted-foreground">
-                      Is this a recurring transaction?
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {isRecurring && (
-              <FormField
-                control={form.control}
-                name="frequency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Frequency</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a frequency" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="quarterly">Quarterly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : 'Save Transaction'}

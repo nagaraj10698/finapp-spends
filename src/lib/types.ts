@@ -1,5 +1,4 @@
 
-
 import type { LucideIcon } from "lucide-react";
 import { z } from 'zod';
 import type { Timestamp } from 'firebase/firestore';
@@ -19,9 +18,6 @@ export interface Transaction {
   date: Date | Timestamp;
   category: string;
   categoryId?: string | null;
-  isRecurring?: boolean;
-  frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
-  recurrenceEndDate?: Date | Timestamp;
   type: 'income' | 'expense';
   fileURL?: string;
   fileName?: string;

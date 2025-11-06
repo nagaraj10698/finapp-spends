@@ -1,4 +1,5 @@
 
+
 import type { LucideIcon } from "lucide-react";
 import { z } from 'zod';
 import type { Timestamp } from 'firebase/firestore';
@@ -55,4 +56,17 @@ export interface Notification {
   title: string;
   description: string;
   href: string;
+}
+
+export interface AppSettings {
+    logoUrl?: string;
+}
+
+export interface UserProfile {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    photoURL?: string;
+    isAdmin?: boolean;
 }

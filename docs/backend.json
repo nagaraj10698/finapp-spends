@@ -28,6 +28,10 @@
           "type": "string",
           "description": "URL of the user's profile picture.",
           "format": "uri"
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Indicates if the user has administrative privileges."
         }
       },
       "required": [
@@ -190,6 +194,19 @@
         "isRecurring",
         "type"
       ]
+    },
+    "AppSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AppSettings",
+      "type": "object",
+      "description": "Stores global application settings.",
+      "properties": {
+        "logoUrl": {
+          "type": "string",
+          "description": "URL of the site logo.",
+          "format": "uri"
+        }
+      }
     }
   },
   "auth": {
@@ -273,6 +290,16 @@
               "description": "The unique identifier of the budget."
             }
           ]
+        }
+      },
+      {
+        "path": "/settings/branding",
+        "definition": {
+          "entityName": "AppSettings",
+          "schema": {
+            "$ref": "#/backend/entities/AppSettings"
+          },
+          "description": "Stores global branding settings, like the site logo."
         }
       }
     ],

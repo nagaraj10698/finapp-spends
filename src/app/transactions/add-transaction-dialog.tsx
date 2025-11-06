@@ -273,6 +273,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
                           field.onChange(date);
                           setDatePickerOpen(false);
                         }}
+                        disabled={false}
                         initialFocus
                       />
                     </PopoverContent>

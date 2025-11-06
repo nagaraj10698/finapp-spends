@@ -293,6 +293,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
                           field.onChange(date);
                           setDueDatePickerOpen(false);
                         }}
+                        disabled={false}
                         initialFocus 
                       />
                     </PopoverContent>
@@ -332,6 +333,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
                             field.onChange(date);
                             setEndDatePickerOpen(false);
                           }}
+                          disabled={false}
                           initialFocus 
                         />
                         </PopoverContent>

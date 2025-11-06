@@ -274,6 +274,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
                           field.onChange(date);
                           setDatePickerOpen(false);
                         }}
+                        disabled={false}
                         initialFocus
                       />
                     </PopoverContent>

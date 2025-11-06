@@ -224,6 +224,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                                 field.onChange(date);
                                 setStartDatePickerOpen(false);
                             }}
+                            disabled={false}
                             initialFocus 
                         />
                         </PopoverContent>
@@ -261,6 +262,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                                 field.onChange(date);
                                 setEndDatePickerOpen(false);
                             }}
+                            disabled={false}
                             initialFocus 
                         />
                         </PopoverContent>

@@ -231,6 +231,7 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
                           field.onChange(date);
                           setDatePickerOpen(false);
                         }}
+                        disabled={false}
                         initialFocus
                       />
                     </PopoverContent>

@@ -286,6 +286,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
                           field.onChange(date);
                           setDueDatePickerOpen(false);
                         }}
+                        disabled={false}
                         initialFocus 
                       />
                     </PopoverContent>
@@ -325,6 +326,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
                               field.onChange(date);
                               setEndDatePickerOpen(false);
                             }}
+                            disabled={false}
                             initialFocus 
                           />
                         </PopoverContent>

@@ -19,6 +19,7 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarSeparator,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import Logo from './logo';
 
@@ -32,6 +33,7 @@ const menuItems = [
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const { isMobile } = useSidebar();
 
   return (
     <>
@@ -45,7 +47,7 @@ export default function AppSidebar() {
               <SidebarMenuButton
                 asChild
                 isActive={pathname === item.href}
-                tooltip={item.label}
+                tooltip={!isMobile ? item.label : undefined}
               >
                 <Link href={item.href}>
                   <item.icon />
@@ -63,7 +65,7 @@ export default function AppSidebar() {
               <SidebarMenuButton
                 asChild
                 isActive={pathname === '/settings'}
-                tooltip={'Settings'}
+                tooltip={!isMobile ? 'Settings' : undefined}
               >
                 <Link href={'/settings'}>
                   <Settings />

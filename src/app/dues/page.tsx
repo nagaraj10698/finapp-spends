@@ -50,6 +50,8 @@ export default function DuesPage() {
   }
 
   const handleEditRequest = (due: Due) => {
+    // When editing, we need to find the original `due` document, not the generated instance,
+    // because the instance might only be for a specific recurring date and won't have all the original properties.
     const originalDue = dues?.find(d => d.id === due.id);
     if (originalDue) {
       setDueToEdit(originalDue);
@@ -133,8 +135,7 @@ export default function DuesPage() {
   
   const dueInstances = useMemo(() => {
     if (!dues) return [];
-    const mappedDues = dues.map(d => ({...d, dueDate: toDate(d.dueDate)}));
-    return generateDueInstances(mappedDues);
+    return generateDueInstances(dues);
   }, [dues]);
 
   const tableColumns = useMemo(() => getColumns(categories ?? [], handlePaymentRequest, handleEditRequest, handleDeleteRequest), [categories]);

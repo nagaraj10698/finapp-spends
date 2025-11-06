@@ -22,10 +22,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, updateDoc, doc } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import type { Due, Category } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -78,29 +78,21 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
     resolver: zodResolver(formSchema),
   });
   
-  const [currentDueDate, setCurrentDueDate] = useState<Date | undefined>();
-  const [currentRecurrenceEndDate, setCurrentRecurrenceEndDate] = useState<Date | null | undefined>();
-
   const isRecurring = form.watch('isRecurring');
 
   useEffect(() => {
     if (due) {
-        const initialDueDate = toDate(due.dueDate);
-        const initialRecurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : null;
-        
         form.reset({
             dueName: due.dueName,
             dueAmount: due.dueAmount,
-            dueDate: initialDueDate,
+            dueDate: toDate(due.dueDate),
             category: due.category,
             isRecurring: due.isRecurring,
             frequency: due.frequency,
-            recurrenceEndDate: initialRecurrenceEndDate,
+            recurrenceEndDate: due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : null,
         });
-        setCurrentDueDate(initialDueDate);
-        setCurrentRecurrenceEndDate(initialRecurrenceEndDate);
     }
-  }, [due]);
+  }, [due, form]);
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -122,15 +114,9 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
+        frequency: values.isRecurring ? values.frequency : undefined,
+        recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : null
     };
-    
-    if (values.isRecurring) {
-        dataToUpdate.frequency = values.frequency;
-        dataToUpdate.recurrenceEndDate = values.recurrenceEndDate || null;
-    } else {
-        dataToUpdate.frequency = undefined;
-        dataToUpdate.recurrenceEndDate = null;
-    }
     
     try {
         await updateDue(user.uid, due.id, dataToUpdate);
@@ -290,10 +276,10 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
                           variant={'outline'}
                           className={cn(
                             'w-full pl-3 text-left font-normal',
-                            !currentDueDate && 'text-muted-foreground'
+                            !field.value && 'text-muted-foreground'
                           )}
                         >
-                          {currentDueDate ? format(currentDueDate, 'PPP') : <span>Pick a date</span>}
+                          {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
@@ -301,13 +287,8 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar 
                         mode="single" 
-                        selected={currentDueDate} 
-                        onSelect={(date) => {
-                          if (date) {
-                              setCurrentDueDate(date);
-                              form.setValue('dueDate', date);
-                          }
-                        }} 
+                        selected={field.value} 
+                        onSelect={field.onChange} 
                         initialFocus 
                       />
                     </PopoverContent>
@@ -331,10 +312,10 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
                             variant={'outline'}
                             className={cn(
                                 'w-full pl-3 text-left font-normal',
-                                !currentRecurrenceEndDate && 'text-muted-foreground'
+                                !field.value && 'text-muted-foreground'
                             )}
                             >
-                            {currentRecurrenceEndDate ? format(currentRecurrenceEndDate, 'PPP') : <span>Pick an end date</span>}
+                            {field.value ? format(field.value, 'PPP') : <span>Pick an end date</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                         </FormControl>
@@ -342,11 +323,8 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
                         <PopoverContent className="w-auto p-0" align="start">
                         <Calendar 
                           mode="single" 
-                          selected={currentRecurrenceEndDate ?? undefined} 
-                          onSelect={(date) => {
-                            setCurrentRecurrenceEndDate(date);
-                            form.setValue('recurrenceEndDate', date);
-                          }} 
+                          selected={field.value ?? undefined} 
+                          onSelect={field.onChange}
                           initialFocus 
                         />
                         </PopoverContent>

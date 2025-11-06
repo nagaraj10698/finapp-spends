@@ -91,7 +91,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         recurrenceEndDate: due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : undefined,
       });
     }
-  }, [due, form]);
+  }, [due]);
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -108,22 +108,16 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
     
     const dueRef = doc(firestore, 'users', user.uid, 'dues', due.id);
     
-    const dataToUpdate: Partial<Due> = {
+    const dataToUpdate: Partial<Omit<Due, 'id'>> = {
         dueName: values.dueName,
         dueAmount: values.dueAmount,
         dueDate: values.dueDate,
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
+        frequency: values.isRecurring ? values.frequency : null,
+        recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate || null : null,
     };
-
-    if (values.isRecurring) {
-        dataToUpdate.frequency = values.frequency;
-        dataToUpdate.recurrenceEndDate = values.recurrenceEndDate || null;
-    } else {
-        dataToUpdate.frequency = null;
-        dataToUpdate.recurrenceEndDate = null;
-    }
     
     try {
         await updateDoc(dueRef, dataToUpdate);

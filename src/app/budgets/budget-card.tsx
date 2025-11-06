@@ -10,17 +10,25 @@ import {
 import { getIconByName } from '@/lib/data';
 import type { Budget, Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Progress } from '@/components/ui/progress';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface BudgetCardProps {
   budget: Budget;
   category: Category | undefined;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
-export default function BudgetCard({ budget, category }: BudgetCardProps) {
+export default function BudgetCard({ budget, category, onEdit, onDelete }: BudgetCardProps) {
   const Icon = category ? getIconByName(category.icon) : null;
   const spent = budget.spent ?? 0;
   const limit = budget.budgetAmount;
@@ -38,9 +46,23 @@ export default function BudgetCard({ budget, category }: BudgetCardProps) {
             </div>
              <CardDescription>Monthly Budget</CardDescription>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-            <MoreVertical className="h-4 w-4" />
-        </Button>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                    <MoreVertical className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onEdit}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    <span>Edit</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onDelete} className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Delete</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1">

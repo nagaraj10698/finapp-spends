@@ -183,34 +183,38 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
     const startDate = toDate(due.dueDate);
 
     if (!due.isRecurring) {
-      // For one-time dues, just add them if they are not paid.
-      // We show them regardless of paid status in the table, but the logic here can be stricter if needed.
       instances.push({ ...due, instanceDate: startDate });
     } else {
-      // For recurring dues, generate instances
       const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : defaultEndDate;
       let nextDate = startDate;
       let sanityCheck = 0; // Prevent infinite loops
 
-      while (isBefore(nextDate, recurrenceEndDate) && sanityCheck < 360) { // Limit to ~30 years of monthly checks
+      while (isBefore(nextDate, recurrenceEndDate) && sanityCheck < 360) {
         const instanceDateStr = nextDate.toISOString().split('T')[0];
         const isInstancePaid = !!due.paidInstances?.[instanceDateStr];
 
-        // Add all instances within a reasonable future window, and all past unpaid instances
         if (isBefore(nextDate, addMonths(today, 6)) || (isBefore(nextDate, today) && !isInstancePaid)) {
             instances.push({
               ...due,
-              instanceDate: new Date(nextDate), // Create new Date object
+              instanceDate: new Date(nextDate),
             });
         }
         
-        // Increment to the next period
         switch (due.frequency) {
-          case 'weekly': nextDate = addWeeks(nextDate, 1); break;
-          case 'monthly': nextDate = addMonths(nextDate, 1); break;
-          case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
-          case 'yearly': nextDate = addYears(nextDate, 1); break;
-          default: sanityCheck = 360; // Should not happen, break loop
+          case 'weekly': 
+            nextDate = addWeeks(nextDate, 1); 
+            break;
+          case 'monthly': 
+            nextDate = startOfMonth(addMonths(nextDate, 1)); 
+            break;
+          case 'quarterly': 
+            nextDate = startOfMonth(addQuarters(nextDate, 1)); 
+            break;
+          case 'yearly': 
+            nextDate = startOfMonth(addYears(nextDate, 1)); 
+            break;
+          default: 
+            sanityCheck = 360;
         }
         sanityCheck++;
       }

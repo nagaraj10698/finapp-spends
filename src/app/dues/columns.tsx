@@ -88,7 +88,10 @@ export const getColumns = (
       );
     },
     filterFn: (row, id, value) => {
-      return Array.isArray(value) && value.includes(row.getValue(id));
+      if (!Array.isArray(value)) {
+        return true;
+      }
+      return value.includes(row.getValue(id));
     },
   },
   {

@@ -47,7 +47,7 @@ export async function createBudgetsForAllCategories(userId: string, amount: numb
 
 export async function generateMockTransactionsForYear(userId: string) {
     const { firestore } = initializeFirebase();
-    const batch = writeBatch(firestore);
+    let batch = writeBatch(firestore);
 
     // 1. Ensure categories exist
     let categories = await getCollectionData<Category>(userId, 'categories');
@@ -60,9 +60,9 @@ export async function generateMockTransactionsForYear(userId: string) {
         // We need to commit the categories first and then refetch them.
         await batch.commit(); 
         // After committing, we need a new batch for transactions.
-        const newBatch = writeBatch(firestore);
+        batch = writeBatch(firestore);
         categories = await getCollectionData<Category>(userId, 'categories');
-        await generateTransactions(userId, categories, newBatch); // Pass new batch
+        await generateTransactions(userId, categories, batch); // Pass new batch
     } else {
         await generateTransactions(userId, categories, batch); // Pass original batch
     }

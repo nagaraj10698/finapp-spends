@@ -20,7 +20,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Notification, Due } from './types';
-import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfDay } from 'date-fns';
+import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
@@ -161,6 +161,7 @@ export function getBudgets(budgets: Budget[] | null, allTransactions: Transactio
     if (!budgets || !allTransactions) return [];
 
     return budgets.map(budget => {
+        if (!budget || !budget.budgetStartDate || !budget.budgetEndDate) return budget;
         const spent = allTransactions
             .filter(t => t.type === 'expense' && t.category === budget.category && isWithinInterval(toDate(t.date), {start: toDate(budget.budgetStartDate), end: toDate(budget.budgetEndDate)}))
             .reduce((sum, t) => sum + Math.abs(t.amount), 0);
@@ -184,7 +185,10 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
     const startDate = toDate(due.dueDate);
 
     if (!due.isRecurring) {
-      instances.push({ ...due, instanceDate: startDate });
+      // For non-recurring dues, only show if they are overdue or within the current month
+      if (isBefore(startDate, currentMonthEnd) || isSameDay(startDate, currentMonthEnd)) {
+          instances.push({ ...due, instanceDate: startDate });
+      }
     } else {
       const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : defaultEndDate;
       let nextDate = startDate;
@@ -269,6 +273,7 @@ export function getBudgetForecast(
   });
 
   allExpenses.forEach(t => {
+    if (!t.date) return;
     const transactionDate = toDate(t.date);
     if (!isWithinInterval(transactionDate, range)) return;
 
@@ -334,6 +339,7 @@ export function getNotifications(
   if (allBudgets && allTransactions) {
     const budgetsWithSpent = getBudgets(allBudgets, allTransactions);
     budgetsWithSpent.forEach(budget => {
+      if (!budget) return;
       const spent = budget.spent ?? 0;
       const limit = budget.budgetAmount ?? 0;
       const usage = limit > 0 ? (spent / limit) * 100 : 0;

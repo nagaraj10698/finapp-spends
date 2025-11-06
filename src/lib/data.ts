@@ -125,11 +125,16 @@ export function getSpendingByCategory(allTransactions: Transaction[] | null) {
 }
 
 
-export function getBudgets(budgets: Budget[] | null, allTransactions: Transaction[] | null): Budget[] {
+export function getBudgets(
+  budgets: Budget[] | null,
+  allTransactions: Transaction[] | null,
+  dateRange?: DateRange,
+): Budget[] {
     if (!budgets) return [];
 
-    const currentMonthStart = startOfMonth(new Date());
-    const currentMonthEnd = endOfMonth(new Date());
+    const range = dateRange?.from && dateRange.to 
+        ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) }
+        : { start: startOfMonth(new Date()), end: endOfMonth(new Date()) };
 
     const safeTransactions = allTransactions || [];
 
@@ -140,7 +145,7 @@ export function getBudgets(budgets: Budget[] | null, allTransactions: Transactio
             .filter(t => 
                 t.type === 'expense' && 
                 t.categoryId === budget.categoryId && 
-                isWithinInterval(toDate(t.date), { start: currentMonthStart, end: currentMonthEnd })
+                isWithinInterval(toDate(t.date), range)
             )
             .reduce((sum, t) => sum + Math.abs(t.amount), 0);
         

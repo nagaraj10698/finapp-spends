@@ -68,11 +68,11 @@ export async function saveDue(userId: string, dueData: Partial<Due>) {
         // Ensure recurrenceEndDate is either a valid date or null
         dataToSave.recurrenceEndDate = dueData.recurrenceEndDate || null;
     } else {
-        // Use deleteField for fields that should be removed
+        // Use deleteField for fields that should be removed when not recurring
         dataToSave.frequency = deleteField();
         dataToSave.recurrenceEndDate = deleteField();
         dataToSave.paidInstances = deleteField();
-        dataToSave.isPaid = dueData.isPaid || false;
+        dataToSave.isPaid = dueData.isPaid || false; // Set initial paid status for non-recurring
     }
     
     if (isEditing) {

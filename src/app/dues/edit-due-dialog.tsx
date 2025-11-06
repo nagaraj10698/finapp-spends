@@ -123,8 +123,8 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
       category: values.category,
       categoryId: selectedCategory?.id || null,
       isRecurring: values.isRecurring,
-      frequency: values.frequency,
-      recurrenceEndDate: values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null,
+      frequency: values.isRecurring ? values.frequency : undefined,
+      recurrenceEndDate: values.isRecurring && values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null,
     };
     
     try {

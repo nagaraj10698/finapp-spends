@@ -4,8 +4,9 @@
 import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, addDoc, writeBatch, deleteField } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase/index.server";
 import { getAuth, type User } from "firebase/auth";
-import type { Transaction, Budget, Due } from "@/lib/types";
+import type { Transaction, Budget, Due, Category } from "@/lib/types";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { startOfYear, endOfYear, eachDayOfInterval, format } from 'date-fns';
 
 
 async function getCollectionData<T>(userId: string, collectionName: string): Promise<T[]> {
@@ -15,6 +16,88 @@ async function getCollectionData<T>(userId: string, collectionName: string): Pro
     const querySnapshot = await getDocs(collection(firestore, 'users', userId, collectionName));
     return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as T[];
 }
+
+export async function createBudgetsForAllCategories(userId: string, amount: number) {
+    const { firestore } = initializeFirebase();
+    const batch = writeBatch(firestore);
+    
+    const categories = await getCollectionData<Category>(userId, 'categories');
+    const budgets = await getCollectionData<Budget>(userId, 'budgets');
+
+    const expenseCategories = categories.filter(c => c.type === 'expense');
+    const budgetedCategoryIds = new Set(budgets.map(b => b.categoryId));
+
+    expenseCategories.forEach(category => {
+        if (!budgetedCategoryIds.has(category.id)) {
+            const newBudgetRef = doc(collection(firestore, 'users', userId, 'budgets'));
+            const newBudget: Omit<Budget, 'id'> = {
+                name: category.name,
+                budgetAmount: amount,
+                type: 'Expense',
+                categoryId: category.id,
+                category: category.name,
+            };
+            batch.set(newBudgetRef, newBudget);
+        }
+    });
+
+    await batch.commit();
+}
+
+export async function generateMockTransactionsForYear(userId: string) {
+    const { firestore } = initializeFirebase();
+    const batch = writeBatch(firestore);
+    const transactionsRef = collection(firestore, 'users', userId, 'transactions');
+    
+    const categories = await getCollectionData<Category>(userId, 'categories');
+    const expenseCategories = categories.filter(c => c.type === 'expense');
+    const incomeCategory = categories.find(c => c.name === 'Salary');
+
+    if (expenseCategories.length === 0) {
+        throw new Error("No expense categories found for user.");
+    }
+
+    const today = new Date();
+    const start = startOfYear(today);
+    const days = eachDayOfInterval({ start, end: today });
+
+    days.forEach(day => {
+        // Add monthly salary
+        if (day.getDate() === 1 && incomeCategory) {
+            const salaryDocRef = doc(transactionsRef);
+            batch.set(salaryDocRef, {
+                userId,
+                description: 'Monthly Salary',
+                amount: 25000 + (Math.random() * 2000 - 1000),
+                date: day,
+                category: incomeCategory.name,
+                categoryId: incomeCategory.id,
+                type: 'income',
+            });
+        }
+
+        // Add random expenses
+        const numExpenses = Math.floor(Math.random() * 6); // 0 to 5 expenses per day
+        for (let i = 0; i < numExpenses; i++) {
+            const randomCategory = expenseCategories[Math.floor(Math.random() * expenseCategories.length)];
+            const amount = Math.random() * 200 + 5; // 5 to 205
+            
+            const newTransactionDocRef = doc(transactionsRef);
+            batch.set(newTransactionDocRef, {
+                userId,
+                description: `${randomCategory.name} purchase`,
+                amount: -amount,
+                date: day,
+                category: randomCategory.name,
+                categoryId: randomCategory.id,
+                type: 'expense',
+            });
+        }
+    });
+
+    await batch.commit();
+}
+
 
 export async function processDuePayment(userId: string, due: Due) {
     const { firestore } = initializeFirebase();

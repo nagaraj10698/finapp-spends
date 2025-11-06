@@ -18,12 +18,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useRef, useState } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Loader2 } from 'lucide-react';
 import ImageCropperDialog from '@/app/profile/image-cropper-dialog';
+import { Separator } from '@/components/ui/separator';
+import { generateMockTransactionsForYear } from '@/app/actions';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
@@ -36,6 +38,7 @@ export default function ProfileSettings() {
   const { user, auth, firestore, firebaseApp } = useFirebase();
   const [photoURL, setPhotoURL] = useState(user?.photoURL);
   const [isUploading, setIsUploading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -140,6 +143,26 @@ export default function ProfileSettings() {
       });
     }
   }
+  
+  const handleGenerateMockData = () => {
+    if (!user) return;
+    startTransition(async () => {
+        try {
+            await generateMockTransactionsForYear(user.uid);
+            toast({
+                title: "Mock Data Generated",
+                description: "A year's worth of mock transactions has been added to your account."
+            });
+        } catch (error) {
+            console.error("Failed to generate mock data", error);
+            toast({
+                variant: "destructive",
+                title: "Generation Failed",
+                description: "Could not generate mock data.",
+            });
+        }
+    })
+  }
 
   return (
     <>
@@ -233,6 +256,21 @@ export default function ProfileSettings() {
                 <Button type="submit">Save Changes</Button>
             </form>
             </Form>
+        </CardContent>
+         <Separator />
+        <CardHeader>
+            <CardTitle>Developer</CardTitle>
+            <CardDescription>Actions for testing and development.</CardDescription>
+        </CardHeader>
+        <CardContent>
+             <Button variant="secondary" onClick={handleGenerateMockData} disabled={isPending}>
+                {isPending ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                    </>
+                ) : "Generate Mock Data"}
+            </Button>
         </CardContent>
       </Card>
     </>

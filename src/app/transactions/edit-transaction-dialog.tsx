@@ -61,6 +61,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDatePickerOpen, setDatePickerOpen] = useState(false);
 
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -246,7 +247,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date</FormLabel>
-                  <Popover>
+                  <Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -269,7 +270,10 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                            field.onChange(date);
+                            setDatePickerOpen(false);
+                        }}
                         initialFocus
                       />
                     </PopoverContent>
@@ -290,5 +294,3 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
     </Dialog>
   );
 }
-
-    

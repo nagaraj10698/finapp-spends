@@ -8,6 +8,7 @@ import {
   Sidebar,
   SidebarInset,
   SidebarProvider,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/app-sidebar';
 import { UserNav } from '@/components/user-nav';
@@ -18,6 +19,7 @@ import { FirebaseClientProvider } from '@/firebase';
 import { usePathname } from 'next/navigation';
 import AuthLayout from './auth/layout';
 import Notifications from '@/components/notifications';
+import Logo from '@/components/logo';
 
 // Metadata can't be in a client component, so we export it from a server component context
 // but since the root layout now needs to be a client component because of usePathname,
@@ -35,7 +37,16 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               <AppSidebar />
             </Sidebar>
             <SidebarInset className="flex flex-col">
-              <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+              <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+                 <div className="flex items-center gap-4 md:hidden">
+                    <SidebarTrigger asChild>
+                        <Button size="icon" variant="ghost">
+                            <span className="sr-only">Toggle Sidebar</span>
+                        </Button>
+                    </SidebarTrigger>
+                    <Logo />
+                </div>
+                <div className='hidden md:flex' />
                 <div className='flex items-center gap-4'>
                   <Notifications />
                   <UserNav />

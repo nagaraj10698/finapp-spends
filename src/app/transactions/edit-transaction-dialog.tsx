@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getIconByName } from '@/lib/data';
+import { getIconByName, toDate } from '@/lib/data';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -68,7 +68,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
 
   useEffect(() => {
     if (transaction) {
-      const transactionDate = (transaction.date as any).toDate ? (transaction.date as any).toDate() : new Date(transaction.date as any);
+      const transactionDate = toDate(transaction.date);
       form.reset({
         type: transaction.type,
         description: transaction.description,

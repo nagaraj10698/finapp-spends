@@ -27,11 +27,11 @@ import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Due, Category } from '@/lib/types';
-import { format, toDate } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getIconByName } from '@/lib/data';
+import { getIconByName, toDate } from '@/lib/data';
 import { updateDue } from '../actions';
 
 
@@ -98,7 +98,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
             category: due.category,
             isRecurring: due.isRecurring,
             frequency: due.frequency,
-            recurrenceEndDate: due.recurrenceEndDate ? format(toDate(due.recurrenceEndDate), 'yyyy-MM-dd') : '',
+            recurrenceEndDate: due.recurrenceEndDate ? format(toDate(due.recurrenceEndDate), 'yyyy-MM-dd') : null,
         });
     }
   }, [due, form]);

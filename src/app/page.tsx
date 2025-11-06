@@ -15,13 +15,12 @@ import {
   getSpendingByCategory,
   getTotals,
   getUpcomingBills,
-  getBudgets,
   getBudgetForecast
 } from '@/lib/data';
-import type { Transaction, Budget, Category } from '@/lib/types';
+import type { Transaction, Category } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, format, isSameMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, differenceInDays } from 'date-fns';
+import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, format, differenceInDays, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,7 @@ import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
 import UpcomingBillsTimeline from '@/components/dashboard/upcoming-bills-timeline';
 import BudgetForecastChart from '@/app/budgets/budget-forecast-chart';
 import RecentTransactions from '@/components/dashboard/recent-transactions';
-import BudgetSummary from '@/components/dashboard/budget-summary';
+import { toDate } from '@/lib/data';
 
 const PRESET_RANGES = [
     { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
@@ -59,9 +58,6 @@ export default function DashboardPage() {
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
     const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-        if (typeof window === 'undefined') {
-            return { from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
-        }
         return { from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
     });
     const [activePreset, setActivePreset] = useState<string | null>('This Month');
@@ -92,18 +88,18 @@ export default function DashboardPage() {
     
     const filteredTransactions = useMemo(() => {
         if (!allTransactions) return [];
-        if (!dateRange?.from || !dateRange.to) return allTransactions;
+        if (!dateRange?.from || !dateRange.to) return allTransactions.map(t => ({...t, date: toDate(t.date)}));
     
         return allTransactions.filter(t => {
-            const transactionDate = (t.date as any).toDate ? (t.date as any).toDate() : new Date(t.date as any);
+            const transactionDate = toDate(t.date);
             return transactionDate >= dateRange.from! && transactionDate <= dateRange.to!;
-        });
+        }).map(t => ({...t, date: toDate(t.date)}));
     }, [allTransactions, dateRange]);
 
 
     const totals = useMemo(() => getTotals(filteredTransactions), [filteredTransactions]);
     const spendingByCategory = useMemo(() => getSpendingByCategory(filteredTransactions), [filteredTransactions]);
-    const upcomingBills = useMemo(() => getUpcomingBills(allTransactions, dateRange), [allTransactions, dateRange]);
+    const upcomingBills = useMemo(() => getUpcomingBills(allTransactions), [allTransactions]);
     const recentTransactions = useMemo(() => getRecentTransactions(allTransactions, 5), [allTransactions]);
     const forecastData = useMemo(() => getBudgetForecast(allTransactions, period, dateRange), [allTransactions, period, dateRange]);
 

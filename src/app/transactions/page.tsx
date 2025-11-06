@@ -18,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { toDate } from '@/lib/data';
+
 
 export default function TransactionsPage() {
   const { toast } = useToast();
@@ -33,10 +35,6 @@ export default function TransactionsPage() {
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
 
-  const toDate = (date: any) => {
-    if (!date) return new Date();
-    return date instanceof Date ? date : date.toDate();
-  }
   
   const handleEdit = (transaction: Transaction) => {
     setTransactionToEdit(transaction);

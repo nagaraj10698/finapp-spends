@@ -25,7 +25,6 @@ export default function DuesPage() {
   const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
 
   const { data: dues, isLoading: duesLoading } = useCollection<Due>(duesCollection);
-  const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const [dueToPay, setDueToPay] = useState<Due | null>(null);
@@ -35,7 +34,11 @@ export default function DuesPage() {
 
 
   const handlePaymentRequest = (due: Due) => {
-    if (due.isPaid) {
+    const instanceDate = due.instanceDate ? toDate(due.instanceDate) : null;
+    const instanceDateStr = instanceDate?.toISOString().split('T')[0];
+    const isInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
+
+    if (due.isPaid || isInstancePaid) {
        toast({
         variant: 'destructive',
         title: 'Already Paid',
@@ -158,13 +161,14 @@ export default function DuesPage() {
   
   const dueInstances = useMemo(() => {
     if (!dues) return [];
-    return generateDueInstances(dues);
+    const mappedDues = dues.map(d => ({...d, dueDate: toDate(d.dueDate)}));
+    return generateDueInstances(mappedDues);
   }, [dues]);
 
   const tableColumns = useMemo(() => getColumns(categories ?? [], handlePaymentRequest, handleEditRequest, handleDeleteRequest), [categories]);
 
 
-  if (duesLoading || transactionsLoading || categoriesLoading) {
+  if (duesLoading || categoriesLoading) {
     return <div>Loading dues...</div>;
   }
 

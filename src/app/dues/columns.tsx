@@ -30,7 +30,8 @@ const StatusCell = ({ row }: { row: any }) => {
     const displayDate = due.instanceDate ? toDate(due.instanceDate) : toDate(due.dueDate);
     const isOverdue = !due.isPaid && isBefore(displayDate, startOfToday());
     
-    const isInstancePaid = due.isRecurring && due.instanceDate && due.paidInstances?.[(due.instanceDate as Date).toISOString().split('T')[0]];
+    const instanceDateStr = due.instanceDate ? toDate(due.instanceDate).toISOString().split('T')[0] : null;
+    const isInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
 
     if (due.isPaid || isInstancePaid) {
         return <Badge variant="secondary">Paid</Badge>
@@ -46,7 +47,6 @@ const DueStatusCell = ({ row }: { row: any }) => {
     const displayDate = due.instanceDate ? toDate(due.instanceDate) : toDate(due.dueDate);
     const isOverdue = !due.isPaid && isBefore(displayDate, startOfToday());
 
-    // For recurring dues, check if the specific instance date is in paidInstances
     const instanceDateStr = due.instanceDate ? toDate(due.instanceDate).toISOString().split('T')[0] : null;
     const isInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
 
@@ -169,7 +169,8 @@ export const getColumns = (
     id: 'actions',
     cell: ({ row }) => {
       const due = row.original;
-      const isInstancePaid = due.isRecurring && due.instanceDate && due.paidInstances?.[(due.instanceDate as Date).toISOString().split('T')[0]];
+      const instanceDateStr = due.instanceDate ? toDate(due.instanceDate).toISOString().split('T')[0] : null;
+      const isInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
 
       return (
         <DropdownMenu>

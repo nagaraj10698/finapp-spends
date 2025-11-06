@@ -21,7 +21,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Notification, Due } from './types';
-import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, addDays, isAfter, startOfDay, startOfQuarter, startOfYear, endOfQuarter, endOfYear } from 'date-fns';
+import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfYear } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
@@ -72,11 +72,14 @@ export const getIconByName = (name: string): LucideIcon => {
     return ICONS[name] || Shapes;
 }
 
-export const getCategoryByName = (name: string, categories: Category[]) => categories.find(c => c.name === name);
+export const getCategoryByName = (name: string, categories: Category[]) => {
+    if (!categories) return undefined;
+    return categories.find(c => c.name === name);
+}
 
 // --- Functions that operate on live data ---
 
-export function toDate(date: Date | Timestamp): Date {
+export function toDate(date: Date | Timestamp | undefined | null): Date {
     if (!date) return new Date();
     return date instanceof Date ? date : (date as Timestamp).toDate();
 }
@@ -92,15 +95,11 @@ export function getRecentTransactions(allTransactions: Transaction[] | null, cou
 
 export function getUpcomingBills(
   allTransactions: Transaction[] | null,
-  dateRange?: DateRange
 ) {
   if (!allTransactions) return { bills: [], upcomingCount: 0, overdueCount: 0 };
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const rangeEnd = dateRange?.to ? toDate(dateRange.to) : endOfMonth(addMonths(today, 3));
-  const rangeStart = dateRange?.from ? toDate(dateRange.from) : today;
+  const today = startOfDay(new Date());
+  const rangeEnd = endOfMonth(addMonths(today, 3));
 
   const upcoming: Transaction[] = [];
   let upcomingCount = 0;
@@ -112,13 +111,12 @@ export function getUpcomingBills(
 
   unpaidExpenses.forEach((t) => {
     const expenseDate = toDate(t.date);
-    if (isWithinInterval(expenseDate, { start: rangeStart, end: rangeEnd })) {
+    if (isWithinInterval(expenseDate, { start: today, end: rangeEnd })) {
       upcoming.push({ ...t, date: expenseDate });
-      if (isBefore(expenseDate, today)) {
-        overdueCount++;
-      } else {
-        upcomingCount++;
-      }
+      upcomingCount++;
+    } else if (isBefore(expenseDate, today)) {
+       upcoming.push({ ...t, date: expenseDate });
+       overdueCount++;
     }
   });
 
@@ -148,8 +146,10 @@ export function getSpendingByCategory(allTransactions: Transaction[] | null) {
   const allExpenses = allTransactions.filter(t => t.type === 'expense');
   
   allExpenses.forEach(t => {
-    const currentTotal = spendingMap.get(t.category) || 0;
-    spendingMap.set(t.category, currentTotal + Math.abs(t.amount));
+    if (t.category) {
+      const currentTotal = spendingMap.get(t.category) || 0;
+      spendingMap.set(t.category, currentTotal + Math.abs(t.amount));
+    }
   });
   
   return Array.from(spendingMap.entries()).map(([name, total]) => ({ name, total }));
@@ -166,7 +166,7 @@ export function getBudgets(budgets: Budget[] | null, allTransactions: Transactio
         return {
             ...budget,
             spent,
-            limit: budget.limit,
+            limit: budget.budgetAmount,
         };
     });
 }
@@ -183,43 +183,26 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
 
     if (!due.isRecurring) {
       // For one-time dues, just add them if they are not paid.
-      if (!due.isPaid) {
-        instances.push({ ...due, instanceDate: startDate });
-      }
+      // We show them regardless of paid status in the table, but the logic here can be stricter if needed.
+      instances.push({ ...due, instanceDate: startDate });
     } else {
-      // For recurring dues, find all past unpaid and the single next upcoming instance.
+      // For recurring dues, generate instances
       const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : defaultEndDate;
       let nextDate = startDate;
-      let foundNextUpcoming = false;
       let sanityCheck = 0; // Prevent infinite loops
 
       while (isBefore(nextDate, recurrenceEndDate) && sanityCheck < 360) { // Limit to ~30 years of monthly checks
         const instanceDateStr = nextDate.toISOString().split('T')[0];
-        const isInstancePaid = !!(due as any).paidInstances?.[instanceDateStr];
+        const isInstancePaid = !!due.paidInstances?.[instanceDateStr];
 
-        if (!isInstancePaid) {
-          if (isBefore(nextDate, today)) {
-            // This is an overdue, unpaid instance. Add it.
+        // Add all instances within a reasonable future window, and all past unpaid instances
+        if (isBefore(nextDate, addMonths(today, 6)) || (isBefore(nextDate, today) && !isInstancePaid)) {
             instances.push({
               ...due,
-              instanceDate: nextDate,
-              isPaid: false,
+              instanceDate: new Date(nextDate), // Create new Date object
             });
-          } else if (!foundNextUpcoming) {
-            // This is the first upcoming, unpaid instance. Add it and stop looking for this due.
-            instances.push({
-              ...due,
-              instanceDate: nextDate,
-              isPaid: false,
-            });
-            foundNextUpcoming = true;
-          }
         }
         
-        if (foundNextUpcoming && !isBefore(nextDate, today)) {
-             break; // Exit loop once we have found the next upcoming due
-        }
-
         // Increment to the next period
         switch (due.frequency) {
           case 'weekly': nextDate = addWeeks(nextDate, 1); break;
@@ -232,7 +215,7 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
       }
     }
   });
-  return instances;
+  return instances.sort((a,b) => (a.instanceDate || a.dueDate).getTime() - (b.instanceDate || b.dueDate).getTime());
 }
 
 
@@ -243,55 +226,52 @@ export function getBudgetForecast(
 ) {
   if (!allTransactions) return [];
   
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
+  const today = startOfDay(new Date());
 
   const range = dateRange?.from && dateRange.to 
-    ? { start: dateRange.from, end: dateRange.to } 
+    ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) } 
     : { start: startOfMonth(today), end: endOfMonth(addMonths(today, 3)) };
   
-  const forecastData: { name: string; open: number; overdue: number; closed: number; }[] = [];
+  const forecastMap = new Map<string, { open: number; overdue: number; closed: number }>();
   const allExpenses = allTransactions.filter(t => t.type === 'expense');
 
-  let periods: {start: Date, end: Date}[];
+  let periods: Date[];
   let formatString: string;
+  let getPeriodKey: (date: Date) => string;
 
   if (period === 'daily') {
-      periods = eachDayOfInterval(range).map(d => ({start: d, end: d}));
+      periods = eachDayOfInterval(range);
       formatString = 'dd MMM';
+      getPeriodKey = (date) => format(date, formatString);
   } else { // monthly
-      periods = eachMonthOfInterval(range).map(d => ({start: d, end: endOfMonth(d)}));
+      periods = eachMonthOfInterval(range);
       formatString = 'MMM yyyy';
+      getPeriodKey = (date) => format(startOfMonth(date), formatString);
   }
 
-  periods.forEach(interval => {
-      const periodName = format(interval.start, formatString);
-      let openForPeriod = 0;
-      let overdueForPeriod = 0;
-
-      // Handle one-time expenses
-      allExpenses
-          .filter(t => isWithinInterval(toDate(t.date), interval))
-          .forEach(t => {
-              const amount = Math.abs(t.amount);
-              if (isBefore(toDate(t.date), today)) {
-                  overdueForPeriod += amount;
-              } else {
-                  openForPeriod += amount;
-              }
-          });
-      
-      if (openForPeriod > 0 || overdueForPeriod > 0) {
-          forecastData.push({ 
-              name: periodName, 
-              open: openForPeriod, 
-              overdue: overdueForPeriod, 
-              closed: 0
-            });
-      }
+  periods.forEach(p => {
+    const key = getPeriodKey(p);
+    forecastMap.set(key, { open: 0, overdue: 0, closed: 0 });
   });
 
-  return forecastData;
+  allExpenses.forEach(t => {
+    const transactionDate = toDate(t.date);
+    if (!isWithinInterval(transactionDate, range)) return;
+
+    const periodKey = getPeriodKey(transactionDate);
+    const periodData = forecastMap.get(periodKey);
+    
+    if (periodData) {
+        const amount = Math.abs(t.amount);
+        if (isBefore(transactionDate, today)) {
+            periodData.overdue += amount;
+        } else {
+            periodData.open += amount;
+        }
+    }
+  });
+
+  return Array.from(forecastMap.entries()).map(([name, values]) => ({ name, ...values }));
 }
 
 
@@ -301,7 +281,7 @@ export function getNotifications(
   allDues: Due[] | null,
 ): Notification[] {
   const notifications: Notification[] = [];
-  if (!allBudgets && !allDues) return [];
+  if (!allBudgets && !allDues && !allTransactions) return [];
 
   const today = startOfDay(new Date());
 
@@ -310,7 +290,10 @@ export function getNotifications(
     const dueInstances = generateDueInstances(allDues);
     dueInstances.forEach(due => {
       const instanceDate = toDate(due.instanceDate || due.dueDate);
-      if (!due.isPaid) {
+      const instanceDateStr = instanceDate.toISOString().split('T')[0];
+      const isInstancePaid = due.isPaid || !!due.paidInstances?.[instanceDateStr];
+
+      if (!isInstancePaid) {
         if (isBefore(instanceDate, today)) {
            notifications.push({
             id: `due-overdue-${due.id}-${format(instanceDate, 'yyyy-MM-dd')}`,
@@ -338,7 +321,7 @@ export function getNotifications(
     const budgetsWithSpent = getBudgets(allBudgets, allTransactions);
     budgetsWithSpent.forEach(budget => {
       const spent = budget.spent ?? 0;
-      const limit = budget.limit ?? 0;
+      const limit = budget.budgetAmount ?? 0;
       const usage = limit > 0 ? (spent / limit) * 100 : 0;
       if (usage >= 80) {
         notifications.push({

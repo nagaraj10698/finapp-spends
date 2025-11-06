@@ -58,18 +58,6 @@ const formSchema = z
       message: 'Please select a frequency for recurring dues.',
       path: ['frequency'],
     }
-  )
-  .refine(
-    (data) => {
-      if (data.isRecurring && !data.recurrenceEndDate) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: 'End date is required for recurring dues.',
-      path: ['recurrenceEndDate'],
-    }
   );
 
 
@@ -112,7 +100,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
         dueName: values.dueName,
         dueAmount: values.dueAmount,
         dueDate: values.dueDate,
-        isPaid: false, // This field might be deprecated based on new logic
+        isPaid: false,
         isRecurring: values.isRecurring,
         category: values.category,
         categoryId: selectedCategory?.id || null,
@@ -297,7 +285,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
                 name="recurrenceEndDate"
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
-                    <FormLabel>End Date</FormLabel>
+                    <FormLabel>End Date (Optional)</FormLabel>
                     <Popover>
                         <PopoverTrigger asChild>
                         <FormControl>

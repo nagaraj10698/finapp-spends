@@ -74,6 +74,7 @@ export const getCategoryByName = (name: string, categories: Category[]) => categ
 // --- Functions that operate on live data ---
 
 export function toDate(date: Date | Timestamp): Date {
+    if (!date) return new Date();
     return date instanceof Date ? date : (date as Timestamp).toDate();
 }
 
@@ -206,6 +207,7 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
     const instances: Due[] = [];
     const today = startOfDay(new Date());
     const rangeEnd = endOfMonth(addMonths(today, 6)); // Look 6 months into the future
+    const defaultEndDate = addYears(rangeEnd, 5); // Default end date if none is specified
 
     dues.forEach(due => {
         const startDate = toDate(due.dueDate);
@@ -220,11 +222,12 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
             }
         } else {
             // Recurring due
-            const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : addYears(rangeEnd, 1);
+            const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : defaultEndDate;
             let nextDate = startDate;
 
-            // Find first occurrence within or after today
-            while(isBefore(nextDate, today) && isBefore(nextDate, recurrenceEndDate)) {
+            // Find first occurrence within or after today, but only check a reasonable number of times
+            let sanityCheck = 0;
+            while(isBefore(nextDate, today) && isBefore(nextDate, recurrenceEndDate) && sanityCheck < 600) { // Limit to 50 years of monthly checks
                 switch (due.frequency) {
                     case 'weekly': nextDate = addWeeks(nextDate, 1); break;
                     case 'monthly': nextDate = addMonths(nextDate, 1); break;
@@ -232,10 +235,12 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
                     case 'yearly': nextDate = addYears(nextDate, 1); break;
                     default: nextDate = addYears(rangeEnd, 1);
                 }
+                sanityCheck++;
             }
             
             // Generate instances until the end of the range
-            while (isBefore(nextDate, rangeEnd) && isBefore(nextDate, recurrenceEndDate)) {
+            sanityCheck = 0;
+            while (isBefore(nextDate, rangeEnd) && isBefore(nextDate, recurrenceEndDate) && sanityCheck < 120) { // Limit to 10 years of monthly checks
                 const instanceDateStr = nextDate.toISOString().split('T')[0];
                 const isInstancePaid = !!(due as any).paidInstances?.[instanceDateStr];
                 
@@ -253,6 +258,7 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
                     case 'yearly': nextDate = addYears(nextDate, 1); break;
                     default: nextDate = addYears(rangeEnd, 1);
                 }
+                sanityCheck++;
             }
         }
     });

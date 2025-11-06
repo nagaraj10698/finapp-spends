@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, addDoc, writeBatch, deleteField } from "firebase/firestore";
@@ -48,11 +49,10 @@ export async function processDuePayment(userId: string, due: Due) {
 }
 
 
-export async function updateDue(userId: string, dueId: string, updatedData: Partial<Due>) {
+export async function updateDue(userId: string, dueId: string, updatedData: Partial<Due> & { isRecurring: boolean }) {
     const { firestore } = initializeFirebase();
     const dueRef = doc(firestore, 'users', userId, 'dues', dueId);
 
-    // Build a clean update object
     const dataToUpdate: { [key: string]: any } = {
         dueName: updatedData.dueName,
         dueAmount: updatedData.dueAmount,

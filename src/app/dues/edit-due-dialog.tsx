@@ -22,16 +22,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Due, Category } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, toDate } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getIconByName, toDate } from '@/lib/data';
+import { getIconByName } from '@/lib/data';
 import { updateDue } from '../actions';
 
 
@@ -39,7 +39,7 @@ const formSchema = z
   .object({
     dueName: z.string().min(1, 'Due name is required.'),
     dueAmount: z.coerce.number().positive('Amount must be positive.'),
-    dueDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Start date is required." }),
+    dueDate: z.string().refine((val) => val, { message: "Start date is required." }),
     category: z.string().min(1, 'Please select a category.'),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
@@ -57,7 +57,14 @@ const formSchema = z
       path: ['frequency'],
     }
   )
-  .refine(data => !data.isRecurring || !data.recurrenceEndDate || new Date(data.recurrenceEndDate) > new Date(data.dueDate), {
+  .refine(data => {
+    if (!data.isRecurring || !data.recurrenceEndDate) return true;
+    try {
+        return new Date(data.recurrenceEndDate) > new Date(data.dueDate);
+    } catch {
+        return false;
+    }
+  }, {
     message: "End date must be after the start date.",
     path: ["recurrenceEndDate"],
   });
@@ -91,7 +98,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
             category: due.category,
             isRecurring: due.isRecurring,
             frequency: due.frequency,
-            recurrenceEndDate: due.recurrenceEndDate ? format(toDate(due.recurrenceEndDate), 'yyyy-MM-dd') : null,
+            recurrenceEndDate: due.recurrenceEndDate ? format(toDate(due.recurrenceEndDate), 'yyyy-MM-dd') : '',
         });
     }
   }, [due, form]);
@@ -109,15 +116,15 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
 
     const selectedCategory = categories?.find(c => c.name === values.category);
 
-    const dataToUpdate: Partial<Due> = {
+    const dataToUpdate: Partial<Due> & { isRecurring: boolean } = {
       dueName: values.dueName,
       dueAmount: values.dueAmount,
       dueDate: new Date(values.dueDate),
       category: values.category,
       categoryId: selectedCategory?.id || null,
       isRecurring: values.isRecurring,
-      frequency: values.frequency,
-      recurrenceEndDate: values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null,
+      frequency: values.isRecurring ? values.frequency : undefined,
+      recurrenceEndDate: values.isRecurring ? (values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null) : undefined,
     };
     
     try {

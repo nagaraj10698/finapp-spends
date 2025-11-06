@@ -50,7 +50,7 @@
           "description": "Reference to User. (Relationship: User 1:N Transaction)"
         },
         "categoryId": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "Reference to Category. (Relationship: Category 1:N Transaction)"
         },
         "transactionDate": {
@@ -87,17 +87,11 @@
         "fileName": {
             "type": "string",
             "description": "Name of the uploaded file."
-        },
-        "status": {
-            "type": "string",
-            "description": "Payment status of the transaction.",
-            "enum": ["Paid", "Un-paid"]
         }
       },
       "required": [
         "id",
         "userId",
-        "categoryId",
         "transactionDate",
         "amount",
         "description",
@@ -191,44 +185,44 @@
         "type"
       ]
     },
-    "Reminder": {
+    "Due": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Reminder",
+      "title": "Due",
       "type": "object",
-      "description": "Represents a reminder for bills or subscriptions.",
+      "description": "Represents a due for bills or subscriptions.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Reminder entity."
+          "description": "Unique identifier for the Due entity."
         },
         "userId": {
           "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Reminder)"
+          "description": "Reference to User. (Relationship: User 1:N Due)"
         },
-        "reminderName": {
+        "dueName": {
           "type": "string",
-          "description": "Name of the reminder."
+          "description": "Name of the due."
         },
-        "reminderDate": {
+        "dueDate": {
           "type": "string",
-          "description": "Date of the reminder.",
+          "description": "Date of the due.",
           "format": "date-time"
         },
-        "reminderAmount": {
+        "dueAmount": {
           "type": "number",
-          "description": "Amount due for the reminder."
+          "description": "Amount due for the due."
         },
         "isPaid": {
           "type": "boolean",
-          "description": "Whether the reminder has been paid."
+          "description": "Whether the due has been paid."
         }
       },
       "required": [
         "id",
         "userId",
-        "reminderName",
-        "reminderDate",
-        "reminderAmount",
+        "dueName",
+        "dueDate",
+        "dueAmount",
         "isPaid"
       ]
     }
@@ -317,26 +311,26 @@
         }
       },
       {
-        "path": "/users/{userId}/reminders/{reminderId}",
+        "path": "/users/{userId}/dues/{dueId}",
         "definition": {
-          "entityName": "Reminder",
+          "entityName": "Due",
           "schema": {
-            "$ref": "#/backend/entities/Reminder"
+            "$ref": "#/backend/entities/Due"
           },
-          "description": "Stores user's reminders for bills and subscriptions. Accessible only by the user themselves.",
+          "description": "Stores user's dues for bills and subscriptions. Accessible only by the user themselves.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier of the user."
             },
             {
-              "name": "reminderId",
-              "description": "The unique identifier of the reminder."
+              "name": "dueId",
+              "description": "The unique identifier of the due."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure data isolation and ownership based on the user. Each user has their own collection of transactions, categories, budgets, and reminders. Transactions are stored as a subcollection of accounts, ensuring that transactions are always associated with a specific account owned by the user.\\n\\nThis design ensures Authorization Independence by storing all user-specific data under paths specific to the user's ID.  There are no dependencies on parent documents (no `get()` calls are needed in the rules). The database adheres to the principle that Rules are not Filters (QAPs). Data segregation by path enables secure `list` operations, as rules can simply verify that `request.auth.uid` matches the `userId` in the path. Because data is segregated by user ID, listing accounts, categories, and other entities will only return data for the authenticated user.\\n"
+    "reasoning": "The Firestore structure is designed to ensure data isolation and ownership based on the user. Each user has their own collection of transactions, categories, budgets, and dues. Transactions are stored as a subcollection of accounts, ensuring that transactions are always associated with a specific account owned by the user.\\n\\nThis design ensures Authorization Independence by storing all user-specific data under paths specific to the user's ID.  There are no dependencies on parent documents (no `get()` calls are needed in the rules). The database adheres to the principle that Rules are not Filters (QAPs). Data segregation by path enables secure `list` operations, as rules can simply verify that `request.auth.uid` matches the `userId` in the path. Because data is segregated by user ID, listing accounts, categories, and other entities will only return data for the authenticated user.\\n"
   }
 }

@@ -49,29 +49,36 @@ export async function processDuePayment(userId: string, due: Due) {
 }
 
 
-export async function updateDue(userId: string, dueId: string, updatedData: Partial<Due> & { isRecurring: boolean }) {
+export async function saveDue(userId: string, dueData: Partial<Due>) {
     const { firestore } = initializeFirebase();
-    const dueRef = doc(firestore, 'users', userId, 'dues', dueId);
-
-    const dataToUpdate: { [key: string]: any } = {
-        dueName: updatedData.dueName,
-        dueAmount: updatedData.dueAmount,
-        dueDate: updatedData.dueDate,
-        category: updatedData.category,
-        categoryId: updatedData.categoryId,
-        isRecurring: updatedData.isRecurring,
+    const isEditing = !!dueData.id;
+    
+    const dataToSave: { [key: string]: any } = {
+        dueName: dueData.dueName,
+        dueAmount: dueData.dueAmount,
+        dueDate: dueData.dueDate,
+        category: dueData.category,
+        categoryId: dueData.categoryId,
+        isRecurring: dueData.isRecurring,
+        userId: userId,
     };
 
-    if (updatedData.isRecurring) {
-        dataToUpdate.frequency = updatedData.frequency;
-        // Firestore can accept null for a date field
-        dataToUpdate.recurrenceEndDate = updatedData.recurrenceEndDate || null;
+    if (dueData.isRecurring) {
+        dataToSave.frequency = dueData.frequency;
+        dataToSave.recurrenceEndDate = dueData.recurrenceEndDate || null;
     } else {
-        // Use deleteField for fields that should not exist on non-recurring dues
-        dataToUpdate.frequency = deleteField();
-        dataToUpdate.recurrenceEndDate = deleteField();
-        dataToUpdate.paidInstances = deleteField();
+        dataToSave.frequency = deleteField();
+        dataToSave.recurrenceEndDate = deleteField();
+        dataToSave.paidInstances = deleteField();
+        dataToSave.isPaid = dueData.isPaid || false;
     }
-
-    await updateDoc(dueRef, dataToUpdate);
+    
+    if (isEditing) {
+        const dueRef = doc(firestore, 'users', userId, 'dues', dueData.id!);
+        await updateDoc(dueRef, dataToSave);
+    } else {
+        const duesCollection = collection(firestore, 'users', userId, 'dues');
+        await addDoc(duesCollection, dataToSave);
+    }
 }
+

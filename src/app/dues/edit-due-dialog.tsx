@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getIconByName, toDate } from '@/lib/data';
-import { updateDue } from '../actions';
+import { saveDue } from '../actions';
 
 
 const formSchema = z
@@ -116,7 +116,8 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
 
     const selectedCategory = categories?.find(c => c.name === values.category);
 
-    const dataToUpdate: Partial<Due> & { isRecurring: boolean } = {
+    const dataToUpdate: Partial<Due> = {
+      id: due.id,
       dueName: values.dueName,
       dueAmount: values.dueAmount,
       dueDate: new Date(values.dueDate),
@@ -128,7 +129,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
     };
     
     try {
-      await updateDue(user.uid, due.id, dataToUpdate);
+      await saveDue(user.uid, dataToUpdate);
       toast({
         title: 'Due Updated',
         description: `The due "${values.dueName}" has been updated.`,

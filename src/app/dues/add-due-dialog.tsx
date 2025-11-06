@@ -25,7 +25,7 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
-import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Due, Category } from '@/lib/types';
 import { format } from 'date-fns';
@@ -33,12 +33,13 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getIconByName } from '@/lib/data';
+import { saveDue } from '../actions';
 
 const formSchema = z
   .object({
     dueName: z.string().min(1, 'Due name is required.'),
     dueAmount: z.coerce.number().positive('Amount must be positive.'),
-    dueDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Start date is required." }),
+    dueDate: z.string().refine((val) => val, { message: "Start date is required." }),
     category: z.string().min(1, 'Please select a category.'),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
@@ -96,9 +97,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
     
     const selectedCategory = categories?.find(c => c.name === values.category);
 
-    const dueCollection = collection(firestore, 'users', user.uid, 'dues');
-    const newDue: Omit<Due, 'id'> = {
-        userId: user.uid,
+    const dueData: Partial<Due> = {
         dueName: values.dueName,
         dueAmount: values.dueAmount,
         dueDate: new Date(values.dueDate),
@@ -106,23 +105,26 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
         isRecurring: values.isRecurring,
         category: values.category,
         categoryId: selectedCategory?.id || null,
+        frequency: values.frequency,
+        recurrenceEndDate: values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null,
     };
-
-    if (values.isRecurring) {
-      newDue.frequency = values.frequency;
-      if (values.recurrenceEndDate) {
-        newDue.recurrenceEndDate = new Date(values.recurrenceEndDate);
-      }
-    }
-
-    await addDocumentNonBlocking(dueCollection, newDue);
     
-    toast({
-      title: 'Due Added',
-      description: `A due for ${values.dueName} has been set.`,
-    });
-    form.reset();
-    setOpen(false);
+    try {
+        await saveDue(user.uid, dueData);
+        toast({
+          title: 'Due Added',
+          description: `A due for ${values.dueName} has been set.`,
+        });
+        form.reset();
+        setOpen(false);
+    } catch (error) {
+        console.error("Error saving due:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to save due. Please try again."
+        });
+    }
   }
 
   const expenseCategories = categories?.filter(c => c.type === 'expense');

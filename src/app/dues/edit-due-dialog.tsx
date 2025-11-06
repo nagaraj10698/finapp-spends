@@ -68,9 +68,9 @@ interface EditDueDialogProps {
 
 export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps) {
   const { toast } = useToast();
-  const { user } = useFirebase();
+  const { user, firestore } = useFirebase();
 
-  const categoriesCollection = useMemoFirebase(() => user ? collection(user.firestore, 'users', user.uid, 'categories') : null, [user]);
+  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -121,8 +121,8 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
-        frequency: values.frequency,
-        recurrenceEndDate: values.recurrenceEndDate,
+        frequency: values.isRecurring ? values.frequency : undefined,
+        recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : null,
     };
     
     try {

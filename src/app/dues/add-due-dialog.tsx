@@ -104,9 +104,14 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
         isRecurring: values.isRecurring,
         category: values.category,
         categoryId: selectedCategory?.id || null,
-        frequency: values.frequency,
-        recurrenceEndDate: values.recurrenceEndDate
     };
+
+    if (values.isRecurring) {
+      newDue.frequency = values.frequency;
+      if (values.recurrenceEndDate) {
+        newDue.recurrenceEndDate = values.recurrenceEndDate;
+      }
+    }
 
     await addDocumentNonBlocking(dueCollection, newDue);
     

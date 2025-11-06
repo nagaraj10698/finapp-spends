@@ -120,9 +120,16 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
-        frequency: values.isRecurring ? values.frequency : deleteField() as any,
-        recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : deleteField() as any,
     };
+
+    if (values.isRecurring) {
+      updatedDue.frequency = values.frequency;
+      updatedDue.recurrenceEndDate = values.recurrenceEndDate || deleteField() as any;
+    } else {
+      updatedDue.frequency = deleteField() as any;
+      updatedDue.recurrenceEndDate = deleteField() as any;
+    }
+
 
      // Handle payment status change
     const instanceDate = due.instanceDate ? toDate(due.instanceDate) : null;
@@ -135,17 +142,22 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
     try {
         await updateDue(user.uid, due, updatedDue, wasPaid, isNowPaid, instanceDateStr);
         
-        if (!isNowPaid && wasPaid) {
+        if (isNowPaid && !wasPaid) {
+             toast({
+                title: 'Due Paid!',
+                description: `${values.dueName} marked as paid and an expense has been logged.`,
+            });
+        } else if (!isNowPaid && wasPaid) {
             toast({
                 title: "Action Required",
                 description: "The due is marked as unpaid. Please manually delete the corresponding expense transaction if needed.",
             });
+        } else {
+             toast({
+                title: 'Due Updated',
+                description: `The due "${values.dueName}" has been updated.`,
+            });
         }
-
-        toast({
-            title: 'Due Updated',
-            description: `The due "${values.dueName}" has been updated.`,
-        });
         onClose();
 
     } catch (error) {

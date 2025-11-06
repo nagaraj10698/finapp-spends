@@ -1,4 +1,5 @@
 
+'use client';
 import ProfileSettings from "../settings/profile-settings";
 
 export default function ProfilePage() {

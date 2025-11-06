@@ -15,11 +15,13 @@ import { UserNav } from '@/components/user-nav';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { FirebaseClientProvider } from '@/firebase';
-import { usePathname } from 'next/navigation';
+import { FirebaseClientProvider, useUser } from '@/firebase';
+import { usePathname, useRouter } from 'next/navigation';
 import AuthLayout from './auth/layout';
 import Notifications from '@/components/notifications';
 import Logo from '@/components/logo';
+import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 // Metadata can't be in a client component, so we export it from a server component context
 // but since the root layout now needs to be a client component because of usePathname,
@@ -60,15 +62,42 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     )
 }
 
-function LayoutDecider({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname();
-    const isAuthPage = pathname === '/login' || pathname === '/signup';
+function AuthWrapper({ children }: { children: React.ReactNode }) {
+  const { user, isUserLoading } = useUser();
+  const pathname = usePathname();
+  const router = useRouter();
 
-    if (isAuthPage) {
-        return <AuthLayout>{children}</AuthLayout>
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+
+  useEffect(() => {
+    if (!isUserLoading && !user && !isAuthPage) {
+      router.push('/login');
     }
+  }, [isUserLoading, user, isAuthPage, router]);
 
-    return <AppLayout>{children}</AppLayout>
+  if (isUserLoading && !isAuthPage) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (isAuthPage) {
+    return <AuthLayout>{children}</AuthLayout>;
+  }
+
+  if (!user) {
+    // This case should be handled by the useEffect redirect, but as a fallback,
+    // we can show a loader or null while redirecting.
+    return (
+         <div className="flex min-h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
+  }
+
+  return <AppLayout>{children}</AppLayout>;
 }
 
 
@@ -100,7 +129,7 @@ export default function RootLayout({
         )}
       >
         <FirebaseClientProvider>
-          <LayoutDecider>{children}</LayoutDecider>
+          <AuthWrapper>{children}</AuthWrapper>
         </FirebaseClientProvider>
         <Toaster />
       </body>

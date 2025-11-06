@@ -1,6 +1,6 @@
 
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import {
   Popover,
@@ -20,6 +20,25 @@ import { ScrollArea } from './ui/scroll-area';
 export default function Notifications() {
   const { firestore, user } = useFirebase();
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    // This effect runs only on the client after hydration
+    const storedIds = localStorage.getItem('readNotificationIds');
+    if (storedIds) {
+      try {
+        setReadNotificationIds(JSON.parse(storedIds));
+      } catch (e) {
+        console.error("Failed to parse readNotificationIds from localStorage", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    // This effect runs whenever readNotificationIds changes, but only on the client
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('readNotificationIds', JSON.stringify(readNotificationIds));
+    }
+  }, [readNotificationIds]);
 
   const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
   const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);

@@ -13,8 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth, useUser } from '@/firebase';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Skeleton } from './ui/skeleton';
 import Link from 'next/link';
 
@@ -22,18 +21,18 @@ export function UserNav() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
+  const pathname = usePathname();
 
   if (isUserLoading) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
   
   if (!user) {
+    // The main layout now handles redirection. This component just renders the buttons
+    // if the user is not logged in and not on an auth page.
+    if (pathname === '/login' || pathname === '/signup') {
+      return null;
+    }
     return (
       <div className="flex items-center gap-2">
         <Button asChild variant="outline">
@@ -74,7 +73,7 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="/settings">Profile</Link>
+            <Link href="/profile">Profile</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/settings">Settings</Link>

@@ -50,7 +50,7 @@
           "description": "Reference to User. (Relationship: User 1:N Transaction)"
         },
         "categoryId": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "Reference to Category. (Relationship: Category 1:N Transaction)"
         },
         "transactionDate": {
@@ -91,13 +91,12 @@
         "status": {
             "type": "string",
             "description": "Payment status of the transaction.",
-            "enum": ["Paid", "Un-paid"]
+            "enum": ["Paid", "Un-paid", "Received", "Pending"]
         }
       },
       "required": [
         "id",
         "userId",
-        "categoryId",
         "transactionDate",
         "amount",
         "description",

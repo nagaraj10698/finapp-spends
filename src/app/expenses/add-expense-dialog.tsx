@@ -114,7 +114,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             description: values.description,
             amount: -Math.abs(values.amount), // ensure it's negative
             category: values.category,
-            categoryId: selectedCategory?.id,
+            categoryId: selectedCategory?.id || null,
             date: values.date,
             isRecurring: values.isRecurring,
             frequency: values.frequency,

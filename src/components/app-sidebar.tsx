@@ -11,6 +11,8 @@ import {
   TrendingUp,
   ArrowRightLeft,
   FileQuestion,
+  Bell,
+  User,
 } from 'lucide-react';
 import {
   SidebarContent,
@@ -30,6 +32,7 @@ const menuItems = [
   { href: '/expenses', label: 'Expenses', icon: Landmark },
   { href: '/income', label: 'Income', icon: TrendingUp },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
+  { href: '/reminders', label: 'Reminders', icon: Bell },
 ];
 
 export default function AppSidebar() {
@@ -67,7 +70,7 @@ export default function AppSidebar() {
               <SidebarMenuButton
                 variant="sidebar"
                 asChild
-                isActive={pathname === '/settings'}
+                isActive={pathname.startsWith('/settings') || pathname === '/profile'}
                 tooltip={!isMobile ? 'Settings' : undefined}
               >
                 <Link href={'/settings'}>

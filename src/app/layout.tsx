@@ -22,6 +22,9 @@ import Notifications from '@/components/notifications';
 import Logo from '@/components/logo';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import MobileBottomNav from '@/components/mobile-nav';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 // Metadata can't be in a client component, so we export it from a server component context
 // but since the root layout now needs to be a client component because of usePathname,
@@ -33,6 +36,7 @@ import { Loader2 } from 'lucide-react';
 // };
 
 function AppLayout({ children }: { children: React.ReactNode }) {
+    const isMobile = useIsMobile();
     return (
         <SidebarProvider>
             <Sidebar>
@@ -56,6 +60,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               <main className="flex-1 overflow-auto p-4 sm:px-6 sm:py-0">
                 {children}
               </main>
+              {isMobile && <MobileBottomNav />}
             </SidebarInset>
         </SidebarProvider>
     )

@@ -65,8 +65,6 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
-  const [isDueDatePickerOpen, setDueDatePickerOpen] = useState(false);
-  const [isEndDatePickerOpen, setEndDatePickerOpen] = useState(false);
 
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -262,7 +260,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>{isRecurring ? 'First Due Date' : 'Due Date'}</FormLabel>
-                  <Popover open={isDueDatePickerOpen} onOpenChange={setDueDatePickerOpen}>
+                  <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -281,10 +279,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
                       <Calendar 
                         mode="single" 
                         selected={field.value} 
-                        onSelect={(date) => {
-                            field.onChange(date);
-                            setDueDatePickerOpen(false);
-                        }}
+                        onSelect={field.onChange}
                         initialFocus 
                       />
                     </PopoverContent>
@@ -301,7 +296,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
                     <FormLabel>End Date (Optional)</FormLabel>
-                    <Popover open={isEndDatePickerOpen} onOpenChange={setEndDatePickerOpen}>
+                    <Popover>
                         <PopoverTrigger asChild>
                         <FormControl>
                             <Button
@@ -320,10 +315,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
                           <Calendar 
                             mode="single" 
                             selected={field.value} 
-                            onSelect={(date) => {
-                                field.onChange(date);
-                                setEndDatePickerOpen(false);
-                            }}
+                            onSelect={field.onChange}
                             initialFocus 
                           />
                         </PopoverContent>

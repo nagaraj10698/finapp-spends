@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, updateDoc, writeBatch, deleteField } from 'firebase/firestore';
 import type { Due, Category, Transaction } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getIconByName, toDate } from '@/lib/data';
+import { updateDue } from '@/app/actions';
 
 const formSchema = z
   .object({
@@ -72,7 +73,6 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
   const { firestore, user } = useFirebase();
 
   const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
-  const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -102,7 +102,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !user || !due) {
+    if (!user || !due) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -111,7 +111,6 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         return;
     }
     
-    const dueRef = doc(firestore, 'users', user.uid, 'dues', due.id);
     const selectedCategory = categories?.find(c => c.name === values.category);
     
     const updatedDue: Partial<Due> = {
@@ -121,64 +120,27 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
+        frequency: values.isRecurring ? values.frequency : deleteField() as any,
+        recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : deleteField() as any,
     };
-
-    if (values.isRecurring) {
-        updatedDue.frequency = values.frequency;
-        updatedDue.recurrenceEndDate = values.recurrenceEndDate;
-    } else {
-        updatedDue.frequency = undefined;
-        updatedDue.recurrenceEndDate = undefined;
-    }
 
      // Handle payment status change
     const instanceDate = due.instanceDate ? toDate(due.instanceDate) : null;
-    const instanceDateStr = instanceDate?.toISOString().split('T')[0];
+    const instanceDateStr = instanceDate?.toISOString().split('T')[0] || null;
     const wasInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
     
     const isNowPaid = values.isPaid;
     const wasPaid = due.isPaid || wasInstancePaid;
     
     try {
-        const batch = writeBatch(firestore);
-
-        if (isNowPaid && !wasPaid) {
-            // Marked as Paid: Create transaction
-            if (transactionsCollection) {
-                const newTransaction: Omit<Transaction, 'id'> = {
-                    description: values.dueName,
-                    amount: -Math.abs(values.dueAmount),
-                    date: instanceDate || values.dueDate,
-                    category: values.category,
-                    categoryId: selectedCategory?.id || null,
-                    type: 'expense',
-                };
-                batch.set(doc(transactionsCollection), newTransaction);
-            }
-             if (due.isRecurring && instanceDateStr) {
-                batch.update(dueRef, { [`paidInstances.${instanceDateStr}`]: true });
-            } else {
-                batch.update(dueRef, { isPaid: true, paidDate: new Date() });
-            }
-
-        } else if (!isNowPaid && wasPaid) {
-            // Marked as Unpaid: We can't reliably find and delete the exact transaction,
-            // so we just update the due status. The user has to manually delete the transaction.
+        await updateDue(user.uid, due, updatedDue, wasPaid, isNowPaid, instanceDateStr);
+        
+        if (!isNowPaid && wasPaid) {
             toast({
                 title: "Action Required",
                 description: "The due is marked as unpaid. Please manually delete the corresponding expense transaction if needed.",
             });
-             if (due.isRecurring && instanceDateStr) {
-                batch.update(dueRef, { [`paidInstances.${instanceDateStr}`]: false });
-            } else {
-                batch.update(dueRef, { isPaid: false, paidDate: null });
-            }
         }
-        
-        // Update the rest of the due fields
-        batch.update(dueRef, updatedDue);
-        
-        await batch.commit();
 
         toast({
             title: 'Due Updated',

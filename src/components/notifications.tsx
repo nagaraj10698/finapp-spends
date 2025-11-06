@@ -1,4 +1,3 @@
-
 'use client';
 import { useMemo, useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
@@ -9,20 +8,20 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import type { Transaction, Budget, Category } from '@/lib/types';
+import type { Transaction, Budget } from '@/lib/types';
 import { collection } from 'firebase/firestore';
 import { getNotifications } from '@/lib/data';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 
-
 export default function Notifications() {
   const { firestore, user } = useFirebase();
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // This effect runs only on the client after hydration
+    setIsClient(true);
     const storedIds = localStorage.getItem('readNotificationIds');
     if (storedIds) {
       try {
@@ -34,11 +33,10 @@ export default function Notifications() {
   }, []);
 
   useEffect(() => {
-    // This effect runs whenever readNotificationIds changes, but only on the client
-    if (typeof window !== 'undefined') {
+    if (isClient) {
       localStorage.setItem('readNotificationIds', JSON.stringify(readNotificationIds));
     }
-  }, [readNotificationIds]);
+  }, [readNotificationIds, isClient]);
 
   const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
   const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
@@ -51,8 +49,9 @@ export default function Notifications() {
   }, [allTransactions, allBudgets]);
 
   const unreadNotificationsCount = useMemo(() => {
+    if (!isClient) return 0; // Don't calculate on server or before hydration
     return allNotifications.filter(n => !readNotificationIds.includes(n.id)).length;
-  }, [allNotifications, readNotificationIds]);
+  }, [allNotifications, readNotificationIds, isClient]);
 
   const handleMarkAllRead = () => {
     const allIds = allNotifications.map(n => n.id);
@@ -63,8 +62,9 @@ export default function Notifications() {
     setReadNotificationIds(prev => [...new Set([...prev, notificationId])]);
   };
 
-
-  if (transactionsLoading || budgetsLoading) {
+  const isLoading = transactionsLoading || budgetsLoading;
+  
+  if (isLoading || !isClient) {
     return (
         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
             <Bell className="h-5 w-5" />

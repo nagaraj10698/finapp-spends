@@ -72,27 +72,37 @@ export default function CategorySettings() {
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
   useEffect(() => {
-    // One-time check to populate default categories for existing users
-    if (user && firestore && !isLoading && categories && categories.length === 0) {
-      const batch = writeBatch(firestore);
-      const userCategoriesRef = collection(firestore, 'users', user.uid, 'categories');
-      defaultCategories.forEach(category => {
-        const newCatRef = doc(userCategoriesRef);
-        batch.set(newCatRef, category);
-      });
-      batch.commit().then(() => {
-        toast({
-          title: "Default Categories Added",
-          description: "We've added some default categories to get you started.",
+    if (user && firestore && !isLoading && categories) {
+      const existingCategoryNames = new Set(categories.map(c => c.name));
+      const missingCategories = defaultCategories.filter(
+        defaultCat => !existingCategoryNames.has(defaultCat.name)
+      );
+
+      if (missingCategories.length > 0) {
+        const batch = writeBatch(firestore);
+        const userCategoriesRef = collection(firestore, 'users', user.uid, 'categories');
+        
+        missingCategories.forEach(category => {
+          const newCatRef = doc(userCategoriesRef);
+          batch.set(newCatRef, category);
         });
-      }).catch(err => {
-        console.error("Failed to add default categories:", err);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Could not add default categories."
-        })
-      });
+
+        batch.commit().then(() => {
+          if (missingCategories.length > 0) {
+             toast({
+              title: "Default Categories Updated",
+              description: "We've added some new default categories to your account.",
+            });
+          }
+        }).catch(err => {
+          console.error("Failed to add missing default categories:", err);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not update your default categories."
+          })
+        });
+      }
     }
   }, [user, firestore, isLoading, categories, toast]);
 

@@ -20,7 +20,7 @@ import {
   Wallet,
   TrendingUp,
 } from 'lucide-react';
-import type { Category, Transaction, Budget, Notification, Due } from './types';
+import type { Category, Transaction, Budget, Notification } from './types';
 import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, addDays, isAfter, startOfDay } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
@@ -285,42 +285,12 @@ export function getBudgetForecast(
 
 export function getNotifications(
   allTransactions: Transaction[] | null,
-  allBudgets: Budget[] | null,
-  allDues: Due[] | null
+  allBudgets: Budget[] | null
 ): Notification[] {
   const notifications: Notification[] = [];
-  if (!allTransactions && !allBudgets && !allDues) return [];
+  if (!allTransactions && !allBudgets) return [];
 
   const today = startOfDay(new Date());
-
-  // Due-based notifications
-  if (allDues) {
-    allDues.forEach(due => {
-      const dueDate = startOfDay(toDate(due.dueDate));
-      
-      // Overdue Dues
-      if (!due.isPaid && isBefore(dueDate, today)) {
-        notifications.push({
-          id: `overdue-due-${due.id}`,
-          type: 'overdue',
-          title: 'Overdue Due',
-          description: `'${due.dueName}' was due on ${format(dueDate, 'LLL dd')}.`,
-          href: '/dues',
-        });
-      }
-      
-      // Upcoming Dues
-      if (!due.isPaid && isWithinInterval(dueDate, { start: today, end: addDays(today, 7) })) {
-        notifications.push({
-          id: `upcoming-due-${due.id}`,
-          type: 'upcoming',
-          title: 'Upcoming Due',
-          description: `'${due.dueName}' is due on ${format(dueDate, 'LLL dd')}.`,
-          href: '/dues',
-        });
-      }
-    });
-  }
 
   // Budget alerts
   if (allBudgets && allTransactions) {

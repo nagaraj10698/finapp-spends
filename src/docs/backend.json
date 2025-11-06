@@ -184,47 +184,6 @@
         "isRecurring",
         "type"
       ]
-    },
-    "Due": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Due",
-      "type": "object",
-      "description": "Represents a due for bills or subscriptions.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Due entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Due)"
-        },
-        "dueName": {
-          "type": "string",
-          "description": "Name of the due."
-        },
-        "dueDate": {
-          "type": "string",
-          "description": "Date of the due.",
-          "format": "date-time"
-        },
-        "dueAmount": {
-          "type": "number",
-          "description": "Amount due for the due."
-        },
-        "isPaid": {
-          "type": "boolean",
-          "description": "Whether the due has been paid."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "dueName",
-        "dueDate",
-        "dueAmount",
-        "isPaid"
-      ]
     }
   },
   "auth": {
@@ -306,26 +265,6 @@
             {
               "name": "budgetId",
               "description": "The unique identifier of the budget."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/dues/{dueId}",
-        "definition": {
-          "entityName": "Due",
-          "schema": {
-            "$ref": "#/backend/entities/Due"
-          },
-          "description": "Stores user's dues for bills and subscriptions. Accessible only by the user themselves.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "dueId",
-              "description": "The unique identifier of the due."
             }
           ]
         }

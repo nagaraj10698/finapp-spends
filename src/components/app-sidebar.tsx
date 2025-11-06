@@ -33,7 +33,6 @@ const menuItems = [
   { href: '/expenses', label: 'Expenses', icon: Landmark },
   { href: '/income', label: 'Income', icon: TrendingUp },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
-  { href: '/dues', label: 'Dues', icon: Bell },
   { href: '/insights', label: 'Insights', icon: WandSparkles },
 ];
 

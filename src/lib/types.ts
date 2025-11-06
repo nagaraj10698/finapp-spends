@@ -41,15 +41,6 @@ export interface Budget {
   limit?: number;
 }
 
-export interface Due {
-  id: string;
-  userId: string;
-  dueName: string;
-  dueDate: Date | Timestamp;
-  dueAmount: number;
-  isPaid: boolean;
-}
-
 export interface Income {
   id: string;
   description: string;

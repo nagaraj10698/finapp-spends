@@ -25,8 +25,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc, writeBatch, deleteField } from 'firebase/firestore';
-import type { Due, Category, Transaction } from '@/lib/types';
+import { collection } from 'firebase/firestore';
+import type { Due, Category } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
@@ -82,10 +82,6 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
 
   useEffect(() => {
     if (due) {
-        const instanceDate = due.instanceDate ? toDate(due.instanceDate) : null;
-        const instanceDateStr = instanceDate?.toISOString().split('T')[0];
-        const isInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
-
       form.reset({
         dueName: due.dueName,
         dueAmount: due.dueAmount,
@@ -111,6 +107,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
     
     const selectedCategory = categories?.find(c => c.name === values.category);
     
+    // Construct a clean data object to send to the server action
     const updatedDue: Partial<Due> = {
         dueName: values.dueName,
         dueAmount: values.dueAmount,
@@ -118,15 +115,9 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
+        frequency: values.isRecurring ? values.frequency : undefined,
+        recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : undefined,
     };
-
-    if (values.isRecurring) {
-      updatedDue.frequency = values.frequency;
-      updatedDue.recurrenceEndDate = values.recurrenceEndDate || deleteField() as any;
-    } else {
-      updatedDue.frequency = deleteField() as any;
-      updatedDue.recurrenceEndDate = deleteField() as any;
-    }
     
     try {
         await updateDue(user.uid, due.id, updatedDue);

@@ -22,7 +22,7 @@ export async function updateDue(userId: string, dueId: string, updatedData: Part
 
   const dataToUpdate: { [key: string]: any } = {};
 
-  // Copy basic fields
+  // Copy basic fields that are always present
   if (updatedData.dueName) dataToUpdate.dueName = updatedData.dueName;
   if (updatedData.dueAmount) dataToUpdate.dueAmount = updatedData.dueAmount;
   if (updatedData.dueDate) dataToUpdate.dueDate = updatedData.dueDate;
@@ -31,15 +31,17 @@ export async function updateDue(userId: string, dueId: string, updatedData: Part
   if (updatedData.isRecurring !== undefined) dataToUpdate.isRecurring = updatedData.isRecurring;
   
   if (updatedData.isRecurring) {
+    // If recurring, frequency is expected.
     dataToUpdate.frequency = updatedData.frequency;
+    
+    // If recurrenceEndDate is provided, set it. Otherwise, delete it.
     if (updatedData.recurrenceEndDate) {
       dataToUpdate.recurrenceEndDate = updatedData.recurrenceEndDate;
     } else {
-      // If it is recurring but no end date is provided, remove it from Firestore
       dataToUpdate.recurrenceEndDate = deleteField();
     }
   } else {
-    // If it's not recurring, remove the frequency and end date fields
+    // If not recurring, remove frequency and end date fields.
     dataToUpdate.frequency = deleteField();
     dataToUpdate.recurrenceEndDate = deleteField();
   }

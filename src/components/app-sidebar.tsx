@@ -13,6 +13,7 @@ import {
   FileQuestion,
   Bell,
   User,
+  WandSparkles,
 } from 'lucide-react';
 import {
   SidebarContent,
@@ -33,6 +34,7 @@ const menuItems = [
   { href: '/income', label: 'Income', icon: TrendingUp },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
   { href: '/reminders', label: 'Reminders', icon: Bell },
+  { href: '/insights', label: 'Insights', icon: WandSparkles },
 ];
 
 export default function AppSidebar() {

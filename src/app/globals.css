@@ -91,12 +91,4 @@ h1, h2, h3, h4, h5, h6 {
   body {
     @apply bg-background text-foreground;
   }
-  
-  main {
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
-  }
-
-  .pb-safe {
-      padding-bottom: env(safe-area-inset-bottom);
-  }
 }

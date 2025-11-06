@@ -1,19 +1,25 @@
-import * as React from "react"
+'use client';
 
-const MOBILE_BREAKPOINT = 768
+import { useState, useEffect } from 'react';
 
-export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+const MOBILE_QUERY = '(max-width: 768px)';
 
-  React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    }
-    mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
-  }, [])
+export function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
 
-  return !!isMobile
+  useEffect(() => {
+    // Set initial value.
+    // This will only run on the client, avoiding hydration errors.
+    const mediaQuery = window.matchMedia(MOBILE_QUERY);
+    setIsMobile(mediaQuery.matches);
+
+    // Add listener for changes
+    const handler = (event: MediaQueryListEvent) => setIsMobile(event.matches);
+    mediaQuery.addEventListener('change', handler);
+
+    // Cleanup listener on component unmount
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  return isMobile;
 }

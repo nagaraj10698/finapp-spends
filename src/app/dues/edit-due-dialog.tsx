@@ -43,7 +43,6 @@ const formSchema = z
     dueAmount: z.coerce.number().positive('Amount must be positive.'),
     dueDate: z.date({ required_error: 'Start date is required.' }),
     category: z.string().min(1, 'Please select a category.'),
-    isPaid: z.boolean(),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
     recurrenceEndDate: z.date().optional(),
@@ -92,7 +91,6 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         dueAmount: due.dueAmount,
         dueDate: toDate(due.dueDate),
         category: due.category,
-        isPaid: due.isPaid || isInstancePaid,
         isRecurring: due.isRecurring,
         frequency: due.frequency,
         recurrenceEndDate: due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : undefined,
@@ -129,36 +127,14 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
       updatedDue.frequency = deleteField() as any;
       updatedDue.recurrenceEndDate = deleteField() as any;
     }
-
-
-     // Handle payment status change
-    const instanceDate = due.instanceDate ? toDate(due.instanceDate) : null;
-    const instanceDateStr = instanceDate?.toISOString().split('T')[0] || null;
-    
-    const wasInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
-    const wasPaid = due.isPaid || wasInstancePaid;
-    
-    const isNowPaid = values.isPaid;
     
     try {
-        await updateDue(user.uid, due, updatedDue, wasPaid, isNowPaid, instanceDateStr);
+        await updateDue(user.uid, due.id, updatedDue);
         
-        if (isNowPaid && !wasPaid) {
-             toast({
-                title: 'Due Paid!',
-                description: `${values.dueName} marked as paid and an expense has been logged.`,
-            });
-        } else if (!isNowPaid && wasPaid) {
-            toast({
-                title: "Action Required",
-                description: "The due is marked as unpaid. Please manually delete the corresponding expense transaction if needed.",
-            });
-        } else {
-             toast({
-                title: 'Due Updated',
-                description: `The due "${values.dueName}" has been updated.`,
-            });
-        }
+        toast({
+            title: 'Due Updated',
+            description: `The due "${values.dueName}" has been updated.`,
+        });
         onClose();
 
     } catch (error) {

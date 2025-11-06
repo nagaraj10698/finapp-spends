@@ -14,7 +14,7 @@ import { getColumns } from './columns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import EditDueDialog from './edit-due-dialog';
-import { updateDue } from '@/app/actions';
+import { processDuePayment } from '@/app/actions';
 
 
 export default function DuesPage() {
@@ -50,8 +50,11 @@ export default function DuesPage() {
   }
 
   const handleEditRequest = (due: Due) => {
-    setDueToEdit(due);
-    setEditOpen(true);
+    const originalDue = dues?.find(d => d.id === due.id);
+    if (originalDue) {
+      setDueToEdit(originalDue);
+      setEditOpen(true);
+    }
   }
 
   const handleDeleteRequest = (due: Due) => {
@@ -61,22 +64,12 @@ export default function DuesPage() {
   const handleConfirmPayment = async () => {
     if (!dueToPay || !user) return;
 
-    const dueInstance = dueToPay;
-    const originalDueData = dues?.find(d => d.id === dueInstance.id);
-    if (!originalDueData) return;
-
-    const instanceDate = dueInstance.instanceDate ? toDate(dueInstance.instanceDate) : null;
-    const instanceDateStr = instanceDate?.toISOString().split('T')[0] || null;
-
     try {
-        // Use the centralized server action to handle payment
-        await updateDue(user.uid, originalDueData, {}, false, true, instanceDateStr);
-
+        await processDuePayment(user.uid, dueToPay);
         toast({
             title: 'Due Paid!',
-            description: `${dueInstance.dueName} marked as paid and an expense has been logged.`,
+            description: `${dueToPay.dueName} marked as paid and an expense has been logged.`,
         });
-
     } catch (error) {
       console.error("Error marking due as paid:", error);
       toast({

@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, addDoc, writeBatch } from "firebase/firestore";
+import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, addDoc, writeBatch, deleteField } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase/index.server";
 import { getAuth, type User } from "firebase/auth";
 import type { Transaction, Budget, Category, Due } from "@/lib/types";
@@ -16,37 +16,38 @@ async function getCollectionData<T>(userId: string, collectionName: string): Pro
     return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as T[];
 }
 
-export async function updateDue(userId: string, due: Due, updatedData: Partial<Due>, wasPaid: boolean, isNowPaid: boolean, instanceDateStr: string | null) {
+export async function updateDue(userId: string, dueId: string, updatedData: Partial<Due>) {
   const { firestore } = initializeFirebase();
-  const batch = writeBatch(firestore);
+  const dueRef = doc(firestore, 'users', userId, 'dues', dueId);
+  await updateDoc(dueRef, updatedData);
+}
 
-  const dueRef = doc(firestore, 'users', userId, 'dues', due.id);
-  batch.update(dueRef, updatedData);
+export async function processDuePayment(userId: string, due: Due) {
+    const { firestore } = initializeFirebase();
+    const batch = writeBatch(firestore);
+    const dueRef = doc(firestore, 'users', userId, 'dues', due.id);
 
-  if (isNowPaid && !wasPaid) {
+    const instanceDate = due.instanceDate ? new Date(due.instanceDate) : null;
+    const instanceDateStr = instanceDate?.toISOString().split('T')[0];
+
+    // Create a new transaction for the payment
     const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
-    const newTransaction: Omit<Transaction, 'id'> = {
-      description: updatedData.dueName || due.dueName,
-      amount: -Math.abs(updatedData.dueAmount || due.dueAmount),
+    const newTransaction: Omit<Transaction, 'id'|'userId'> = {
+      description: due.dueName,
+      amount: -Math.abs(due.dueAmount),
       date: new Date(),
-      category: updatedData.category || due.category,
-      categoryId: updatedData.categoryId === undefined ? due.categoryId : updatedData.categoryId,
+      category: due.category,
+      categoryId: due.categoryId,
       type: 'expense',
     };
     batch.set(doc(transactionsCollection), newTransaction);
 
+    // Update the due's paid status
     if (due.isRecurring && instanceDateStr) {
       batch.update(dueRef, { [`paidInstances.${instanceDateStr}`]: true });
     } else {
       batch.update(dueRef, { isPaid: true, paidDate: new Date() });
     }
-  } else if (!isNowPaid && wasPaid) {
-    if (due.isRecurring && instanceDateStr) {
-      batch.update(dueRef, { [`paidInstances.${instanceDateStr}`]: false });
-    } else {
-      batch.update(dueRef, { isPaid: false, paidDate: null });
-    }
-  }
 
-  await batch.commit();
+    await batch.commit();
 }

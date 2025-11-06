@@ -103,8 +103,9 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
     setIsSubmitting(true);
     
     try {
-        const expenseCollection = collection(firestore, 'users', user.uid, 'transactions');
-        const newExpenseRef = doc(expenseCollection);
+        const expenseCollectionRef = collection(firestore, 'users', user.uid, 'transactions');
+        // Generate a new document reference with an auto-generated ID on the client
+        const newExpenseRef = doc(expenseCollectionRef);
 
         const selectedCategory = categories?.find(c => c.name === values.category);
 
@@ -121,6 +122,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
         
         if (values.attachment) {
             const storage = getStorage(firebaseApp);
+            // Use the client-generated ID for the storage path
             const storageRef = ref(storage, `user_uploads/${user.uid}/${newExpenseRef.id}/${values.attachment.name}`);
             const snapshot = await uploadBytes(storageRef, values.attachment);
             const fileURL = await getDownloadURL(snapshot.ref);
@@ -130,6 +132,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             }
         }
 
+        // Use setDoc with the pre-generated document reference
         await setDoc(newExpenseRef, newExpense);
 
         toast({
@@ -282,7 +285,8 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                       type="file" 
                       accept="image/*,.pdf,.xls,.xlsx"
                       onChange={(e) => {
-                        field.onChange(e.target.files ? e.target.files[0] : undefined);
+                        const file = e.target.files ? e.target.files[0] : undefined;
+                        field.onChange(file);
                       }}
                     />
                   </FormControl>
@@ -349,3 +353,5 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
     </Dialog>
   );
 }
+
+    

@@ -88,7 +88,7 @@ export const getColumns = (
       );
     },
     filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
+      return Array.isArray(value) && value.includes(row.getValue(id));
     },
   },
   {
@@ -115,6 +115,9 @@ export const getColumns = (
     header: 'Status',
     cell: StatusCell,
     filterFn: (row, id, value) => {
+        if (!Array.isArray(value) || value.length === 0) {
+            return true;
+        }
         const due = row.original as Due;
         const displayDate = due.instanceDate ? toDate(due.instanceDate) : toDate(due.dueDate);
         const isOverdue = !due.isPaid && isBefore(displayDate, startOfToday());

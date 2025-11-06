@@ -15,4 +15,3 @@ async function getCollectionData<T>(userId: string, collectionName: string): Pro
     const querySnapshot = await getDocs(collection(firestore, 'users', userId, collectionName));
     return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as T[];
 }
-

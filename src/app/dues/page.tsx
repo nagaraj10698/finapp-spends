@@ -2,8 +2,8 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc, writeBatch, deleteDoc } from 'firebase/firestore';
-import type { Due, Transaction, Category } from '@/lib/types';
+import { collection, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import type { Due, Category } from '@/lib/types';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import AddDueDialog from './add-due-dialog';
@@ -14,6 +14,7 @@ import { getColumns } from './columns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import EditDueDialog from './edit-due-dialog';
+import { updateDue } from '@/app/actions';
 
 
 export default function DuesPage() {
@@ -21,7 +22,6 @@ export default function DuesPage() {
   const { toast } = useToast();
   
   const duesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'dues') : null, [firestore, user]);
-  const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
   const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
 
   const { data: dues, isLoading: duesLoading } = useCollection<Due>(duesCollection);
@@ -59,37 +59,18 @@ export default function DuesPage() {
   }
 
   const handleConfirmPayment = async () => {
-    if (!dueToPay || !user || !firestore || !transactionsCollection) return;
-    
-    const dueInstance = dueToPay;
-    const dueRef = doc(firestore, 'users', user.uid, 'dues', dueInstance.id);
-    
-    try {
-        const batch = writeBatch(firestore);
+    if (!dueToPay || !user) return;
 
-        // 1. Create a new transaction
-        const newTransactionRef = doc(transactionsCollection);
-        const newTransaction: Omit<Transaction, 'id'> = {
-            description: dueInstance.dueName,
-            amount: -Math.abs(dueInstance.dueAmount),
-            date: dueInstance.instanceDate || toDate(dueInstance.dueDate),
-            category: dueInstance.category,
-            categoryId: dueInstance.categoryId,
-            type: 'expense',
-        };
-        batch.set(newTransactionRef, newTransaction);
-        
-        // 2. Update the original due document
-        if (dueInstance.isRecurring && dueInstance.instanceDate) {
-            const instanceDateStr = toDate(dueInstance.instanceDate).toISOString().split('T')[0]; // YYYY-MM-DD
-            batch.update(dueRef, {
-                [`paidInstances.${instanceDateStr}`]: true
-            });
-        } else {
-             batch.update(dueRef, { isPaid: true, paidDate: new Date() });
-        }
-        
-        await batch.commit();
+    const dueInstance = dueToPay;
+    const originalDueData = dues?.find(d => d.id === dueInstance.id);
+    if (!originalDueData) return;
+
+    const instanceDate = dueInstance.instanceDate ? toDate(dueInstance.instanceDate) : null;
+    const instanceDateStr = instanceDate?.toISOString().split('T')[0] || null;
+
+    try {
+        // Use the centralized server action to handle payment
+        await updateDue(user.uid, originalDueData, {}, false, true, instanceDateStr);
 
         toast({
             title: 'Due Paid!',
@@ -111,8 +92,6 @@ export default function DuesPage() {
   const handleDeleteConfirm = async () => {
     if (!dueToDelete || !user || !firestore) return;
 
-    // A due instance might not have the original due's full data if it's a recurring one.
-    // We always need the original due ID.
     const originalDueId = dueToDelete.id;
 
     try {

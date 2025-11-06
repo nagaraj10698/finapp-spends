@@ -2,7 +2,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, updateDoc, writeBatch, deleteDoc } from 'firebase/firestore';
 import type { Due, Transaction, Category } from '@/lib/types';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -13,6 +13,8 @@ import { DataTable } from '@/components/ui/data-table';
 import { getColumns } from './columns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import EditDueDialog from './edit-due-dialog';
+
 
 export default function DuesPage() {
   const { firestore, user } = useFirebase();
@@ -27,6 +29,10 @@ export default function DuesPage() {
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const [dueToPay, setDueToPay] = useState<Due | null>(null);
+  const [dueToEdit, setDueToEdit] = useState<Due | null>(null);
+  const [isEditOpen, setEditOpen] = useState(false);
+  const [dueToDelete, setDueToDelete] = useState<Due | null>(null);
+
 
   const handlePaymentRequest = (due: Due) => {
     if (due.isPaid) {
@@ -38,6 +44,15 @@ export default function DuesPage() {
       return;
     }
     setDueToPay(due);
+  }
+
+  const handleEditRequest = (due: Due) => {
+    setDueToEdit(due);
+    setEditOpen(true);
+  }
+
+  const handleDeleteRequest = (due: Due) => {
+    setDueToDelete(due);
   }
 
   const handleConfirmPayment = async () => {
@@ -89,13 +104,64 @@ export default function DuesPage() {
         setDueToPay(null);
     }
   };
+
+  const handleDeleteConfirm = async () => {
+    if (!dueToDelete || !user || !firestore) return;
+
+    // A due instance might not have the original due's full data if it's a recurring one.
+    // We always need the original due ID.
+    const originalDueId = dueToDelete.id;
+
+    try {
+        await deleteDoc(doc(firestore, 'users', user.uid, 'dues', originalDueId));
+        toast({
+            title: 'Due Deleted',
+            description: `The due "${dueToDelete.dueName}" has been permanently deleted.`,
+        });
+    } catch (error) {
+        console.error("Error deleting due:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Delete Failed',
+            description: 'Could not delete the due.',
+        });
+    } finally {
+        setDueToDelete(null);
+    }
+  };
+   const handleDeleteMany = async (duesToDelete: Due[]) => {
+    if (!user || !firestore || duesToDelete.length === 0) return;
+
+    const batch = writeBatch(firestore);
+    const uniqueDueIds = new Set(duesToDelete.map(due => due.id));
+
+    uniqueDueIds.forEach(dueId => {
+      const docRef = doc(firestore, 'users', user.uid, 'dues', dueId);
+      batch.delete(docRef);
+    });
+
+    try {
+      await batch.commit();
+      toast({
+        title: "Dues Deleted",
+        description: `${uniqueDueIds.size} due(s) have been deleted.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error Deleting Dues",
+        description: "An error occurred while deleting dues.",
+      });
+      console.error("Error deleting dues: ", error);
+    }
+  };
   
   const dueInstances = useMemo(() => {
     if (!dues) return [];
     return generateDueInstances(dues);
   }, [dues]);
 
-  const tableColumns = useMemo(() => getColumns(categories ?? [], handlePaymentRequest), [categories]);
+  const tableColumns = useMemo(() => getColumns(categories ?? [], handlePaymentRequest, handleEditRequest, handleDeleteRequest), [categories]);
 
 
   if (duesLoading || transactionsLoading || categoriesLoading) {
@@ -139,7 +205,7 @@ export default function DuesPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Confirm Payment</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This will mark <span className='font-bold'>&quot;{dueToPay?.dueName}&quot;</span> as paid and create a corresponding expense entry. This action cannot be undone.
+                    This will mark <span className='font-bold'>"'{dueToPay?.dueName}'"</span> as paid and create a corresponding expense entry. This action cannot be undone.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -150,6 +216,33 @@ export default function DuesPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
+     <AlertDialog open={!!dueToDelete} onOpenChange={(open) => !open && setDueToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will permanently delete the due <span className='font-bold'>"'{dueToDelete?.dueName}'"</span> and all its recurring instances. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDueToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteConfirm} className={cn(buttonVariants({variant: 'destructive'}))}>
+                    Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+    {dueToEdit && (
+        <EditDueDialog 
+            isOpen={isEditOpen}
+            onClose={() => {
+                setEditOpen(false);
+                setDueToEdit(null);
+            }}
+            due={dueToEdit}
+        />
+    )}
     </>
   );
 }

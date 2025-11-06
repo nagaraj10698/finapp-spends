@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
@@ -7,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { getCategoryByName, getIconByName, toDate } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDown, MoreHorizontal, Check, AlertTriangle } from 'lucide-react';
+import { ArrowUpDown, MoreHorizontal, Check, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,8 +30,11 @@ const StatusCell = ({ row }: { row: any }) => {
     const due = row.original as Due;
     const displayDate = due.instanceDate ? toDate(due.instanceDate) : toDate(due.dueDate);
     const isOverdue = !due.isPaid && isBefore(displayDate, startOfToday());
+    
+    // Check if the due is an instance of a recurring due and if that instance is paid
+    const isInstancePaid = due.isRecurring && due.instanceDate && due.paidInstances?.[(due.instanceDate as Date).toISOString().split('T')[0]];
 
-    if (due.isPaid) {
+    if (due.isPaid || isInstancePaid) {
         return <Badge variant="secondary">Paid</Badge>
     }
     if (isOverdue) {
@@ -43,6 +47,8 @@ const StatusCell = ({ row }: { row: any }) => {
 export const getColumns = (
     categories: Category[],
     onPay: (due: Due) => void,
+    onEdit: (due: Due) => void,
+    onDelete: (due: Due) => void,
     ): ColumnDef<Due>[] => [
   {
     id: "select",
@@ -87,6 +93,10 @@ export const getColumns = (
         </Badge>
       );
     },
+     filterFn: (row, id, value) => {
+      if (!value || !Array.isArray(value) || value.length === 0) return true;
+      return value.includes(row.getValue(id));
+    },
   },
   {
     accessorKey: 'dueDate',
@@ -111,6 +121,20 @@ export const getColumns = (
     id: 'status',
     header: 'Status',
     cell: StatusCell,
+    accessorFn: (row) => {
+      const due = row as Due;
+      const displayDate = due.instanceDate ? toDate(due.instanceDate) : toDate(due.dueDate);
+      const isOverdue = !due.isPaid && isBefore(displayDate, startOfToday());
+      const isInstancePaid = due.isRecurring && due.instanceDate && due.paidInstances?.[(due.instanceDate as Date).toISOString().split('T')[0]];
+
+      if (due.isPaid || isInstancePaid) return 'Paid';
+      if (isOverdue) return 'Overdue';
+      return 'Upcoming';
+    },
+    filterFn: (row, id, value) => {
+      if (!value || !Array.isArray(value) || value.length === 0) return true;
+      return value.includes(row.getValue(id));
+    },
   },
   {
     accessorKey: 'dueAmount',
@@ -141,6 +165,7 @@ export const getColumns = (
     id: 'actions',
     cell: ({ row }) => {
       const due = row.original;
+      const isInstancePaid = due.isRecurring && due.instanceDate && due.paidInstances?.[(due.instanceDate as Date).toISOString().split('T')[0]];
 
       return (
         <DropdownMenu>
@@ -152,9 +177,18 @@ export const getColumns = (
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => onPay(due)} disabled={due.isPaid}>
+            <DropdownMenuItem onClick={() => onPay(due)} disabled={due.isPaid || isInstancePaid}>
                 <Check className="mr-2 h-4 w-4" />
                 Mark as Paid
+            </DropdownMenuItem>
+             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onEdit(due)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(due)} className="text-destructive">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

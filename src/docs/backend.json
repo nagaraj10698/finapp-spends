@@ -50,7 +50,10 @@
           "description": "Reference to User. (Relationship: User 1:N Transaction)"
         },
         "categoryId": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "Reference to Category. (Relationship: Category 1:N Transaction)"
         },
         "transactionDate": {
@@ -75,9 +78,19 @@
           "description": "Whether the transaction is recurring."
         },
         "frequency": {
-            "type": "string",
-            "description": "Frequency of recurring transaction.",
-            "enum": ["weekly", "monthly", "quarterly", "yearly"]
+          "type": "string",
+          "description": "Frequency of recurring transaction.",
+          "enum": [
+            "weekly",
+            "monthly",
+            "quarterly",
+            "yearly"
+          ]
+        },
+        "recurrenceEndDate": {
+          "type": "string",
+          "description": "End date for the recurring transaction.",
+          "format": "date-time"
         },
         "fileURL": {
           "type": "string",
@@ -85,8 +98,8 @@
           "format": "uri"
         },
         "fileName": {
-            "type": "string",
-            "description": "Name of the uploaded file."
+          "type": "string",
+          "description": "Name of the uploaded file."
         }
       },
       "required": [
@@ -169,9 +182,13 @@
           "description": "Whether the budget is recurring."
         },
         "type": {
-            "type": "string",
-            "description": "Type of budget.",
-            "enum": ["Bills", "Subscription", "Expense"]
+          "type": "string",
+          "description": "Type of budget.",
+          "enum": [
+            "Bills",
+            "Subscription",
+            "Expense"
+          ]
         }
       },
       "required": [
@@ -183,6 +200,87 @@
         "budgetEndDate",
         "isRecurring",
         "type"
+      ]
+    },
+    "Due": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Due",
+      "type": "object",
+      "description": "Represents a due for bills or subscriptions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Due entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Due)"
+        },
+        "dueName": {
+          "type": "string",
+          "description": "Name of the due."
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Start date of the due.",
+          "format": "date-time"
+        },
+        "dueAmount": {
+          "type": "number",
+          "description": "Amount due for the due."
+        },
+        "isPaid": {
+          "type": "boolean",
+          "description": "Whether the due has been paid."
+        },
+        "paidDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the due was paid."
+        },
+        "isRecurring": {
+          "type": "boolean",
+          "description": "Whether the due is recurring."
+        },
+        "paidInstances": {
+            "type": "object",
+            "description": "A map of paid recurring instances, with the key being the instance date (YYYY-MM-DD) and value as true."
+        },
+        "frequency": {
+          "type": "string",
+          "description": "Frequency of recurring due.",
+          "enum": [
+            "weekly",
+            "monthly",
+            "quarterly",
+            "yearly"
+          ]
+        },
+        "recurrenceEndDate": {
+          "type": "string",
+          "description": "End date for the recurring due.",
+          "format": "date-time"
+        },
+        "categoryId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Reference to Category."
+        },
+        "category": {
+          "type": "string",
+          "description": "Name of the category for the due."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "dueName",
+        "dueDate",
+        "dueAmount",
+        "category",
+        "categoryId"
       ]
     }
   },
@@ -265,6 +363,26 @@
             {
               "name": "budgetId",
               "description": "The unique identifier of the budget."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/dues/{dueId}",
+        "definition": {
+          "entityName": "Due",
+          "schema": {
+            "$ref": "#/backend/entities/Due"
+          },
+          "description": "Stores user's dues for bills and subscriptions. Accessible only by the user themselves.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "dueId",
+              "description": "The unique identifier of the due."
             }
           ]
         }

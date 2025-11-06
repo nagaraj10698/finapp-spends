@@ -61,9 +61,10 @@ export interface Due {
     recurrenceEndDate?: Date | Timestamp;
     category: string;
     categoryId: string | null;
+    paidDate?: Date | Timestamp | null;
     // For recurring instances
     instanceDate?: Date; // The specific date for this instance of a recurring due
-    paidDate?: Date | Timestamp | null;
+    paidInstances?: { [date: string]: boolean };
 }
 
 export interface Notification {

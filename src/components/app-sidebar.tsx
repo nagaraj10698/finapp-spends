@@ -11,7 +11,6 @@ import {
   TrendingUp,
   ArrowRightLeft,
   FileQuestion,
-  Bell,
   User,
   ChevronDown,
 } from 'lucide-react';
@@ -42,7 +41,6 @@ const mainMenuItems = [
 
 const bottomMenuItems = [
     { href: '/budgets', label: 'Budgets', icon: Wallet },
-    { href: '/dues', label: 'Dues', icon: Bell },
 ];
 
 export default function AppSidebar() {

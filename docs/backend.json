@@ -79,6 +79,11 @@
             "description": "Frequency of recurring transaction.",
             "enum": ["weekly", "monthly", "quarterly", "yearly"]
         },
+        "recurrenceEndDate": {
+            "type": "string",
+            "description": "End date for the recurring transaction.",
+            "format": "date-time"
+        },
         "fileURL": {
           "type": "string",
           "description": "URL of an uploaded file attachment.",

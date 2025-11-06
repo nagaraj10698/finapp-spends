@@ -21,6 +21,7 @@ export interface Transaction {
   categoryId?: string | null;
   isRecurring?: boolean;
   frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  recurrenceEndDate?: Date | Timestamp;
   type: 'income' | 'expense';
   fileURL?: string;
   fileName?: string;
@@ -46,6 +47,15 @@ export interface Income {
   description: string;
   amount: number;
   date: Date | Timestamp;
+}
+
+export interface Due {
+    id: string;
+    userId: string;
+    dueName: string;
+    dueAmount: number;
+    dueDate: Date | Timestamp;
+    isPaid: boolean;
 }
 
 export interface Notification {

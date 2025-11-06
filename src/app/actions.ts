@@ -52,34 +52,50 @@ export async function processDuePayment(userId: string, due: Due) {
 export async function saveDue(userId: string, dueData: Partial<Due>) {
     const { firestore } = initializeFirebase();
     const isEditing = !!dueData.id;
-    
-    const dataToSave: { [key: string]: any } = {
-        dueName: dueData.dueName,
-        dueAmount: dueData.dueAmount,
-        dueDate: dueData.dueDate,
-        category: dueData.category,
-        categoryId: dueData.categoryId,
-        isRecurring: dueData.isRecurring,
-        userId: userId,
-    };
 
-    if (dueData.isRecurring) {
-        dataToSave.frequency = dueData.frequency;
-        // Ensure recurrenceEndDate is either a valid date or null
-        dataToSave.recurrenceEndDate = dueData.recurrenceEndDate || null;
-    } else {
-        // Use deleteField for fields that should be removed when not recurring
-        dataToSave.frequency = deleteField();
-        dataToSave.recurrenceEndDate = deleteField();
-        dataToSave.paidInstances = deleteField();
-        dataToSave.isPaid = dueData.isPaid || false; // Set initial paid status for non-recurring
-    }
-    
     if (isEditing) {
         const dueRef = doc(firestore, 'users', userId, 'dues', dueData.id!);
-        await updateDoc(dueRef, dataToSave);
+        const dataToUpdate: { [key: string]: any } = {
+            dueName: dueData.dueName,
+            dueAmount: dueData.dueAmount,
+            dueDate: dueData.dueDate,
+            category: dueData.category,
+            categoryId: dueData.categoryId,
+            isRecurring: dueData.isRecurring,
+        };
+
+        if (dueData.isRecurring) {
+            dataToUpdate.frequency = dueData.frequency;
+            // Ensure recurrenceEndDate is either a valid date or null
+            dataToUpdate.recurrenceEndDate = dueData.recurrenceEndDate || null;
+        } else {
+            // Use deleteField for fields that should be removed when not recurring
+            dataToUpdate.frequency = deleteField();
+            dataToUpdate.recurrenceEndDate = deleteField();
+            dataToUpdate.paidInstances = deleteField();
+            dataToUpdate.isPaid = dueData.isPaid || false; // Keep existing or set for non-recurring
+        }
+        await updateDoc(dueRef, dataToUpdate);
+
     } else {
+        // Creating a new due
         const duesCollection = collection(firestore, 'users', userId, 'dues');
-        await addDoc(duesCollection, dataToSave);
+        const dataToCreate: { [key: string]: any } = {
+            dueName: dueData.dueName,
+            dueAmount: dueData.dueAmount,
+            dueDate: dueData.dueDate,
+            category: dueData.category,
+            categoryId: dueData.categoryId,
+            isRecurring: dueData.isRecurring,
+            userId: userId,
+        };
+
+        if (dueData.isRecurring) {
+            dataToCreate.frequency = dueData.frequency;
+            dataToCreate.recurrenceEndDate = dueData.recurrenceEndDate || null;
+        } else {
+            dataToCreate.isPaid = false;
+        }
+        await addDoc(duesCollection, dataToCreate);
     }
 }

@@ -38,11 +38,13 @@ import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } f
 import { collection } from 'firebase/firestore';
 import type { Budget, Category } from '@/lib/types';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import { Slider } from '@/components/ui/slider';
 
 
 const formSchema = z.object({
-  budgetAmount: z.coerce.number().positive('Amount must be positive.'),
+  budgetAmount: z.coerce.number().min(0, 'Amount must be non-negative.'),
   categoryId: z.string().min(1, 'Please select a category.'),
+  name: z.string().optional(),
 });
 
 export default function AddBudgetDialog({children}: {children: ReactNode}) {
@@ -56,7 +58,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      budgetAmount: 0,
+      budgetAmount: 500,
       categoryId: '',
     },
   });
@@ -104,7 +106,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
         </span>
       ),
     });
-    form.reset();
+    form.reset({ budgetAmount: 500, categoryId: '' });
     setOpen(false);
   }
 
@@ -123,7 +125,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 py-4">
             <FormField
               control={form.control}
               name="categoryId"
@@ -164,9 +166,27 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                 <FormItem>
                   <FormLabel>Budget Amount</FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="number" placeholder="0.00" {...field} className="pl-12" />
+                    <div className="space-y-4">
+                        <div className="relative">
+                            <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                            <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                value={field.value}
+                                onChange={field.onChange}
+                                className="pl-12 text-lg font-bold" 
+                            />
+                        </div>
+                         <Slider
+                            value={[field.value]}
+                            onValueChange={(value) => field.onChange(value[0])}
+                            max={5000}
+                            step={50}
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>AED 0</span>
+                            <span>AED 5,000</span>
+                        </div>
                     </div>
                   </FormControl>
                   <FormMessage />

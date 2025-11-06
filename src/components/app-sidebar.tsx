@@ -10,6 +10,7 @@ import {
   Settings,
   TrendingUp,
   ArrowRightLeft,
+  FileQuestion,
 } from 'lucide-react';
 import {
   SidebarContent,
@@ -45,6 +46,7 @@ export default function AppSidebar() {
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
+                variant="sidebar"
                 asChild
                 isActive={pathname === item.href}
                 tooltip={!isMobile ? item.label : undefined}
@@ -63,6 +65,7 @@ export default function AppSidebar() {
         <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
+                variant="sidebar"
                 asChild
                 isActive={pathname === '/settings'}
                 tooltip={!isMobile ? 'Settings' : undefined}

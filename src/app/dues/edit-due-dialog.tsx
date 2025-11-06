@@ -121,9 +121,15 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
-        frequency: values.frequency,
-        recurrenceEndDate: values.recurrenceEndDate,
     };
+
+    if (values.isRecurring) {
+        updatedDue.frequency = values.frequency;
+        updatedDue.recurrenceEndDate = values.recurrenceEndDate;
+    } else {
+        updatedDue.frequency = undefined;
+        updatedDue.recurrenceEndDate = undefined;
+    }
 
      // Handle payment status change
     const instanceDate = due.instanceDate ? toDate(due.instanceDate) : null;

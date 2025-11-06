@@ -33,6 +33,7 @@ import Logo from './logo';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 const mainMenuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },

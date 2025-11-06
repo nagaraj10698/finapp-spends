@@ -178,56 +178,66 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
 
   const instances: Due[] = [];
   const today = startOfDay(new Date());
-  const defaultEndDate = addYears(today, 10); // A far-future default end date
-  const currentMonthEnd = endOfMonth(today);
+  const defaultEndDate = addYears(today, 10);
 
   dues.forEach(due => {
     const startDate = toDate(due.dueDate);
 
     if (!due.isRecurring) {
-      // For non-recurring dues, only show if they are overdue or within the current month
-      if (isBefore(startDate, currentMonthEnd) || isSameDay(startDate, currentMonthEnd)) {
-          instances.push({ ...due, instanceDate: startDate });
-      }
+      // Non-recurring dues are always added if they exist.
+      // Their visibility should be handled by filters if needed, but here we generate them.
+      instances.push({ ...due, instanceDate: startDate });
     } else {
       const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : defaultEndDate;
       let nextDate = startDate;
-      let sanityCheck = 0; // Prevent infinite loops
+      let addedUpcoming = false;
+      let sanityCheck = 0;
 
       while (isBefore(nextDate, recurrenceEndDate) && sanityCheck < 360) {
         const instanceDateStr = nextDate.toISOString().split('T')[0];
         const isInstancePaid = !!due.paidInstances?.[instanceDateStr];
 
-        // Only generate instances that are overdue or within the current month
-        if (isBefore(nextDate, currentMonthEnd) || isSameDay(nextDate, currentMonthEnd)) {
-           if (isBefore(nextDate, today) && !isInstancePaid) { // Overdue
-             instances.push({
-                ...due,
-                instanceDate: new Date(nextDate),
-              });
-           } else if (isWithinInterval(nextDate, { start: today, end: currentMonthEnd })) { // Upcoming in current month
-             instances.push({
-                ...due,
-                instanceDate: new Date(nextDate),
-              });
-           }
+        // Add all overdue, unpaid instances
+        if (isBefore(nextDate, today) && !isInstancePaid) {
+          instances.push({
+            ...due,
+            instanceDate: new Date(nextDate),
+          });
         }
         
+        // Add the very next upcoming instance if not already paid
+        if (!isBefore(nextDate, today) && !addedUpcoming && !isInstancePaid) {
+          instances.push({
+            ...due,
+            instanceDate: new Date(nextDate),
+          });
+          addedUpcoming = true;
+        }
+
+        // If we have found all overdue and the next upcoming one, we can stop for this due
+        if(addedUpcoming) {
+           // We can break the loop early if we only want the *next* single upcoming due
+           // and have already processed all overdue ones.
+           // However, to find all overdue, we must iterate up to today.
+           // To be safe and find all overdue, we continue iterating but stop adding upcoming ones.
+        }
+
+        // Calculate next date based on frequency
         switch (due.frequency) {
-          case 'weekly': 
-            nextDate = addWeeks(nextDate, 1); 
+          case 'weekly':
+            nextDate = addWeeks(nextDate, 1);
             break;
-          case 'monthly': 
-            nextDate = startOfMonth(addMonths(nextDate, 1)); 
+          case 'monthly':
+            nextDate = startOfMonth(addMonths(nextDate, 1));
             break;
-          case 'quarterly': 
-            nextDate = startOfMonth(addQuarters(nextDate, 1)); 
+          case 'quarterly':
+            nextDate = startOfMonth(addQuarters(nextDate, 1));
             break;
-          case 'yearly': 
-            nextDate = startOfMonth(addYears(nextDate, 1)); 
+          case 'yearly':
+            nextDate = startOfMonth(addYears(nextDate, 1));
             break;
-          default: 
-            sanityCheck = 360;
+          default:
+            sanityCheck = 360; // Exit loop if frequency is invalid
         }
         sanityCheck++;
       }

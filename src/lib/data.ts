@@ -21,7 +21,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Notification, Due } from './types';
-import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, addDays, isAfter, startOfDay } from 'date-fns';
+import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, addDays, isAfter, startOfDay, startOfQuarter, startOfYear, endOfQuarter, endOfYear } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
@@ -198,84 +198,73 @@ export function getBudgets(budgets: Budget[] | null, allTransactions: Transactio
         return {
             ...budget,
             spent,
-            limit: budget.budgetAmount,
+            limit: budget.limit,
         };
     });
 }
 
 export function generateDueInstances(dues: Due[] | null): Due[] {
-    if (!dues) return [];
-    
-    const instances: Due[] = [];
-    const today = startOfDay(new Date());
-    const rangeEnd = endOfMonth(addMonths(today, 6)); // Look 6 months into the future
-    const defaultEndDate = addYears(rangeEnd, 5); // Default end date if none is specified
+  if (!dues) return [];
 
-    dues.forEach(due => {
-        const startDate = toDate(due.dueDate);
-        
-        if (!due.isRecurring) {
-            // One-time due
-            if (!due.isPaid || (due.paidDate && isWithinInterval(toDate(due.paidDate), {start: today, end: rangeEnd}))) {
-                instances.push({
-                    ...due,
-                    instanceDate: startDate,
-                });
-            }
-        } else {
-            // Recurring due
-            const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : defaultEndDate;
-            
-            // First, add the initial due date if it's within range
-            if (isWithinInterval(startDate, { start: today, end: rangeEnd })) {
-                 const instanceDateStr = startDate.toISOString().split('T')[0];
-                 const isInstancePaid = !!(due as any).paidInstances?.[instanceDateStr];
-                 instances.push({
-                    ...due,
-                    instanceDate: startDate,
-                    isPaid: isInstancePaid,
-                    paidDate: isInstancePaid ? startDate : null,
-                });
-            }
-            
-            let nextDate = startDate;
+  const instances: Due[] = [];
+  const today = startOfDay(new Date());
+  const defaultEndDate = addYears(today, 10); // A far-future default end date
 
-            // Generate subsequent instances, aligned to the 1st of the period
-            let sanityCheck = 0;
-            while (isBefore(nextDate, rangeEnd) && isBefore(nextDate, recurrenceEndDate) && sanityCheck < 120) { // Limit to 10 years of monthly checks
-                 switch (due.frequency) {
-                    case 'weekly':
-                        nextDate = startOfWeek(addWeeks(nextDate, 1));
-                        break;
-                    case 'monthly':
-                        nextDate = startOfMonth(addMonths(nextDate, 1));
-                        break;
-                    case 'quarterly':
-                        nextDate = startOfQuarter(addQuarters(nextDate, 1));
-                        break;
-                    case 'yearly':
-                        nextDate = startOfYear(addYears(nextDate, 1));
-                        break;
-                    default:
-                        nextDate = addYears(rangeEnd, 1); // Should not happen
-                }
+  dues.forEach(due => {
+    const startDate = toDate(due.dueDate);
 
-                if (isBefore(nextDate, recurrenceEndDate) && isWithinInterval(nextDate, { start: today, end: rangeEnd })) {
-                    const instanceDateStr = nextDate.toISOString().split('T')[0];
-                    const isInstancePaid = !!(due as any).paidInstances?.[instanceDateStr];
-                    
-                    instances.push({
-                        ...due,
-                        instanceDate: nextDate,
-                        isPaid: isInstancePaid,
-                        paidDate: isInstancePaid ? nextDate : null,
-                    });
-                }
-                sanityCheck++;
-            }
+    if (!due.isRecurring) {
+      // For one-time dues, just add them if they are not paid.
+      if (!due.isPaid) {
+        instances.push({ ...due, instanceDate: startDate });
+      }
+    } else {
+      // For recurring dues, find all past unpaid and the single next upcoming instance.
+      const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : defaultEndDate;
+      let nextDate = startDate;
+      let foundNextUpcoming = false;
+      let sanityCheck = 0; // Prevent infinite loops
+
+      while (isBefore(nextDate, recurrenceEndDate) && sanityCheck < 360) { // Limit to ~30 years of monthly checks
+        const instanceDateStr = nextDate.toISOString().split('T')[0];
+        const isInstancePaid = !!(due as any).paidInstances?.[instanceDateStr];
+
+        if (!isInstancePaid) {
+          if (isBefore(nextDate, today)) {
+            // This is an overdue, unpaid instance. Add it.
+            instances.push({
+              ...due,
+              instanceDate: nextDate,
+              isPaid: false,
+            });
+          } else if (!foundNextUpcoming) {
+            // This is the first upcoming, unpaid instance. Add it and stop looking for this due.
+            instances.push({
+              ...due,
+              instanceDate: nextDate,
+              isPaid: false,
+            });
+            foundNextUpcoming = true;
+          }
         }
-    });
-    return instances;
+        
+        if (foundNextUpcoming && !isBefore(nextDate, today)) {
+             break; // Exit loop once we have found the next upcoming due
+        }
+
+        // Increment to the next period
+        switch (due.frequency) {
+          case 'weekly': nextDate = addWeeks(nextDate, 1); break;
+          case 'monthly': nextDate = addMonths(nextDate, 1); break;
+          case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
+          case 'yearly': nextDate = addYears(nextDate, 1); break;
+          default: sanityCheck = 360; // Should not happen, break loop
+        }
+        sanityCheck++;
+      }
+    }
+  });
+  return instances;
 }
 
 

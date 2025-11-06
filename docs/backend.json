@@ -28,10 +28,6 @@
           "type": "string",
           "description": "URL of the user's profile picture.",
           "format": "uri"
-        },
-        "isAdmin": {
-          "type": "boolean",
-          "description": "Indicates if the user has administrative privileges."
         }
       },
       "required": [
@@ -195,18 +191,46 @@
         "type"
       ]
     },
-    "AppSettings": {
+    "Reminder": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AppSettings",
+      "title": "Reminder",
       "type": "object",
-      "description": "Stores global application settings.",
+      "description": "Represents a reminder for bills or subscriptions.",
       "properties": {
-        "logoUrl": {
+        "id": {
           "type": "string",
-          "description": "URL of the site logo.",
-          "format": "uri"
+          "description": "Unique identifier for the Reminder entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Reminder)"
+        },
+        "reminderName": {
+          "type": "string",
+          "description": "Name of the reminder."
+        },
+        "reminderDate": {
+          "type": "string",
+          "description": "Date of the reminder.",
+          "format": "date-time"
+        },
+        "reminderAmount": {
+          "type": "number",
+          "description": "Amount due for the reminder."
+        },
+        "isPaid": {
+          "type": "boolean",
+          "description": "Whether the reminder has been paid."
         }
-      }
+      },
+      "required": [
+        "id",
+        "userId",
+        "reminderName",
+        "reminderDate",
+        "reminderAmount",
+        "isPaid"
+      ]
     }
   },
   "auth": {
@@ -293,13 +317,23 @@
         }
       },
       {
-        "path": "/settings/branding",
+        "path": "/users/{userId}/reminders/{reminderId}",
         "definition": {
-          "entityName": "AppSettings",
+          "entityName": "Reminder",
           "schema": {
-            "$ref": "#/backend/entities/AppSettings"
+            "$ref": "#/backend/entities/Reminder"
           },
-          "description": "Stores global branding settings, like the site logo."
+          "description": "Stores user's reminders for bills and subscriptions. Accessible only by the user themselves.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "reminderId",
+              "description": "The unique identifier of the reminder."
+            }
+          ]
         }
       }
     ],

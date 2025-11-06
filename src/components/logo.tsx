@@ -1,9 +1,6 @@
 
 'use client';
 import { cn } from '@/lib/utils';
-import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { AppSettings } from '@/lib/types';
 import Image from 'next/image';
 
 function DefaultLogo() {
@@ -61,26 +58,9 @@ function DefaultLogo() {
 }
 
 export default function Logo({ className }: { className?: string }) {
-  const { firestore } = useFirebase();
-  const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'branding') : null, [firestore]);
-  const { data: appSettings, isLoading } = useDoc<AppSettings>(settingsDocRef);
-  
-  if (isLoading) {
-    return (
-        <div className={cn("flex items-center gap-2 h-8 w-[110px]", className)}>
-            <div className="h-8 w-8 rounded-md bg-muted animate-pulse" />
-            <div className="h-6 w-20 rounded-md bg-muted animate-pulse" />
-        </div>
-    )
-  }
-
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {appSettings?.logoUrl ? (
-        <Image src={appSettings.logoUrl} alt="Spends Logo" width={110} height={32} className="h-8 w-auto" priority />
-      ) : (
         <DefaultLogo />
-      )}
     </div>
   );
 }

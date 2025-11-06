@@ -88,7 +88,6 @@ export default function SignupPage() {
           firstName: values.firstName,
           lastName: values.lastName,
           photoURL: user.photoURL,
-          isAdmin: false, // Set default admin status
       });
 
       // Create default categories for the user

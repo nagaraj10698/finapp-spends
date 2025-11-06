@@ -41,6 +41,14 @@ export interface Budget {
   limit?: number;
 }
 
+export interface Reminder {
+  id: string;
+  userId: string;
+  reminderName: string;
+  reminderDate: Date | Timestamp;
+  reminderAmount: number;
+  isPaid: boolean;
+}
 
 export interface Income {
   id: string;
@@ -68,5 +76,4 @@ export interface UserProfile {
     firstName: string;
     lastName: string;
     photoURL?: string;
-    isAdmin?: boolean;
 }

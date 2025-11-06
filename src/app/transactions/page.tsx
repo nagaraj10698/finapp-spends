@@ -100,6 +100,9 @@ export default function TransactionsPage() {
 
   const incomeData = useMemo(() => transactionData.filter(t => t.type === 'income'), [transactionData]);
   const expenseData = useMemo(() => transactionData.filter(t => t.type === 'expense'), [transactionData]);
+  
+  const incomeCategories = useMemo(() => categories?.filter(c => c.type === 'income') ?? [], [categories]);
+  const expenseCategories = useMemo(() => categories?.filter(c => c.type === 'expense') ?? [], [categories]);
 
   if (transactionsLoading || categoriesLoading) {
     return <div>Loading transactions...</div>;
@@ -132,10 +135,10 @@ export default function TransactionsPage() {
                          <DataTable columns={tableColumns} data={transactionData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={categories ?? []} />} />
                     </TabsContent>
                     <TabsContent value="income" className="p-4">
-                        <DataTable columns={tableColumns} data={incomeData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={categories?.filter(c => c.type === 'income') ?? []} />} />
+                        <DataTable columns={tableColumns} data={incomeData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={incomeCategories} />} />
                     </TabsContent>
                     <TabsContent value="expenses" className="p-4">
-                         <DataTable columns={tableColumns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={categories?.filter(c => c.type === 'expense') ?? []} />} />
+                         <DataTable columns={tableColumns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={expenseCategories} />} />
                     </TabsContent>
                 </Tabs>
             </CardContent>

@@ -15,7 +15,6 @@ import EditTransactionDialog from '../transactions/edit-transaction-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
-import { columns as incomeColumns } from './columns';
 
 
 export default function IncomePage() {

@@ -50,10 +50,13 @@
           "description": "Reference to User. (Relationship: User 1:N Transaction)"
         },
         "categoryId": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "Reference to Category. (Relationship: Category 1:N Transaction)"
         },
-        "transactionDate": {
+        "date": {
           "type": "string",
           "description": "Date of the transaction.",
           "format": "date-time"
@@ -66,41 +69,18 @@
           "type": "string",
           "description": "Description of the transaction."
         },
-        "transactionType": {
+        "type": {
           "type": "string",
-          "description": "Type of transaction (e.g., deposit, withdrawal)."
-        },
-        "isRecurring": {
-          "type": "boolean",
-          "description": "Whether the transaction is recurring."
-        },
-        "frequency": {
-            "type": "string",
-            "description": "Frequency of recurring transaction.",
-            "enum": ["weekly", "monthly", "quarterly", "yearly"]
-        },
-        "recurrenceEndDate": {
-            "type": "string",
-            "description": "End date for the recurring transaction.",
-            "format": "date-time"
-        },
-        "fileURL": {
-          "type": "string",
-          "description": "URL of an uploaded file attachment.",
-          "format": "uri"
-        },
-        "fileName": {
-            "type": "string",
-            "description": "Name of the uploaded file."
+          "description": "Type of transaction (e.g., income, expense)."
         }
       },
       "required": [
         "id",
         "userId",
-        "transactionDate",
+        "date",
         "amount",
         "description",
-        "transactionType"
+        "type"
       ]
     },
     "Category": {
@@ -117,20 +97,30 @@
           "type": "string",
           "description": "Reference to User. (Relationship: User 1:N Category)"
         },
-        "categoryName": {
+        "name": {
           "type": "string",
           "description": "Name of the category (e.g., Food, Transportation)."
         },
-        "categoryType": {
+        "type": {
           "type": "string",
           "description": "Type of category (e.g., Income, Expense)."
+        },
+        "icon": {
+          "type": "string",
+          "description": "The name of the lucide-react icon to use for the category."
+        },
+        "color": {
+          "type": "string",
+          "description": "The tailwind color class to use for the category icon."
         }
       },
       "required": [
         "id",
         "userId",
-        "categoryName",
-        "categoryType"
+        "name",
+        "type",
+        "icon",
+        "color"
       ]
     },
     "Budget": {
@@ -174,9 +164,17 @@
           "description": "Whether the budget is recurring."
         },
         "type": {
-            "type": "string",
-            "description": "Type of budget.",
-            "enum": ["Bills", "Subscription", "Expense"]
+          "type": "string",
+          "description": "Type of budget.",
+          "enum": [
+            "Bills",
+            "Subscription",
+            "Expense"
+          ]
+        },
+        "category": {
+          "type": "string",
+          "description": "Name of the category for the budget."
         }
       },
       "required": [
@@ -187,7 +185,8 @@
         "budgetStartDate",
         "budgetEndDate",
         "isRecurring",
-        "type"
+        "type",
+        "category"
       ]
     },
     "Due": {
@@ -221,22 +220,39 @@
           "type": "boolean",
           "description": "Whether the due has been paid."
         },
+        "paidDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the due was paid."
+        },
         "isRecurring": {
           "type": "boolean",
           "description": "Whether the due is recurring."
         },
+        "paidInstances": {
+          "type": "object",
+          "description": "A map of paid recurring instances, with the key being the instance date (YYYY-MM-DD) and value as true."
+        },
         "frequency": {
-            "type": "string",
-            "description": "Frequency of recurring due.",
-            "enum": ["weekly", "monthly", "quarterly", "yearly"]
+          "type": "string",
+          "description": "Frequency of recurring due.",
+          "enum": [
+            "weekly",
+            "monthly",
+            "quarterly",
+            "yearly"
+          ]
         },
         "recurrenceEndDate": {
-            "type": "string",
-            "description": "End date for the recurring due.",
-            "format": "date-time"
+          "type": "string",
+          "description": "End date for the recurring due.",
+          "format": "date-time"
         },
         "categoryId": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "Reference to Category."
         },
         "category": {

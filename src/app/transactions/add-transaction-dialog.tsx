@@ -40,7 +40,6 @@ import { ReactNode, useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Transaction, Category } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -51,12 +50,11 @@ const formSchema = z.object({
     amount: z.coerce.number().positive('Amount must be positive.'),
     category: z.string().min(1, 'Please select a category.'),
     date: z.date(),
-    attachment: z.instanceof(File).optional(),
   });
 
 export default function AddTransactionDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
-  const { firestore, user, firebaseApp } = useFirebase();
+  const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -82,7 +80,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !user || !firebaseApp) {
+    if (!firestore || !user) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -108,17 +106,6 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
             type: values.type,
         };
         
-        if (values.attachment) {
-            const storage = getStorage(firebaseApp);
-            const storageRef = ref(storage, `user_uploads/${user.uid}/${newTransactionRef.id}/${values.attachment.name}`);
-            const snapshot = await uploadBytes(storageRef, values.attachment);
-            const fileURL = await getDownloadURL(snapshot.ref);
-            if(fileURL) {
-              newTransaction.fileURL = fileURL;
-              newTransaction.fileName = values.attachment.name;
-            }
-        }
-
         await setDoc(newTransactionRef, newTransaction);
 
         toast({
@@ -286,25 +273,6 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
                       />
                     </PopoverContent>
                   </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="attachment"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Attachment</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="file" 
-                      accept="image/*,.pdf,.xls,.xlsx"
-                      onChange={(e) => {
-                        field.onChange(e.target.files ? e.target.files[0] : undefined);
-                      }}
-                    />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

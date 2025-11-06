@@ -19,8 +19,6 @@ export interface Transaction {
   category: string;
   categoryId?: string | null;
   type: 'income' | 'expense';
-  fileURL?: string;
-  fileName?: string;
 }
 
 export interface Budget {

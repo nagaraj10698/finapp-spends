@@ -27,7 +27,6 @@ import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Transaction, Category } from '@/lib/types';
 import {
   Select,
@@ -48,7 +47,6 @@ const formSchema = z.object({
   description: z.string().min(2, 'Description must be at least 2 characters.'),
   category: z.string().min(1, 'Please select a category.'),
   date: z.date(),
-  attachment: z.instanceof(File).optional(),
 });
 
 export default function AddIncomeDialog({children}: {children: ReactNode}) {
@@ -95,14 +93,6 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
             date: values.date,
             type: 'income',
         };
-        
-        if (values.attachment) {
-            const storage = getStorage(firebaseApp);
-            const storageRef = ref(storage, `user_uploads/${user.uid}/${newIncomeRef.id}/${values.attachment.name}`);
-            const snapshot = await uploadBytes(storageRef, values.attachment);
-            newIncome.fileURL = await getDownloadURL(snapshot.ref);
-            newIncome.fileName = values.attachment.name;
-        }
         
         await setDoc(newIncomeRef, newIncome);
 
@@ -241,25 +231,6 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
                       />
                     </PopoverContent>
                   </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="attachment"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Attachment</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="file" 
-                      accept="image/*,.pdf,.xls,.xlsx"
-                      onChange={(e) => {
-                        field.onChange(e.target.files ? e.target.files[0] : undefined);
-                      }}
-                    />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

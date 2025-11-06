@@ -22,7 +22,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
@@ -109,17 +109,19 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
 
     const selectedCategory = categories?.find(c => c.name === values.category);
 
-    const dataToUpdate: Partial<Due> & {id: string} = {
-      id: due.id,
+    const dataToUpdate: Partial<Due> = {
       dueName: values.dueName,
       dueAmount: values.dueAmount,
       dueDate: new Date(values.dueDate),
       category: values.category,
       categoryId: selectedCategory?.id || null,
       isRecurring: values.isRecurring,
-      frequency: values.frequency,
-      recurrenceEndDate: values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null,
     };
+    
+    if (values.isRecurring) {
+        dataToUpdate.frequency = values.frequency;
+        dataToUpdate.recurrenceEndDate = values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null;
+    }
 
     try {
       await updateDue(user.uid, due.id, dataToUpdate);

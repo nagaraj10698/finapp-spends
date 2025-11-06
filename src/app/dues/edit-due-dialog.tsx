@@ -134,10 +134,11 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
      // Handle payment status change
     const instanceDate = due.instanceDate ? toDate(due.instanceDate) : null;
     const instanceDateStr = instanceDate?.toISOString().split('T')[0] || null;
+    
     const wasInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
+    const wasPaid = due.isPaid || wasInstancePaid;
     
     const isNowPaid = values.isPaid;
-    const wasPaid = due.isPaid || wasInstancePaid;
     
     try {
         await updateDue(user.uid, due, updatedDue, wasPaid, isNowPaid, instanceDateStr);
@@ -248,28 +249,6 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
                 </FormItem>
               )}
             />
-            
-             <FormField
-              control={form.control}
-              name="isPaid"
-              render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={(val) => field.onChange(val === 'true')} value={String(field.value)}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="false">Upcoming</SelectItem>
-                            <SelectItem value="true">Paid</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </FormItem>
-              )}
-            />
-
 
             <FormField
               control={form.control}

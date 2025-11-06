@@ -85,7 +85,7 @@ export default function BudgetsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="font-headline text-2xl font-semibold">Cash Flow Forecast</h1>
-        <p className="text-muted-foreground">A projection of your upcoming and unpaid expenses.</p>
+        <p className="text-muted-foreground">A projection of your upcoming expenses.</p>
       </div>
 
        <Card>
@@ -93,7 +93,7 @@ export default function BudgetsPage() {
             <div className='flex justify-between items-start'>
                 <div>
                     <CardTitle>Expense Forecast</CardTitle>
-                    <CardDescription>This chart shows your open, closed and overdue expenses.</CardDescription>
+                    <CardDescription>This chart shows your open and overdue expenses.</CardDescription>
                 </div>
                 <div className='flex items-center gap-2'>
                     <Popover open={isDatePopoverOpen} onOpenChange={setDatePopoverOpen}>

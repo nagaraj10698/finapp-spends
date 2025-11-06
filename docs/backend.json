@@ -87,11 +87,6 @@
         "fileName": {
             "type": "string",
             "description": "Name of the uploaded file."
-        },
-        "status": {
-            "type": "string",
-            "description": "Payment status of the transaction.",
-            "enum": ["Paid", "Un-paid", "Received", "Pending"]
         }
       },
       "required": [

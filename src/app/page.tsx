@@ -210,7 +210,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="font-headline">Expense Forecast</CardTitle>
              <CardDescription>
-              A projection of your upcoming and unpaid expenses.
+              A projection of your upcoming expenses.
             </CardDescription>
           </CardHeader>
           <CardContent>

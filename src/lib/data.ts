@@ -103,7 +103,7 @@ export function getUpcomingBills(
   let overdueCount = 0;
 
   const unpaidExpenses = allTransactions.filter(
-    (t) => t.type === 'expense' && t.status === 'Un-paid'
+    (t) => t.type === 'expense'
   );
 
   unpaidExpenses.forEach((t) => {
@@ -231,21 +231,16 @@ export function getBudgetForecast(
       const periodName = format(interval.start, formatString);
       let openForPeriod = 0;
       let overdueForPeriod = 0;
-      let closedForPeriod = 0;
 
       // Handle one-time expenses
       allExpenses
           .filter(t => !t.isRecurring && isWithinInterval(toDate(t.date), interval))
           .forEach(t => {
               const amount = Math.abs(t.amount);
-              if (t.status === 'Paid') {
-                  closedForPeriod += amount;
+              if (isBefore(toDate(t.date), today)) {
+                  overdueForPeriod += amount;
               } else {
-                  if (isBefore(toDate(t.date), today)) {
-                      overdueForPeriod += amount;
-                  } else {
-                      openForPeriod += amount;
-                  }
+                  openForPeriod += amount;
               }
           });
       
@@ -259,7 +254,6 @@ export function getBudgetForecast(
                       const amount = Math.abs(t.amount);
                       // Treat all future recurring items as "open" for forecasting
                       if (isBefore(nextDate, today)) {
-                        // For recurring, we might not have a per-instance status, so we forecast based on date
                         overdueForPeriod += amount;
                       } else {
                         openForPeriod += amount;
@@ -275,12 +269,12 @@ export function getBudgetForecast(
               }
           });
       
-      if (openForPeriod > 0 || overdueForPeriod > 0 || closedForPeriod > 0) {
+      if (openForPeriod > 0 || overdueForPeriod > 0) {
           forecastData.push({ 
               name: periodName, 
               open: openForPeriod, 
               overdue: overdueForPeriod, 
-              closed: closedForPeriod 
+              closed: 0
             });
       }
   });
@@ -300,7 +294,6 @@ export function getNotifications(allTransactions: Transaction[] | null, allBudge
   if (allTransactions) {
     const overdueBills = allTransactions.filter(t => 
       t.type === 'expense' && 
-      t.status === 'Un-paid' && 
       isBefore(toDate(t.date), today)
     );
     overdueBills.forEach(bill => {
@@ -316,7 +309,6 @@ export function getNotifications(allTransactions: Transaction[] | null, allBudge
     // Upcoming bills
     const upcomingBills = allTransactions.filter(t =>
         t.type === 'expense' &&
-        t.status === 'Un-paid' &&
         isWithinInterval(toDate(t.date), { start: today, end: addDays(today, 7)})
     );
     upcomingBills.forEach(bill => {

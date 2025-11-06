@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { getCategoryByName, getIconByName } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDown, MoreHorizontal, Check, Circle, Edit, Trash2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Checkbox } from "@/components/ui/checkbox";
-import StatusDropdown from './status-dropdown';
 
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', {
@@ -116,19 +115,6 @@ export const getColumns = (
     },
   },
   {
-    accessorKey: 'status',
-    header: 'Payment Status',
-    cell: ({ row }) => {
-      const transaction = row.original;
-      if (transaction.type !== 'expense' || !transaction.status) return null;
-      
-      return <StatusDropdown transaction={transaction} />;
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
-  },
-  {
     accessorKey: 'amount',
     header: ({ column }) => (
       <div className="text-right">
@@ -156,51 +142,6 @@ export const getColumns = (
           {formatted}
         </div>
       );
-    },
-  },
-  {
-    id: 'bill',
-    header: 'Bill',
-    cell: ({ row }) => {
-        const transaction = row.original;
-        if (transaction.type !== 'expense') return null;
-
-        const status = transaction.status;
-        // The date from firestore might be a timestamp, so we convert it.
-        const date = (transaction.date as any).toDate ? (transaction.date as any).toDate() : new Date(transaction.date as any);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Compare dates only
-
-        let billStatus: 'Open' | 'Closed' | 'Overdue' | null = null;
-        let badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
-        let icon: React.ReactNode | null = null;
-        let customClasses = '';
-
-        if (status === 'Paid') {
-            billStatus = 'Closed';
-            badgeVariant = 'outline';
-            customClasses = 'border-green-300 text-green-700 bg-green-50';
-            icon = <CheckCircle2 className="h-3 w-3" />;
-        } else if (status === 'Un-paid') {
-            if (date < today) {
-                billStatus = 'Overdue';
-                badgeVariant = 'destructive';
-                icon = <XCircle className="h-3 w-3" />;
-            } else {
-                billStatus = 'Open';
-                badgeVariant = 'outline';
-                icon = <AlertCircle className="h-3 w-3" />;
-            }
-        }
-
-        if (!billStatus) return null;
-
-        return (
-            <Badge variant={badgeVariant} className={cn("flex w-fit items-center gap-1.5", customClasses)}>
-                {icon}
-                {billStatus}
-            </Badge>
-        );
     },
   },
   {

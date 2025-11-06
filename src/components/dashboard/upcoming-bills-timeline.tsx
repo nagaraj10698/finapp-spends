@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { Transaction, Category } from '@/lib/types';
@@ -8,9 +9,8 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { getCategoryByName, getIconByName } from '@/lib/data';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useToast } from '@/hooks/use-toast';
-import { updateTransactionStatus } from '@/app/actions';
 import { useFirebase } from '@/firebase';
-import { Check, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 interface UpcomingBillsTimelineProps {
   bills: Transaction[];
@@ -72,29 +72,6 @@ export default function UpcomingBillsTimeline({ bills, categories }: UpcomingBil
     return dayData ? [...dayData.overdue, ...dayData.upcoming] : [];
   }, [selectedDate, billsByDate]);
   
-  const handleMarkAsPaid = async (transaction: Transaction) => {
-    if (!user) {
-        toast({
-            variant: "destructive",
-            title: "Not Authenticated",
-            description: "You must be logged in to update a transaction."
-        });
-        return;
-    }
-    const result = await updateTransactionStatus(transaction.id.split('-upcoming-')[0], 'Paid', user.uid);
-    if (result.success) {
-        toast({
-            title: "Transaction Updated",
-            description: `${transaction.description} marked as Paid.`
-        });
-    } else {
-        toast({
-            variant: "destructive",
-            title: "Update Failed",
-            description: result.error
-        });
-    }
-  };
   
   if (!today || !selectedDate) {
     // Render a placeholder or loader while waiting for the client-side mount
@@ -163,10 +140,6 @@ export default function UpcomingBillsTimeline({ bills, categories }: UpcomingBil
                     <div className="text-right">
                         <p className={cn("font-semibold flex items-center gap-1", isOverdue && "text-destructive")}><DhiramSymbol />{Math.abs(bill.amount).toFixed(2)}</p>
                     </div>
-                    <Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleMarkAsPaid(bill)}>
-                        <Check className="mr-2 h-4 w-4" />
-                        Mark as Paid
-                    </Button>
                 </div>
               )
             })}

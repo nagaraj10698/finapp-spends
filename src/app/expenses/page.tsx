@@ -112,7 +112,7 @@ export default function ExpensesPage() {
             </Button>
         </AddExpenseDialog>
        </div>
-      <DataTable columns={tableColumns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDelete} categories={categories ?? []}/>} />
+      <DataTable columns={tableColumns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDelete} categories={categories?.filter(c => c.type === 'expense') ?? []}/>} />
     </div>
     {transactionToEdit && (
         <EditTransactionDialog

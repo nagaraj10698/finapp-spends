@@ -117,7 +117,6 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             isRecurring: values.isRecurring,
             frequency: values.frequency,
             type: 'expense',
-            status: 'Un-paid',
         };
         
         if (values.attachment) {

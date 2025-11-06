@@ -53,7 +53,6 @@ const formSchema = z
     date: z.date(),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
-    status: z.enum(['Paid', 'Un-paid']).optional(),
   })
   .refine(
     (data) => {
@@ -96,7 +95,6 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
         date: (transaction.date as any).toDate ? (transaction.date as any).toDate() : new Date(transaction.date as any),
         isRecurring: transaction.isRecurring ?? false,
         frequency: transaction.frequency,
-        status: transaction.status ?? 'Un-paid',
       });
     }
   }, [transaction, form]);
@@ -133,17 +131,9 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
             isRecurring: values.isRecurring,
             type: values.type,
         };
-
-        if(values.type === 'expense') {
-            updatedTransaction.status = values.status;
-        } else {
-            delete updatedTransaction.status;
-        }
         
         if (values.isRecurring && values.frequency) {
             updatedTransaction.frequency = values.frequency;
-        } else {
-             delete updatedTransaction.frequency;
         }
 
         await updateDoc(transactionRef, updatedTransaction);
@@ -208,38 +198,6 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
                 </FormItem>
               )}
             />
-             {transactionType === 'expense' && (
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Status</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        className="flex space-x-4"
-                      >
-                        <FormItem className="flex items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="Paid" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Paid</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="Un-paid" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Un-paid</FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
             <FormField
               control={form.control}
               name="description"

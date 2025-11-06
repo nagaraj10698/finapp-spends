@@ -48,8 +48,7 @@ export function DataTableToolbar<TData>({
       return { value: c.name, label: c.name, icon: Icon };
   });
   const typeOptions = [{value: 'income', label: 'Credit'}, {value: 'expense', label: 'Debit'}];
-  const statusOptions = [{ value: 'Paid', label: 'Paid' }, { value: 'Un-paid', label: 'Un-paid' }];
-
+  
 
   const handleDeleteSelected = () => {
     const selectedRowsData = table.getFilteredSelectedRowModel().rows.map(row => row.original);
@@ -81,13 +80,6 @@ export function DataTableToolbar<TData>({
                 title="Type"
                 options={typeOptions}
             />
-        )}
-        {table.getColumn("status") && (
-          <DataTableFacetedFilter
-            column={table.getColumn("status")}
-            title="Status"
-            options={statusOptions}
-          />
         )}
          <Popover>
             <PopoverTrigger asChild>

@@ -20,7 +20,6 @@ export function DataTableToolbar<TData>({
   if (!table) return null;
   
   const isFiltered = table.getState().columnFilters.length > 0
-  const statusOptions = [{ value: 'Received', label: 'Received' }, { value: 'Pending', label: 'Pending' }];
   
   const handleDeleteSelected = () => {
     const selectedRowsData = table.getFilteredSelectedRowModel().rows.map(row => row.original);
@@ -39,13 +38,6 @@ export function DataTableToolbar<TData>({
           }
           className="h-8 w-[150px] lg:w-[250px]"
         />
-        {table.getColumn("status") && (
-          <DataTableFacetedFilter
-            column={table.getColumn("status")}
-            title="Status"
-            options={statusOptions}
-          />
-        )}
         {isFiltered && (
           <Button
             variant="ghost"

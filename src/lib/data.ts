@@ -20,7 +20,7 @@ import {
   Wallet,
   TrendingUp,
 } from 'lucide-react';
-import type { Category, Transaction, Budget, Notification, Reminder } from './types';
+import type { Category, Transaction, Budget, Notification, Due } from './types';
 import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, eachWeekOfInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, addDays, isAfter, startOfDay } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
@@ -286,37 +286,37 @@ export function getBudgetForecast(
 export function getNotifications(
   allTransactions: Transaction[] | null,
   allBudgets: Budget[] | null,
-  allReminders: Reminder[] | null
+  allDues: Due[] | null
 ): Notification[] {
   const notifications: Notification[] = [];
-  if (!allTransactions && !allBudgets && !allReminders) return [];
+  if (!allTransactions && !allBudgets && !allDues) return [];
 
   const today = startOfDay(new Date());
 
-  // Reminder-based notifications
-  if (allReminders) {
-    allReminders.forEach(reminder => {
-      const reminderDate = startOfDay(toDate(reminder.reminderDate));
+  // Due-based notifications
+  if (allDues) {
+    allDues.forEach(due => {
+      const dueDate = startOfDay(toDate(due.dueDate));
       
-      // Overdue Reminders
-      if (!reminder.isPaid && isBefore(reminderDate, today)) {
+      // Overdue Dues
+      if (!due.isPaid && isBefore(dueDate, today)) {
         notifications.push({
-          id: `overdue-reminder-${reminder.id}`,
+          id: `overdue-due-${due.id}`,
           type: 'overdue',
-          title: 'Overdue Reminder',
-          description: `'${reminder.reminderName}' was due on ${format(reminderDate, 'LLL dd')}.`,
-          href: '/reminders',
+          title: 'Overdue Due',
+          description: `'${due.dueName}' was due on ${format(dueDate, 'LLL dd')}.`,
+          href: '/dues',
         });
       }
       
-      // Upcoming Reminders
-      if (!reminder.isPaid && isWithinInterval(reminderDate, { start: today, end: addDays(today, 7) })) {
+      // Upcoming Dues
+      if (!due.isPaid && isWithinInterval(dueDate, { start: today, end: addDays(today, 7) })) {
         notifications.push({
-          id: `upcoming-reminder-${reminder.id}`,
+          id: `upcoming-due-${due.id}`,
           type: 'upcoming',
-          title: 'Upcoming Reminder',
-          description: `'${reminder.reminderName}' is due on ${format(reminderDate, 'LLL dd')}.`,
-          href: '/reminders',
+          title: 'Upcoming Due',
+          description: `'${due.dueName}' is due on ${format(dueDate, 'LLL dd')}.`,
+          href: '/dues',
         });
       }
     });

@@ -1,0 +1,64 @@
+
+'use client';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import type { Due } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import { Check, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { format, isBefore, startOfToday } from 'date-fns';
+
+interface DueCardProps {
+  due: Due;
+  onTogglePaid: (due: Due) => void;
+}
+
+export default function DueCard({ due, onTogglePaid }: DueCardProps) {
+    const toDate = (date: any): Date => {
+        if (date.toDate) return date.toDate();
+        return new Date(date);
+    };
+
+    const dueDate = toDate(due.dueDate);
+    const isOverdue = !due.isPaid && isBefore(dueDate, startOfToday());
+    
+  return (
+    <Card className={cn(
+        "flex flex-col",
+        due.isPaid && "bg-muted/50 text-muted-foreground",
+        isOverdue && "border-destructive/50 bg-destructive/5"
+    )}>
+      <CardHeader className="flex-row items-center justify-between pb-2">
+        <CardTitle className="font-headline text-lg">{due.dueName}</CardTitle>
+        {isOverdue && <AlertTriangle className="h-5 w-5 text-destructive" />}
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className={cn("text-3xl font-bold flex items-center gap-1", isOverdue && "text-destructive")}>
+            <DhiramSymbol className={cn("h-7 w-7", !isOverdue && "text-muted-foreground")} />
+            {due.dueAmount.toFixed(2)}
+        </div>
+        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <CalendarIcon className="h-3 w-3" />
+            <span>Due on {format(dueDate, 'LLL dd, yyyy')}</span>
+        </div>
+      </CardContent>
+      <CardFooter className="mt-auto">
+        <Button 
+            className="w-full" 
+            variant={due.isPaid ? 'secondary' : 'default'}
+            onClick={() => onTogglePaid(due)}
+        >
+            <Check className="mr-2 h-4 w-4" />
+            {due.isPaid ? 'Mark as Unpaid' : 'Mark as Paid'}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}

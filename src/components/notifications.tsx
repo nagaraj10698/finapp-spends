@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import type { Transaction, Budget, Reminder } from '@/lib/types';
+import type { Transaction, Budget, Due } from '@/lib/types';
 import { collection } from 'firebase/firestore';
 import { getNotifications } from '@/lib/data';
 import Link from 'next/link';
@@ -41,16 +41,16 @@ export default function Notifications() {
 
   const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
   const budgetsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
-  const remindersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'reminders') : null, [firestore, user]);
+  const duesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'dues') : null, [firestore, user]);
 
   const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
   const { data: allBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
-  const { data: allReminders, isLoading: remindersLoading } = useCollection<Reminder>(remindersCollection);
+  const { data: allDues, isLoading: duesLoading } = useCollection<Due>(duesCollection);
 
 
   const allNotifications = useMemo(() => {
-    return getNotifications(allTransactions, allBudgets, allReminders);
-  }, [allTransactions, allBudgets, allReminders]);
+    return getNotifications(allTransactions, allBudgets, allDues);
+  }, [allTransactions, allBudgets, allDues]);
 
   const unreadNotificationsCount = useMemo(() => {
     if (!isClient) return 0; // Don't calculate on server or before hydration
@@ -66,7 +66,7 @@ export default function Notifications() {
     setReadNotificationIds(prev => [...new Set([...prev, notificationId])]);
   };
 
-  const isLoading = transactionsLoading || budgetsLoading || remindersLoading;
+  const isLoading = transactionsLoading || budgetsLoading || duesLoading;
   
   if (isLoading || !isClient) {
     return (

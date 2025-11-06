@@ -41,12 +41,12 @@ export interface Budget {
   limit?: number;
 }
 
-export interface Reminder {
+export interface Due {
   id: string;
   userId: string;
-  reminderName: string;
-  reminderDate: Date | Timestamp;
-  reminderAmount: number;
+  dueName: string;
+  dueDate: Date | Timestamp;
+  dueAmount: number;
   isPaid: boolean;
 }
 

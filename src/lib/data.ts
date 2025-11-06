@@ -112,45 +112,12 @@ export function getUpcomingBills(
 
   unpaidExpenses.forEach((t) => {
     const expenseDate = toDate(t.date);
-    if (!t.isRecurring) {
-      if (isWithinInterval(expenseDate, { start: rangeStart, end: rangeEnd })) {
-        upcoming.push({ ...t, date: expenseDate });
-        if (isBefore(expenseDate, today)) {
-          overdueCount++;
-        } else {
-          upcomingCount++;
-        }
-      }
-    } else {
-      let nextDate = expenseDate;
-      const recurrenceEndDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : addYears(rangeEnd, 1);
-      
-      while (isBefore(nextDate, rangeStart)) {
-        if(isAfter(nextDate, recurrenceEndDate)) break;
-        switch (t.frequency) {
-          case 'weekly': nextDate = addWeeks(nextDate, 1); break;
-          case 'monthly': nextDate = addMonths(nextDate, 1); break;
-          case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
-          case 'yearly': nextDate = addYears(nextDate, 1); break;
-          default: nextDate = addYears(rangeEnd, 1);
-        }
-      }
-
-      while (isWithinInterval(nextDate, { start: rangeStart, end: rangeEnd }) && isBefore(nextDate, recurrenceEndDate)) {
-        upcoming.push({ ...t, id: `${t.id}-${nextDate.toISOString()}`, date: nextDate });
-        if (isBefore(nextDate, today)) {
-          overdueCount++;
-        } else {
-          upcomingCount++;
-        }
-
-        switch (t.frequency) {
-          case 'weekly': nextDate = addWeeks(nextDate, 1); break;
-          case 'monthly': nextDate = addMonths(nextDate, 1); break;
-          case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
-          case 'yearly': nextDate = addYears(nextDate, 1); break;
-          default: nextDate = addYears(rangeEnd, 1);
-        }
+    if (isWithinInterval(expenseDate, { start: rangeStart, end: rangeEnd })) {
+      upcoming.push({ ...t, date: expenseDate });
+      if (isBefore(expenseDate, today)) {
+        overdueCount++;
+      } else {
+        upcomingCount++;
       }
     }
   });
@@ -304,40 +271,13 @@ export function getBudgetForecast(
 
       // Handle one-time expenses
       allExpenses
-          .filter(t => !t.isRecurring && isWithinInterval(toDate(t.date), interval))
+          .filter(t => isWithinInterval(toDate(t.date), interval))
           .forEach(t => {
               const amount = Math.abs(t.amount);
               if (isBefore(toDate(t.date), today)) {
                   overdueForPeriod += amount;
               } else {
                   openForPeriod += amount;
-              }
-          });
-      
-      // Handle recurring expenses
-      allExpenses
-          .filter(t => t.isRecurring && t.frequency)
-          .forEach(t => {
-              let nextDate = toDate(t.date);
-              const recurrenceEndDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : addYears(range.end, 1);
-
-              while(nextDate <= interval.end && nextDate <= recurrenceEndDate) {
-                  if (nextDate >= interval.start) {
-                      const amount = Math.abs(t.amount);
-                      // Treat all future recurring items as "open" for forecasting
-                      if (isBefore(nextDate, today)) {
-                        overdueForPeriod += amount;
-                      } else {
-                        openForPeriod += amount;
-                      }
-                  }
-                  switch (t.frequency) {
-                      case 'weekly': nextDate = addWeeks(nextDate, 1); break;
-                      case 'monthly': nextDate = addMonths(nextDate, 1); break;
-                      case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
-                      case 'yearly': nextDate = addYears(nextDate, 1); break;
-                      default: nextDate = addYears(interval.end, 1);
-                  }
               }
           });
       

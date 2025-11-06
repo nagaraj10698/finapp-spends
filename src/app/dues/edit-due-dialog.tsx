@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc, deleteField } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import type { Due, Category } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getIconByName, toDate } from '@/lib/data';
+import { updateDue } from '@/app/actions';
 
 const formSchema = z
   .object({
@@ -67,9 +68,9 @@ interface EditDueDialogProps {
 
 export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps) {
   const { toast } = useToast();
-  const { firestore, user } = useFirebase();
+  const { user } = useFirebase();
 
-  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+  const categoriesCollection = useMemoFirebase(() => user ? collection(user.firestore, 'users', user.uid, 'categories') : null, [user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -77,15 +78,14 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
   });
   
   const [currentDueDate, setCurrentDueDate] = useState<Date | undefined>();
-  const [currentRecurrenceEndDate, setCurrentRecurrenceEndDate] = useState<Date | undefined | null>();
-
+  const [currentRecurrenceEndDate, setCurrentRecurrenceEndDate] = useState<Date | null | undefined>();
 
   const isRecurring = form.watch('isRecurring');
 
   useEffect(() => {
     if (due) {
         const initialDueDate = toDate(due.dueDate);
-        const initialRecurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : undefined;
+        const initialRecurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : null;
         
         form.reset({
             dueName: due.dueName,
@@ -103,7 +103,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !firestore || !due) {
+    if (!user || !due) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -114,8 +114,6 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
     
     const selectedCategory = categories?.find(c => c.name === values.category);
     
-    const dueRef = doc(firestore, 'users', user.uid, 'dues', due.id);
-    
     const dataToUpdate: Partial<Omit<Due, 'id'>> = {
         dueName: values.dueName,
         dueAmount: values.dueAmount,
@@ -123,20 +121,12 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
+        frequency: values.frequency,
+        recurrenceEndDate: values.recurrenceEndDate,
     };
-
-    if (values.isRecurring) {
-        dataToUpdate.frequency = values.frequency;
-        dataToUpdate.recurrenceEndDate = values.recurrenceEndDate || null;
-    } else {
-        dataToUpdate.frequency = null;
-        dataToUpdate.recurrenceEndDate = null;
-    }
     
     try {
-        await updateDoc(dueRef, {
-          ...dataToUpdate
-        });
+        await updateDue(user.uid, due.id, dataToUpdate);
         
         toast({
             title: 'Due Updated',
@@ -306,8 +296,10 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
                         mode="single" 
                         selected={currentDueDate} 
                         onSelect={(date) => {
-                          setCurrentDueDate(date);
-                          form.setValue('dueDate', date as Date);
+                          if (date) {
+                              setCurrentDueDate(date);
+                              form.setValue('dueDate', date);
+                          }
                         }} 
                         initialFocus 
                       />

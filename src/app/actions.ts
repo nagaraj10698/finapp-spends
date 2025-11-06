@@ -1,4 +1,3 @@
-
 'use server';
 
 import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, addDoc, writeBatch, deleteField } from "firebase/firestore";
@@ -46,4 +45,32 @@ export async function processDuePayment(userId: string, due: Due) {
     }
 
     await batch.commit();
+}
+
+
+export async function updateDue(userId: string, dueId: string, updatedData: Partial<Due>) {
+    const { firestore } = initializeFirebase();
+    const dueRef = doc(firestore, 'users', userId, 'dues', dueId);
+
+    // Build a clean update object
+    const dataToUpdate: { [key: string]: any } = {
+        dueName: updatedData.dueName,
+        dueAmount: updatedData.dueAmount,
+        dueDate: updatedData.dueDate,
+        category: updatedData.category,
+        categoryId: updatedData.categoryId,
+        isRecurring: updatedData.isRecurring,
+    };
+
+    if (updatedData.isRecurring) {
+        dataToUpdate.frequency = updatedData.frequency;
+        // Firestore can accept null for a date field
+        dataToUpdate.recurrenceEndDate = updatedData.recurrenceEndDate || null;
+    } else {
+        // Use deleteField for fields that should not exist on non-recurring dues
+        dataToUpdate.frequency = deleteField();
+        dataToUpdate.recurrenceEndDate = deleteField();
+    }
+
+    await updateDoc(dueRef, dataToUpdate);
 }

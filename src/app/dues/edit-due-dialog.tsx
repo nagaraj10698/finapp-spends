@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, doc, updateDoc } from 'firebase/firestore';
 import type { Due, Category } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -35,7 +35,6 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getIconByName, toDate } from '@/lib/data';
-import { updateDue } from '@/app/actions';
 
 const formSchema = z
   .object({
@@ -96,7 +95,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !due) {
+    if (!user || !firestore || !due) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -107,20 +106,27 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
     
     const selectedCategory = categories?.find(c => c.name === values.category);
     
-    // Construct a clean data object to send to the server action
-    const updatedDue: Partial<Due> = {
+    const dueRef = doc(firestore, 'users', user.uid, 'dues', due.id);
+    
+    const dataToUpdate: Partial<Due> = {
         dueName: values.dueName,
         dueAmount: values.dueAmount,
         dueDate: values.dueDate,
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
-        frequency: values.isRecurring ? values.frequency : undefined,
-        recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : undefined,
     };
+
+    if (values.isRecurring) {
+        dataToUpdate.frequency = values.frequency;
+        dataToUpdate.recurrenceEndDate = values.recurrenceEndDate || null;
+    } else {
+        dataToUpdate.frequency = null;
+        dataToUpdate.recurrenceEndDate = null;
+    }
     
     try {
-        await updateDue(user.uid, due.id, updatedDue);
+        await updateDoc(dueRef, dataToUpdate);
         
         toast({
             title: 'Due Updated',

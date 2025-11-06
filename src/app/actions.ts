@@ -16,39 +16,6 @@ async function getCollectionData<T>(userId: string, collectionName: string): Pro
     return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as T[];
 }
 
-export async function updateDue(userId: string, dueId: string, updatedData: Partial<Due>) {
-  const { firestore } = initializeFirebase();
-  const dueRef = doc(firestore, 'users', userId, 'dues', dueId);
-
-  const dataToUpdate: { [key: string]: any } = {};
-
-  // Copy basic fields that are always present
-  if (updatedData.dueName) dataToUpdate.dueName = updatedData.dueName;
-  if (updatedData.dueAmount) dataToUpdate.dueAmount = updatedData.dueAmount;
-  if (updatedData.dueDate) dataToUpdate.dueDate = updatedData.dueDate;
-  if (updatedData.category) dataToUpdate.category = updatedData.category;
-  if (updatedData.categoryId !== undefined) dataToUpdate.categoryId = updatedData.categoryId;
-  if (updatedData.isRecurring !== undefined) dataToUpdate.isRecurring = updatedData.isRecurring;
-  
-  if (updatedData.isRecurring) {
-    // If recurring, frequency is expected.
-    dataToUpdate.frequency = updatedData.frequency;
-    
-    // If recurrenceEndDate is provided, set it. Otherwise, delete it.
-    if (updatedData.recurrenceEndDate) {
-      dataToUpdate.recurrenceEndDate = updatedData.recurrenceEndDate;
-    } else {
-      dataToUpdate.recurrenceEndDate = deleteField();
-    }
-  } else {
-    // If not recurring, remove frequency and end date fields.
-    dataToUpdate.frequency = deleteField();
-    dataToUpdate.recurrenceEndDate = deleteField();
-  }
-
-  await updateDoc(dueRef, dataToUpdate);
-}
-
 export async function processDuePayment(userId: string, due: Due) {
     const { firestore } = initializeFirebase();
     const batch = writeBatch(firestore);

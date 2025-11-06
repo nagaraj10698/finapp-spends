@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, doc, updateDoc } from 'firebase/firestore';
 import type { Due, Category } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -35,7 +35,8 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getIconByName, toDate } from '@/lib/data';
-import { updateDue } from '@/app/actions';
+import { updateDue } from '../actions';
+
 
 const formSchema = z
   .object({
@@ -92,7 +93,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
             recurrenceEndDate: due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : null,
         });
     }
-  }, [due, form]);
+  }, [due]);
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -107,19 +108,17 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
     
     const selectedCategory = categories?.find(c => c.name === values.category);
     
-    const dataToUpdate: Partial<Omit<Due, 'id'>> = {
+    const dataToUpdate: Partial<Omit<Due, 'id' | 'userId'>> = {
         dueName: values.dueName,
         dueAmount: values.dueAmount,
         dueDate: values.dueDate,
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
-        frequency: values.isRecurring ? values.frequency : undefined,
-        recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : null
     };
     
     try {
-        await updateDue(user.uid, due.id, dataToUpdate);
+        await updateDue(user.uid, due.id, dataToUpdate, values);
         
         toast({
             title: 'Due Updated',
@@ -323,7 +322,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
                         <PopoverContent className="w-auto p-0" align="start">
                         <Calendar 
                           mode="single" 
-                          selected={field.value ?? undefined} 
+                          selected={field.value}
                           onSelect={field.onChange}
                           initialFocus 
                         />

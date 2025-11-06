@@ -38,9 +38,6 @@ import { Switch } from '@/components/ui/switch';
 import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Budget, Category } from '@/lib/types';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 
 
@@ -48,8 +45,12 @@ const formSchema = z.object({
   name: z.string().min(1, 'Budget name is required.'),
   budgetAmount: z.coerce.number().positive('Amount must be positive.'),
   category: z.string().min(1, 'Please select a category.'),
-  budgetStartDate: z.date({ required_error: 'Start date is required.' }),
-  budgetEndDate: z.date({ required_error: 'End date is required.' }),
+  budgetStartDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Start date is required.",
+  }),
+  budgetEndDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "End date is required.",
+  }),
   isRecurring: z.boolean(),
   type: z.enum(['Bills', 'Subscription', 'Expense'], { required_error: 'Please select a type.' }),
 });
@@ -58,8 +59,6 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
-  const [isStartDatePickerOpen, setStartDatePickerOpen] = useState(false);
-  const [isEndDatePickerOpen, setEndDatePickerOpen] = useState(false);
 
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -70,8 +69,8 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
       name: '',
       budgetAmount: 0,
       category: '',
-      budgetStartDate: new Date(),
-      budgetEndDate: new Date(),
+      budgetStartDate: format(new Date(), 'yyyy-MM-dd'),
+      budgetEndDate: format(new Date(), 'yyyy-MM-dd'),
       isRecurring: false,
       type: 'Expense',
     },
@@ -93,8 +92,8 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
     const newBudget: Omit<Budget, 'id'> = {
         name: values.name,
         budgetAmount: values.budgetAmount,
-        budgetStartDate: values.budgetStartDate,
-        budgetEndDate: values.budgetEndDate,
+        budgetStartDate: new Date(values.budgetStartDate),
+        budgetEndDate: new Date(values.budgetEndDate),
         isRecurring: values.isRecurring,
         type: values.type,
         categoryId: selectedCategory?.id,
@@ -201,34 +200,9 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
                     <FormLabel>Start Date</FormLabel>
-                    <Popover open={isStartDatePickerOpen} onOpenChange={setStartDatePickerOpen}>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant={'outline'}
-                            className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                            )}
-                            >
-                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar 
-                            mode="single" 
-                            selected={field.value} 
-                            onSelect={(date) => {
-                                field.onChange(date);
-                                setStartDatePickerOpen(false);
-                            }}
-                            disabled={false}
-                            initialFocus 
-                        />
-                        </PopoverContent>
-                    </Popover>
+                     <FormControl>
+                        <Input type="date" {...field} />
+                    </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
@@ -239,34 +213,9 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
                     <FormLabel>End Date</FormLabel>
-                    <Popover open={isEndDatePickerOpen} onOpenChange={setEndDatePickerOpen}>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant={'outline'}
-                            className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                            )}
-                            >
-                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar 
-                            mode="single" 
-                            selected={field.value} 
-                            onSelect={(date) => {
-                                field.onChange(date);
-                                setEndDatePickerOpen(false);
-                            }}
-                            disabled={false}
-                            initialFocus 
-                        />
-                        </PopoverContent>
-                    </Popover>
+                     <FormControl>
+                        <Input type="date" {...field} />
+                    </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}

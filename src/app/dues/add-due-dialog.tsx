@@ -28,9 +28,6 @@ import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Due, Category } from '@/lib/types';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
@@ -41,11 +38,13 @@ const formSchema = z
   .object({
     dueName: z.string().min(1, 'Due name is required.'),
     dueAmount: z.coerce.number().positive('Amount must be positive.'),
-    dueDate: z.date({ required_error: 'Start date is required.' }),
+    dueDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+      message: "Start date is required.",
+    }),
     category: z.string().min(1, 'Please select a category.'),
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
-    recurrenceEndDate: z.date().optional(),
+    recurrenceEndDate: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -58,16 +57,17 @@ const formSchema = z
       message: 'Please select a frequency for recurring dues.',
       path: ['frequency'],
     }
-  );
+  )
+  .refine(data => !data.isRecurring || !data.recurrenceEndDate || new Date(data.recurrenceEndDate) > new Date(data.dueDate), {
+    message: "End date must be after the start date.",
+    path: ["recurrenceEndDate"],
+  });
 
 
 export default function AddDueDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
-  const [isDueDatePickerOpen, setDueDatePickerOpen] = useState(false);
-  const [isEndDatePickerOpen, setEndDatePickerOpen] = useState(false);
-
 
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -77,7 +77,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
     defaultValues: {
       dueName: '',
       dueAmount: 0,
-      dueDate: new Date(),
+      dueDate: format(new Date(), 'yyyy-MM-dd'),
       isRecurring: false,
       category: ''
     },
@@ -102,7 +102,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
         userId: user.uid,
         dueName: values.dueName,
         dueAmount: values.dueAmount,
-        dueDate: values.dueDate,
+        dueDate: new Date(values.dueDate),
         isPaid: false,
         isRecurring: values.isRecurring,
         category: values.category,
@@ -112,7 +112,7 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
     if (values.isRecurring) {
       newDue.frequency = values.frequency;
       if (values.recurrenceEndDate) {
-        newDue.recurrenceEndDate = values.recurrenceEndDate;
+        newDue.recurrenceEndDate = new Date(values.recurrenceEndDate);
       }
     }
 
@@ -263,34 +263,9 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>{isRecurring ? 'First Due Date' : 'Due Date'}</FormLabel>
-                  <Popover open={isDueDatePickerOpen} onOpenChange={setDueDatePickerOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-full pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar 
-                        mode="single" 
-                        selected={field.value} 
-                        onSelect={(date) => {
-                          field.onChange(date);
-                          setDueDatePickerOpen(false);
-                        }}
-                        disabled={false}
-                        initialFocus 
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -303,34 +278,9 @@ export default function AddDueDialog({children}: {children: ReactNode}) {
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
                     <FormLabel>End Date (Optional)</FormLabel>
-                    <Popover open={isEndDatePickerOpen} onOpenChange={setEndDatePickerOpen}>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant={'outline'}
-                            className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                            )}
-                            >
-                            {field.value ? format(field.value, 'PPP') : <span>Pick an end date</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar 
-                            mode="single" 
-                            selected={field.value} 
-                            onSelect={(date) => {
-                              field.onChange(date);
-                              setEndDatePickerOpen(false);
-                            }}
-                            disabled={false}
-                            initialFocus 
-                          />
-                        </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}

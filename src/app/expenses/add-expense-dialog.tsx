@@ -30,9 +30,6 @@ import { getIconByName } from '@/lib/data';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -47,7 +44,7 @@ const formSchema = z.object({
     description: z.string().min(2, 'Description must be at least 2 characters.'),
     amount: z.coerce.number().positive('Amount must be positive.'),
     category: z.string().min(1, 'Please select a category.'),
-    date: z.date(),
+    date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Date is required." }),
   });
 
 export default function AddExpenseDialog({children}: {children: ReactNode}) {
@@ -55,7 +52,6 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDatePickerOpen, setDatePickerOpen] = useState(false);
   
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -66,7 +62,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
       description: '',
       amount: 0,
       category: '',
-      date: new Date(),
+      date: format(new Date(), 'yyyy-MM-dd'),
     },
   });
 
@@ -92,7 +88,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             amount: -Math.abs(values.amount),
             category: values.category,
             categoryId: selectedCategory?.id || null,
-            date: values.date,
+            date: new Date(values.date),
             type: 'expense',
         };
         
@@ -206,38 +202,9 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date</FormLabel>
-                  <Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-full pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={(date) => {
-                          field.onChange(date);
-                          setDatePickerOpen(false);
-                        }}
-                        disabled={false}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

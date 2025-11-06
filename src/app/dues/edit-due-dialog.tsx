@@ -22,10 +22,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteField } from 'firebase/firestore';
 import type { Due, Category } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -97,45 +97,45 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !due || !firestore) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "You must be logged in to edit a due."
-        });
-        return;
+    if (!user || !due) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to edit a due.',
+      });
+      return;
     }
-    
+
     const selectedCategory = categories?.find(c => c.name === values.category);
-    
-    const dataToUpdate: Partial<Omit<Due, 'id' | 'userId'>> = {
-        dueName: values.dueName,
-        dueAmount: values.dueAmount,
-        dueDate: values.dueDate,
-        category: values.category,
-        categoryId: selectedCategory?.id || null,
-        isRecurring: values.isRecurring,
+
+    const dataToUpdate: Partial<Due> = {
+      dueName: values.dueName,
+      dueAmount: values.dueAmount,
+      dueDate: values.dueDate,
+      category: values.category,
+      categoryId: selectedCategory?.id || null,
+      isRecurring: values.isRecurring,
+      frequency: values.frequency,
+      recurrenceEndDate: values.recurrenceEndDate,
     };
-    
+
     try {
-        await updateDue(user.uid, due.id, dataToUpdate, values);
-        
-        toast({
-            title: 'Due Updated',
-            description: `The due "${values.dueName}" has been updated.`,
-        });
-        onClose();
-
+      await updateDue(user.uid, due.id, dataToUpdate);
+      toast({
+        title: 'Due Updated',
+        description: `The due "${values.dueName}" has been updated.`,
+      });
+      onClose();
     } catch (error) {
-        console.error("Error updating due:", error);
-        toast({
-            variant: "destructive",
-            title: "Update Failed",
-            description: "An error occurred while updating the due.",
-        });
+      console.error('Error updating due:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'An error occurred while updating the due.',
+      });
     }
-
   }
+
 
   const expenseCategories = categories?.filter(c => c.type === 'expense');
 
@@ -344,3 +344,5 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
     </Dialog>
   );
 }
+
+    

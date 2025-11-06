@@ -97,7 +97,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
         const amount = values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
         const selectedCategory = categories?.find(c => c.name === values.category);
 
-        const newTransaction: Omit<Transaction, 'id'> = {
+        const newTransaction: Omit<Transaction, 'id' | 'userId'> = {
             description: values.description,
             amount: amount,
             category: values.category,
@@ -288,3 +288,5 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
     </Dialog>
   );
 }
+
+    

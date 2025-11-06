@@ -290,3 +290,5 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
     </Dialog>
   );
 }
+
+    

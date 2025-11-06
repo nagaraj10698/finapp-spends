@@ -52,7 +52,7 @@ const formSchema = z.object({
 
 export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
-  const { firestore, user, firebaseApp } = useFirebase();
+  const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -70,7 +70,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !user || !firebaseApp) {
+    if (!firestore || !user) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -86,7 +86,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
 
         const selectedCategory = categories?.find(c => c.name === values.category);
 
-        const newExpense: Omit<Transaction, 'id'> = {
+        const newExpense: Omit<Transaction, 'id' | 'userId'> = {
             description: values.description,
             amount: -Math.abs(values.amount),
             category: values.category,
@@ -248,3 +248,5 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
     </Dialog>
   );
 }
+
+    

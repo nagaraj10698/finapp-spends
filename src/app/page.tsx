@@ -20,7 +20,7 @@ import {
 import type { Transaction, Category, Due } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, format, differenceInDays, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
+import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, format, differenceInDays, startOfQuarter, endOfQuarter, startOfYear, endOfYear, startOfDay, isBefore, isAfter } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';

@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { generateDueInstances, toDate } from '@/lib/data';
 import { DataTable } from '@/components/ui/data-table';
 import { getColumns } from './columns';
-import { DataTableToolbar } from './data-table-toolbar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
@@ -120,7 +119,7 @@ export default function DuesPage() {
       </div>
 
       {dueInstances.length > 0 ? (
-        <DataTable columns={tableColumns} data={dueInstances} toolbar={<DataTableToolbar categories={categories?.filter(c => c.type === 'expense') ?? []} />} />
+        <DataTable columns={tableColumns} data={dueInstances} />
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
           <h3 className="text-lg font-semibold text-muted-foreground">No dues yet</h3>

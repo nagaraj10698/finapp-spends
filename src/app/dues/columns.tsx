@@ -87,12 +87,6 @@ export const getColumns = (
         </Badge>
       );
     },
-    filterFn: (row, id, value) => {
-      if (!Array.isArray(value)) {
-        return true;
-      }
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: 'dueDate',
@@ -117,21 +111,6 @@ export const getColumns = (
     id: 'status',
     header: 'Status',
     cell: StatusCell,
-    filterFn: (row, id, value) => {
-        if (!Array.isArray(value) || value.length === 0) {
-            return true;
-        }
-        const due = row.original as Due;
-        const displayDate = due.instanceDate ? toDate(due.instanceDate) : toDate(due.dueDate);
-        const isOverdue = !due.isPaid && isBefore(displayDate, startOfToday());
-        
-        let status: string;
-        if(due.isPaid) status = 'paid';
-        else if (isOverdue) status = 'overdue';
-        else status = 'upcoming';
-
-        return value.includes(status);
-    }
   },
   {
     accessorKey: 'dueAmount',

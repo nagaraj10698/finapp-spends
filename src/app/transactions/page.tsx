@@ -33,6 +33,11 @@ export default function TransactionsPage() {
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
 
+  const toDate = (date: any) => {
+    if (!date) return new Date();
+    return date instanceof Date ? date : date.toDate();
+  }
+  
   const handleEdit = (transaction: Transaction) => {
     setTransactionToEdit(transaction);
     setEditOpen(true);
@@ -41,7 +46,7 @@ export default function TransactionsPage() {
   const handleDeleteRequest = (transaction: Transaction) => {
     setTransactionToDelete(transaction);
   };
-
+  
   const handleDeleteMany = async (transactionsToDelete: Transaction[]) => {
     if (!user || !firestore || transactionsToDelete.length === 0) return;
 
@@ -86,7 +91,6 @@ export default function TransactionsPage() {
     }
   };
 
-
   const tableColumns = useMemo(() => getColumns(categories ?? [], handleEdit, handleDeleteRequest), [categories]);
   
   const transactionData = useMemo(() => {
@@ -101,11 +105,6 @@ export default function TransactionsPage() {
 
   if (transactionsLoading || categoriesLoading) {
     return <div>Loading transactions...</div>;
-  }
-
-  const toDate = (date: any) => {
-    if (!date) return new Date();
-    return date instanceof Date ? date : date.toDate();
   }
 
   return (

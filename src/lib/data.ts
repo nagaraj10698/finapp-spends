@@ -1,5 +1,4 @@
 
-
 import {
   ShoppingBag,
   HeartPulse,
@@ -21,7 +20,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Notification, Due } from './types';
-import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfYear } from 'date-fns';
+import { addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfDay } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
@@ -72,7 +71,7 @@ export const getIconByName = (name: string): LucideIcon => {
     return ICONS[name] || Shapes;
 }
 
-export const getCategoryByName = (name: string, categories: Category[]) => {
+export const getCategoryByName = (name: string, categories: Category[] | undefined) => {
     if (!categories) return undefined;
     return categories.find(c => c.name === name);
 }
@@ -81,7 +80,9 @@ export const getCategoryByName = (name: string, categories: Category[]) => {
 
 export function toDate(date: Date | Timestamp | undefined | null): Date {
     if (!date) return new Date();
-    return date instanceof Date ? date : (date as Timestamp).toDate();
+    if (date instanceof Date) return date;
+    if ('toDate' in date && typeof date.toDate === 'function') return date.toDate();
+    return new Date(date);
 }
 
 
@@ -215,7 +216,7 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
       }
     }
   });
-  return instances.sort((a,b) => (a.instanceDate || a.dueDate).getTime() - (b.instanceDate || b.dueDate).getTime());
+  return instances.sort((a,b) => (a.instanceDate || toDate(a.dueDate)).getTime() - (b.instanceDate || toDate(b.dueDate)).getTime());
 }
 
 
@@ -339,6 +340,7 @@ export function getNotifications(
   return notifications.sort((a, b) => {
     if (a.type === 'overdue' && b.type !== 'overdue') return -1;
     if (a.type !== 'overdue' && b.type === 'overdue') return 1;
+    // For non-overdue, there is no specific order, so we can return 0
     return 0;
   });
 }

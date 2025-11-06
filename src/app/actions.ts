@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, addDoc, writeBatch, deleteField } from "firebase/firestore";
+import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, addDoc, writeBatch, deleteField, Timestamp } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase/index.server";
 import { getAuth, type User } from "firebase/auth";
 import type { Transaction, Budget, Due, Category } from "@/lib/types";
@@ -69,7 +69,7 @@ export async function generateMockTransactionsForYear(userId: string) {
                 userId,
                 description: 'Monthly Salary',
                 amount: 25000 + (Math.random() * 2000 - 1000),
-                date: day,
+                date: Timestamp.fromDate(day),
                 category: incomeCategory.name,
                 categoryId: incomeCategory.id,
                 type: 'income',
@@ -87,7 +87,7 @@ export async function generateMockTransactionsForYear(userId: string) {
                 userId,
                 description: `${randomCategory.name} purchase`,
                 amount: -amount,
-                date: day,
+                date: Timestamp.fromDate(day),
                 category: randomCategory.name,
                 categoryId: randomCategory.id,
                 type: 'expense',

@@ -42,8 +42,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-
 
 const formSchema = z.object({
   amount: z.coerce.number().positive('Amount must be positive.'),
@@ -87,10 +85,13 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
         const incomeCollection = collection(firestore, 'users', user.uid, 'transactions');
         const newIncomeRef = doc(incomeCollection);
 
+        const selectedCategory = categories?.find(c => c.name === values.category);
+
         const newIncome: Omit<Transaction, 'id'> = {
             description: values.description,
             amount: values.amount,
             category: values.category,
+            categoryId: selectedCategory?.id || null,
             date: values.date,
             type: 'income',
         };

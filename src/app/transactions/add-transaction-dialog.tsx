@@ -115,11 +115,13 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
         const newTransactionRef = doc(transactionCollection);
         
         const amount = values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
+        const selectedCategory = categories?.find(c => c.name === values.category);
 
         const newTransaction: Omit<Transaction, 'id'> = {
             description: values.description,
             amount: amount,
             category: values.category,
+            categoryId: selectedCategory?.id || null,
             date: values.date,
             isRecurring: values.isRecurring,
             type: values.type,

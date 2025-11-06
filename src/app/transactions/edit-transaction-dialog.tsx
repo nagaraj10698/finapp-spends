@@ -103,8 +103,10 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
   const isRecurring = form.watch('isRecurring');
 
   useEffect(() => {
-    form.resetField('category', { defaultValue: '' });
-  }, [transactionType, form]);
+    if (transaction.type !== transactionType) {
+        form.resetField('category', { defaultValue: '' });
+    }
+  }, [transactionType, form, transaction.type]);
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -122,11 +124,13 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
         const transactionRef = doc(firestore, 'users', user.uid, 'transactions', transaction.id);
         
         const amount = values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
+        const selectedCategory = categories?.find(c => c.name === values.category);
 
         const updatedTransaction: Partial<Transaction> = {
             description: values.description,
             amount: amount,
             category: values.category,
+            categoryId: selectedCategory?.id || null,
             date: values.date,
             isRecurring: values.isRecurring,
             type: values.type,
@@ -134,6 +138,8 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
         
         if (values.isRecurring && values.frequency) {
             updatedTransaction.frequency = values.frequency;
+        } else {
+            updatedTransaction.frequency = undefined;
         }
 
         await updateDoc(transactionRef, updatedTransaction);
@@ -358,5 +364,3 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
     </Dialog>
   );
 }
-
-    

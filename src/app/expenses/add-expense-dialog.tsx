@@ -42,7 +42,6 @@ import { Switch } from '@/components/ui/switch';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 
@@ -353,5 +352,3 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
     </Dialog>
   );
 }
-
-    

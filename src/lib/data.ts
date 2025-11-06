@@ -85,7 +85,7 @@ export function getRecentTransactions(allTransactions: Transaction[] | null, cou
   if (!allTransactions) return [];
   return [...allTransactions]
     .map(t => ({...t, date: toDate(t.date)}))
-    .sort((a,b) => b.date.getTime() - b.date.getTime())
+    .sort((a,b) => b.date.getTime() - a.date.getTime())
     .slice(0, count);
 }
 
@@ -225,40 +225,51 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
         } else {
             // Recurring due
             const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : defaultEndDate;
-            let nextDate = startDate;
-
-            // Find first occurrence within or after today, but only check a reasonable number of times
-            let sanityCheck = 0;
-            while(isBefore(nextDate, today) && isBefore(nextDate, recurrenceEndDate) && sanityCheck < 600) { // Limit to 50 years of monthly checks
-                switch (due.frequency) {
-                    case 'weekly': nextDate = addWeeks(nextDate, 1); break;
-                    case 'monthly': nextDate = addMonths(nextDate, 1); break;
-                    case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
-                    case 'yearly': nextDate = addYears(nextDate, 1); break;
-                    default: nextDate = addYears(rangeEnd, 1);
-                }
-                sanityCheck++;
+            
+            // First, add the initial due date if it's within range
+            if (isWithinInterval(startDate, { start: today, end: rangeEnd })) {
+                 const instanceDateStr = startDate.toISOString().split('T')[0];
+                 const isInstancePaid = !!(due as any).paidInstances?.[instanceDateStr];
+                 instances.push({
+                    ...due,
+                    instanceDate: startDate,
+                    isPaid: isInstancePaid,
+                    paidDate: isInstancePaid ? startDate : null,
+                });
             }
             
-            // Generate instances until the end of the range
-            sanityCheck = 0;
-            while (isBefore(nextDate, rangeEnd) && isBefore(nextDate, recurrenceEndDate) && sanityCheck < 120) { // Limit to 10 years of monthly checks
-                const instanceDateStr = nextDate.toISOString().split('T')[0];
-                const isInstancePaid = !!(due as any).paidInstances?.[instanceDateStr];
-                
-                instances.push({
-                    ...due,
-                    instanceDate: nextDate,
-                    isPaid: isInstancePaid,
-                    paidDate: isInstancePaid ? nextDate : null,
-                });
+            let nextDate = startDate;
 
-                switch (due.frequency) {
-                    case 'weekly': nextDate = addWeeks(nextDate, 1); break;
-                    case 'monthly': nextDate = addMonths(nextDate, 1); break;
-                    case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
-                    case 'yearly': nextDate = addYears(nextDate, 1); break;
-                    default: nextDate = addYears(rangeEnd, 1);
+            // Generate subsequent instances, aligned to the 1st of the period
+            let sanityCheck = 0;
+            while (isBefore(nextDate, rangeEnd) && isBefore(nextDate, recurrenceEndDate) && sanityCheck < 120) { // Limit to 10 years of monthly checks
+                 switch (due.frequency) {
+                    case 'weekly':
+                        nextDate = startOfWeek(addWeeks(nextDate, 1));
+                        break;
+                    case 'monthly':
+                        nextDate = startOfMonth(addMonths(nextDate, 1));
+                        break;
+                    case 'quarterly':
+                        nextDate = startOfQuarter(addQuarters(nextDate, 1));
+                        break;
+                    case 'yearly':
+                        nextDate = startOfYear(addYears(nextDate, 1));
+                        break;
+                    default:
+                        nextDate = addYears(rangeEnd, 1); // Should not happen
+                }
+
+                if (isBefore(nextDate, recurrenceEndDate) && isWithinInterval(nextDate, { start: today, end: rangeEnd })) {
+                    const instanceDateStr = nextDate.toISOString().split('T')[0];
+                    const isInstancePaid = !!(due as any).paidInstances?.[instanceDateStr];
+                    
+                    instances.push({
+                        ...due,
+                        instanceDate: nextDate,
+                        isPaid: isInstancePaid,
+                        paidDate: isInstancePaid ? nextDate : null,
+                    });
                 }
                 sanityCheck++;
             }

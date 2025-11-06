@@ -85,7 +85,7 @@ export function getRecentTransactions(allTransactions: Transaction[] | null, cou
   if (!allTransactions) return [];
   return [...allTransactions]
     .map(t => ({...t, date: toDate(t.date)}))
-    .sort((a,b) => b.date.getTime() - a.date.getTime())
+    .sort((a,b) => b.date.getTime() - b.date.getTime())
     .slice(0, count);
 }
 

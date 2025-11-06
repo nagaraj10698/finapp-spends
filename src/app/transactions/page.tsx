@@ -16,6 +16,8 @@ import EditTransactionDialog from './edit-transaction-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function TransactionsPage() {
   const { toast } = useToast();
@@ -86,22 +88,31 @@ export default function TransactionsPage() {
 
 
   const tableColumns = useMemo(() => getColumns(categories ?? [], handleEdit, handleDeleteRequest), [categories]);
+  
   const transactionData = useMemo(() => {
     if (!allTransactions) return [];
     return allTransactions
-      .map(t => ({...t, date: (t.date as any).toDate()}))
+      .map(t => ({...t, date: toDate(t.date)}))
       .sort((a,b) => b.date.getTime() - a.date.getTime())
   }, [allTransactions]);
 
+  const incomeData = useMemo(() => transactionData.filter(t => t.type === 'income'), [transactionData]);
+  const expenseData = useMemo(() => transactionData.filter(t => t.type === 'expense'), [transactionData]);
+
   if (transactionsLoading || categoriesLoading) {
     return <div>Loading transactions...</div>;
+  }
+
+  const toDate = (date: any) => {
+    if (!date) return new Date();
+    return date instanceof Date ? date : date.toDate();
   }
 
   return (
     <>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-            <h1 className="font-headline text-2xl font-semibold">All Transactions</h1>
+            <h1 className="font-headline text-2xl font-semibold">Transactions</h1>
             <AddTransactionDialog>
                 <Button className="mt-4">
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -109,7 +120,29 @@ export default function TransactionsPage() {
                 </Button>
             </AddTransactionDialog>
         </div>
-        <DataTable columns={tableColumns} data={transactionData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={categories ?? []} />} />
+        
+        <Card>
+            <CardContent className="p-0">
+                <Tabs defaultValue="all">
+                    <div className="p-4 border-b">
+                        <TabsList>
+                            <TabsTrigger value="all">All Transactions</TabsTrigger>
+                            <TabsTrigger value="income">Income</TabsTrigger>
+                            <TabsTrigger value="expenses">Expenses</TabsTrigger>
+                        </TabsList>
+                    </div>
+                    <TabsContent value="all" className="p-4">
+                         <DataTable columns={tableColumns} data={transactionData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={categories ?? []} />} />
+                    </TabsContent>
+                    <TabsContent value="income" className="p-4">
+                        <DataTable columns={tableColumns} data={incomeData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={categories?.filter(c => c.type === 'income') ?? []} />} />
+                    </TabsContent>
+                    <TabsContent value="expenses" className="p-4">
+                         <DataTable columns={tableColumns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={categories?.filter(c => c.type === 'expense') ?? []} />} />
+                    </TabsContent>
+                </Tabs>
+            </CardContent>
+        </Card>
       </div>
       
       {transactionToEdit && (
@@ -142,5 +175,3 @@ export default function TransactionsPage() {
     </>
   );
 }
-
-    

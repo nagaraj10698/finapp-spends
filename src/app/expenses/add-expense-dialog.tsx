@@ -55,7 +55,6 @@ const formSchema = z
     isRecurring: z.boolean(),
     frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
     attachment: z.instanceof(File).optional(),
-    status: z.enum(['Paid', 'Un-paid']),
   })
   .refine(
     (data) => {
@@ -87,7 +86,6 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
       category: '',
       date: new Date(),
       isRecurring: false,
-      status: 'Un-paid',
     },
   });
 
@@ -119,7 +117,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             isRecurring: values.isRecurring,
             frequency: values.frequency,
             type: 'expense',
-            status: values.status,
+            status: 'Un-paid',
         };
         
         if (values.attachment) {
@@ -174,36 +172,6 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Status</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="Paid" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Paid</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="Un-paid" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Un-paid</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="description"

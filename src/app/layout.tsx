@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/app-sidebar';
 import { UserNav } from '@/components/user-nav';
-import { Search } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FirebaseClientProvider, useUser } from '@/firebase';
@@ -41,10 +41,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarInset className="flex flex-col">
               <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
                  <div className="flex items-center gap-4 md:hidden">
-                    <SidebarTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                            <span className="sr-only">Toggle Sidebar</span>
-                        </Button>
+                    <SidebarTrigger variant="ghost" size="icon">
+                        <Menu />
+                        <span className="sr-only">Toggle Sidebar</span>
                     </SidebarTrigger>
                     <Logo />
                 </div>

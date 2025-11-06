@@ -40,9 +40,9 @@ import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Switch } from '@/components/ui/switch';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { addExpenseAction } from '../actions';
 
 
 const formSchema = z
@@ -91,7 +91,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
   const isRecurring = form.watch('isRecurring');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !user || !firebaseApp) {
+    if (!user) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -102,15 +102,11 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
     setIsSubmitting(true);
     
     try {
-        const expenseCollectionRef = collection(firestore, 'users', user.uid, 'transactions');
-        // Generate a new document reference with an auto-generated ID on the client
-        const newExpenseRef = doc(expenseCollectionRef);
-
         const selectedCategory = categories?.find(c => c.name === values.category);
 
-        const newExpense: Omit<Transaction, 'id'> = {
+        const expenseData: Omit<Transaction, 'id' | 'fileURL' | 'fileName'> = {
             description: values.description,
-            amount: -Math.abs(values.amount), // ensure it's negative
+            amount: -Math.abs(values.amount),
             category: values.category,
             categoryId: selectedCategory?.id || null,
             date: values.date,
@@ -119,38 +115,29 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             type: 'expense',
         };
         
-        if (values.attachment) {
-            const storage = getStorage(firebaseApp);
-            // Use the client-generated ID for the storage path
-            const storageRef = ref(storage, `user_uploads/${user.uid}/${newExpenseRef.id}/${values.attachment.name}`);
-            const snapshot = await uploadBytes(storageRef, values.attachment);
-            const fileURL = await getDownloadURL(snapshot.ref);
-            if (fileURL) {
-                newExpense.fileURL = fileURL;
-                newExpense.fileName = values.attachment.name;
-            }
+        const result = await addExpenseAction(user.uid, expenseData, values.attachment);
+
+        if (result.success) {
+            toast({
+              title: 'Expense Added',
+              description: (
+                <span className="flex items-center gap-1">
+                  {values.description} for <DhiramSymbol />
+                  {values.amount} has been added.
+                </span>
+              ),
+            });
+            form.reset();
+            setOpen(false);
+        } else {
+            throw new Error(result.error);
         }
-
-        // Use setDoc with the pre-generated document reference
-        await setDoc(newExpenseRef, newExpense);
-
-        toast({
-          title: 'Expense Added',
-          description: (
-            <span className="flex items-center gap-1">
-              {values.description} for <DhiramSymbol />
-              {values.amount} has been added.
-            </span>
-          ),
-        });
-        form.reset();
-        setOpen(false);
     } catch (error) {
         console.error("Error adding expense:", error);
         toast({
             variant: "destructive",
             title: "Error",
-            description: "Failed to add expense. Please try again."
+            description: error instanceof Error ? error.message : "Failed to add expense. Please try again."
         });
     } finally {
         setIsSubmitting(false);
@@ -276,7 +263,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
              <FormField
               control={form.control}
               name="attachment"
-              render={({ field }) => (
+              render={({ field: { onChange, value, ...rest } }) => (
                 <FormItem>
                   <FormLabel>Upload Bill/Receipt</FormLabel>
                   <FormControl>
@@ -285,8 +272,9 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
                       accept="image/*,.pdf,.xls,.xlsx"
                       onChange={(e) => {
                         const file = e.target.files ? e.target.files[0] : undefined;
-                        field.onChange(file);
+                        onChange(file);
                       }}
+                      {...rest}
                     />
                   </FormControl>
                   <FormMessage />

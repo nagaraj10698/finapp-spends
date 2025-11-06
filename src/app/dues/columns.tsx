@@ -32,8 +32,9 @@ const StatusCell = ({ row }: { row: any }) => {
     
     const instanceDateStr = due.instanceDate ? toDate(due.instanceDate).toISOString().split('T')[0] : null;
     const isInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
+    const isPaid = due.isPaid || isInstancePaid;
 
-    if (due.isPaid || isInstancePaid) {
+    if (isPaid) {
         return <Badge variant="secondary">Paid</Badge>
     }
     if (isOverdue) {
@@ -49,8 +50,9 @@ const DueStatusCell = ({ row }: { row: any }) => {
 
     const instanceDateStr = due.instanceDate ? toDate(due.instanceDate).toISOString().split('T')[0] : null;
     const isInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
+    const isPaid = due.isPaid || isInstancePaid;
 
-    if (due.isPaid || isInstancePaid) {
+    if (isPaid) {
         return <Badge variant="secondary">Paid</Badge>
     }
     if (isOverdue) {
@@ -171,6 +173,7 @@ export const getColumns = (
       const due = row.original;
       const instanceDateStr = due.instanceDate ? toDate(due.instanceDate).toISOString().split('T')[0] : null;
       const isInstancePaid = !!(due.isRecurring && instanceDateStr && due.paidInstances?.[instanceDateStr]);
+      const isPaid = due.isPaid || isInstancePaid;
 
       return (
         <DropdownMenu>
@@ -182,7 +185,7 @@ export const getColumns = (
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => onPay(due)} disabled={due.isPaid || isInstancePaid}>
+            <DropdownMenuItem onClick={() => onPay(due)} disabled={isPaid}>
                 <Check className="mr-2 h-4 w-4" />
                 Mark as Paid
             </DropdownMenuItem>

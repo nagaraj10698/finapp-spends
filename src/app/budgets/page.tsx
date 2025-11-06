@@ -35,7 +35,7 @@ const PRESET_RANGES = [
 
 export default function BudgetsPage() {
   const { firestore, user } = useFirebase();
-  const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
+  const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
 
   const [period, setPeriod] = useState<ForecastPeriod>('monthly');

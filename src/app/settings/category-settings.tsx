@@ -63,7 +63,7 @@ function CategoryList({ title, categories, onEdit, onDelete }: { title: string, 
 export default function CategorySettings() {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
-  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+  const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading } = useCollection<Category>(categoriesCollection);
 
   const [isAddOpen, setAddOpen] = useState(false);

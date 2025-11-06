@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, updateDoc, doc } from 'firebase/firestore';
 import type { Due, Category } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -70,7 +71,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
   const { toast } = useToast();
   const { user, firestore } = useFirebase();
 
-  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+  const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -103,7 +104,7 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !due) {
+    if (!user || !due || !firestore) {
         toast({
             variant: "destructive",
             title: "Error",
@@ -121,9 +122,15 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
         category: values.category,
         categoryId: selectedCategory?.id || null,
         isRecurring: values.isRecurring,
-        frequency: values.isRecurring ? values.frequency : undefined,
-        recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : null,
     };
+    
+    if (values.isRecurring) {
+        dataToUpdate.frequency = values.frequency;
+        dataToUpdate.recurrenceEndDate = values.recurrenceEndDate || null;
+    } else {
+        dataToUpdate.frequency = undefined;
+        dataToUpdate.recurrenceEndDate = null;
+    }
     
     try {
         await updateDue(user.uid, due.id, dataToUpdate);

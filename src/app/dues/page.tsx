@@ -21,8 +21,8 @@ export default function DuesPage() {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
   
-  const duesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'dues') : null, [firestore, user]);
-  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+  const duesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'dues') : null, [firestore, user]);
+  const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
 
   const { data: dues, isLoading: duesLoading } = useCollection<Due>(duesCollection);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);

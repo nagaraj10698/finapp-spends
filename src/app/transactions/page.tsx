@@ -25,8 +25,8 @@ export default function TransactionsPage() {
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
 
-  const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
-  const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+  const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
+  const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   
   const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
@@ -31,7 +30,6 @@ const StatusCell = ({ row }: { row: any }) => {
     const displayDate = due.instanceDate ? toDate(due.instanceDate) : toDate(due.dueDate);
     const isOverdue = !due.isPaid && isBefore(displayDate, startOfToday());
     
-    // Check if the due is an instance of a recurring due and if that instance is paid
     const isInstancePaid = due.isRecurring && due.instanceDate && due.paidInstances?.[(due.instanceDate as Date).toISOString().split('T')[0]];
 
     if (due.isPaid || isInstancePaid) {
@@ -42,6 +40,22 @@ const StatusCell = ({ row }: { row: any }) => {
     }
     return <Badge variant="outline" className='border-primary text-primary'>Upcoming</Badge>
 }
+
+const DueStatusCell = ({ row }: { row: any }) => {
+    const due = row.original as Due;
+    const displayDate = due.instanceDate ? toDate(due.instanceDate) : toDate(due.dueDate);
+    const isOverdue = !due.isPaid && isBefore(displayDate, startOfToday());
+    const isInstancePaid = due.isRecurring && due.instanceDate && due.paidInstances?.[(due.instanceDate as Date).toISOString().split('T')[0]];
+
+    if (due.isPaid || isInstancePaid) {
+        return <Badge variant="secondary">Paid</Badge>
+    }
+    if (isOverdue) {
+        return <Badge variant="destructive">Over Due</Badge>
+    }
+    return <Badge variant="outline">Un-Paid</Badge>
+}
+
 
 // This is a dynamic column definition that accepts categories
 export const getColumns = (
@@ -93,10 +107,6 @@ export const getColumns = (
         </Badge>
       );
     },
-     filterFn: (row, id, value) => {
-      if (!value || !Array.isArray(value) || value.length === 0) return true;
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: 'dueDate',
@@ -120,21 +130,7 @@ export const getColumns = (
    {
     id: 'status',
     header: 'Status',
-    cell: StatusCell,
-    accessorFn: (row) => {
-      const due = row as Due;
-      const displayDate = due.instanceDate ? toDate(due.instanceDate) : toDate(due.dueDate);
-      const isOverdue = !due.isPaid && isBefore(displayDate, startOfToday());
-      const isInstancePaid = due.isRecurring && due.instanceDate && due.paidInstances?.[(due.instanceDate as Date).toISOString().split('T')[0]];
-
-      if (due.isPaid || isInstancePaid) return 'Paid';
-      if (isOverdue) return 'Overdue';
-      return 'Upcoming';
-    },
-    filterFn: (row, id, value) => {
-      if (!value || !Array.isArray(value) || value.length === 0) return true;
-      return value.includes(row.getValue(id));
-    },
+    cell: StatusCell
   },
   {
     accessorKey: 'dueAmount',
@@ -160,6 +156,11 @@ export const getColumns = (
         </div>
       );
     },
+  },
+   {
+    id: 'dueStatus',
+    header: 'Due Status',
+    cell: DueStatusCell
   },
   {
     id: 'actions',

@@ -2,7 +2,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { Budget, Transaction, Category } from '@/lib/types';
 import BudgetCard from './budget-card';
 import { getBudgets } from '@/lib/data';
@@ -10,7 +10,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
 import AddBudgetDialog from './add-budget-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import BudgetForecastChart from './budget-forecast-chart';
+import BudgetSummaryChart from '@/components/dashboard/budget-summary-chart';
 import EditBudgetDialog from './edit-budget-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,9 @@ import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format, addDays, startOfMonth, endOfMonth, subMonths, isSameDay, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
+import { createBudgetsForAllCategories } from '@/app/actions';
+
 
 const PRESET_RANGES = [
     { label: 'This Month', getRange: () => ({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) }) },
@@ -38,6 +40,7 @@ export default function BudgetsPage() {
   const [isEditOpen, setEditOpen] = useState(false);
   const [budgetToEdit, setBudgetToEdit] = useState<Budget | null>(null);
   const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null);
+  const [showConfirmSetAll, setShowConfirmSetAll] = useState(false);
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
     return { from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
@@ -57,13 +60,14 @@ export default function BudgetsPage() {
     return getBudgets(allBudgets, allTransactions, dateRange);
   }, [allBudgets, allTransactions, dateRange]);
   
-  const forecastData = useMemo(() => {
-    return budgetsWithSpent.map(b => ({
-      name: b.name,
-      actual: b.spent ?? 0,
-      expected: b.budgetAmount,
-    }));
-  }, [budgetsWithSpent]);
+  const spendingByCategory = useMemo(() => {
+    return getBudgets(allBudgets, allTransactions, dateRange)
+        .filter(b => (b.spent ?? 0) > 0)
+        .map(b => ({
+            name: b.name,
+            total: b.spent ?? 0,
+        }));
+    }, [allBudgets, allTransactions, dateRange]);
 
   const handleEditRequest = (budget: Budget) => {
     setBudgetToEdit(budget);
@@ -92,6 +96,25 @@ export default function BudgetsPage() {
       setBudgetToDelete(null);
     }
   };
+
+  const handleSetAllBudgets = async () => {
+    if (!user) return;
+    try {
+        await createBudgetsForAllCategories(user.uid, 6000);
+        toast({
+            title: "Budgets Created",
+            description: "Budgets of 6000 AED have been set for all missing expense categories."
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Failed to Set Budgets",
+            description: "An error occurred while creating the budgets.",
+        });
+    } finally {
+        setShowConfirmSetAll(false);
+    }
+  }
 
   const handlePresetClick = (label: string, getRange?: () => DateRange | undefined) => {
     if (getRange) {
@@ -175,7 +198,8 @@ export default function BudgetsPage() {
                 </PopoverContent>
             </Popover>
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowConfirmSetAll(true)}>Set All Budgets</Button>
             <AddBudgetDialog>
                 <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -185,17 +209,8 @@ export default function BudgetsPage() {
         </div>
         
         {budgetsWithSpent && budgetsWithSpent.length > 0 ? (
-          <>
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Budget vs Actual</CardTitle>
-                      <CardDescription>How your spending compares to your budgets for the selected period.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <BudgetForecastChart data={forecastData} />
-                  </CardContent>
-              </Card>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {budgetsWithSpent.map(budget => {
                   const category = categories?.find(c => c.id === budget.categoryId);
                   return (
@@ -209,7 +224,16 @@ export default function BudgetsPage() {
                   )
               })}
               </div>
-          </>
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Spending by Category</CardTitle>
+                      <CardDescription>How your spending compares to your budgets for the selected period.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <BudgetSummaryChart data={spendingByCategory} categories={categories ?? []}/>
+                  </CardContent>
+              </Card>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
               <h3 className="text-lg font-semibold text-muted-foreground">No budgets created yet</h3>
@@ -251,7 +275,26 @@ export default function BudgetsPage() {
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
-    </AlertDialog>
+      </AlertDialog>
+
+       <AlertDialog open={showConfirmSetAll} onOpenChange={setShowConfirmSetAll}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Set Budgets for All Categories?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will create a budget of <span className='font-bold'>6000 AED</span> for any expense category that does not already have a budget. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSetAllBudgets}>
+                    Confirm & Create
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
+
+    

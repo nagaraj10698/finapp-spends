@@ -212,13 +212,12 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
 }
 
 
-export function getBudgetForecast(
-  allTransactions: Transaction[] | null,
-  allDues: Due[],
+export function getMoneyFlow(
+  transactions: Transaction[] | null,
   period: 'daily' | 'monthly',
   dateRange?: DateRange
 ) {
-  if (!allTransactions) return [];
+  if (!transactions) return [];
   
   const today = startOfDay(new Date());
 
@@ -226,7 +225,7 @@ export function getBudgetForecast(
     ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) } 
     : { start: startOfMonth(today), end: endOfMonth(today) };
   
-  const forecastMap = new Map<string, { actual: number; expected: number }>();
+  const flowMap = new Map<string, { income: number; expense: number }>();
   let periods: Date[];
   let formatString: string;
   let getPeriodKey: (date: Date) => string;
@@ -237,45 +236,32 @@ export function getBudgetForecast(
       getPeriodKey = (date) => format(date, formatString);
   } else { // monthly
       periods = eachMonthOfInterval(range);
-      formatString = 'MMM yyyy';
+      formatString = 'MMM';
       getPeriodKey = (date) => format(startOfMonth(date), formatString);
   }
 
   periods.forEach(p => {
     const key = getPeriodKey(p);
-    forecastMap.set(key, { actual: 0, expected: 0 });
+    flowMap.set(key, { income: 0, expense: 0 });
   });
 
-  // Calculate actual spending from transactions
-  allTransactions.forEach(t => {
-    if (t.type !== 'expense') return;
+  transactions.forEach(t => {
     const transactionDate = toDate(t.date);
     if (!isWithinInterval(transactionDate, range)) return;
 
     const periodKey = getPeriodKey(transactionDate);
-    const periodData = forecastMap.get(periodKey);
+    const periodData = flowMap.get(periodKey);
     
     if (periodData) {
-        periodData.actual += Math.abs(t.amount);
+      if (t.type === 'income') {
+        periodData.income += t.amount;
+      } else {
+        periodData.expense += Math.abs(t.amount);
+      }
     }
   });
-
-  // Calculate expected spending from dues
-  const dueInstances = generateDueInstances(allDues);
-  dueInstances.forEach(due => {
-      const instanceDate = toDate(due.instanceDate || due.dueDate);
-      if (!isWithinInterval(instanceDate, range)) return;
-
-      const periodKey = getPeriodKey(instanceDate);
-      const periodData = forecastMap.get(periodKey);
-
-      if (periodData) {
-        periodData.expected += Math.abs(due.dueAmount);
-      }
-  });
-
-
-  return Array.from(forecastMap.entries()).map(([name, values]) => ({ name, ...values }));
+  
+  return Array.from(flowMap.entries()).map(([name, values]) => ({ name, ...values }));
 }
 
 
@@ -349,3 +335,5 @@ export function getNotifications(
     return 0;
   });
 }
+
+    

@@ -9,18 +9,17 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import OverviewCards from '@/components/dashboard/overview-cards';
-import SpendingChart from '@/components/dashboard/spending-chart';
 import {
   getRecentTransactions,
   getSpendingByCategory,
   getTotals,
-  getBudgetForecast,
+  getMoneyFlow,
   generateDueInstances,
 } from '@/lib/data';
-import type { Transaction, Category, Due } from '@/lib/types';
+import type { Transaction, Category, Due, Budget } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import { addDays, startOfMonth, endOfMonth, subMonths, isSameDay, format, differenceInDays, startOfQuarter, endOfQuarter, startOfYear, endOfYear, startOfDay, isBefore, isAfter } from 'date-fns';
+import { endOfDay, startOfDay, isBefore, isAfter, subMonths, isSameDay, format, differenceInDays, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addDays } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -30,9 +29,11 @@ import { cn } from '@/lib/utils';
 import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
 import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
 import UpcomingBillsTimeline from '@/components/dashboard/upcoming-bills-timeline';
-import BudgetForecastChart from '@/app/budgets/budget-forecast-chart';
 import RecentTransactions from '@/components/dashboard/recent-transactions';
 import { toDate } from '@/lib/data';
+import MoneyFlowChart from '@/components/dashboard/money-flow-chart';
+import BudgetSummaryChart from '@/components/dashboard/budget-summary-chart';
+
 
 const PRESET_RANGES = [
     { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
@@ -64,7 +65,7 @@ export default function DashboardPage() {
     });
     const [activePreset, setActivePreset] = useState<string | null>('This Month');
     const [isDatePopoverOpen, setDatePopoverOpen] = useState(false);
-    const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
+    const [period, setPeriod] = useState<'daily' | 'monthly'>('monthly');
 
     useEffect(() => {
         if (dateRange?.from && dateRange.to) {
@@ -75,7 +76,7 @@ export default function DashboardPage() {
           setActivePreset(matchedPreset ? matchedPreset.label : 'Custom');
           
           const diff = differenceInDays(dateRange.to, dateRange.from);
-          setPeriod(diff > 31 ? 'monthly' : 'daily');
+          setPeriod(diff > 62 ? 'monthly' : 'daily');
         } else {
             setActivePreset(null);
         }
@@ -92,9 +93,10 @@ export default function DashboardPage() {
         if (!allTransactions) return [];
         if (!dateRange?.from || !dateRange.to) return allTransactions.map(t => ({...t, date: toDate(t.date)}));
     
+        const rangeEnd = endOfDay(dateRange.to);
         return allTransactions.filter(t => {
             const transactionDate = toDate(t.date);
-            return transactionDate >= dateRange.from! && transactionDate <= dateRange.to!;
+            return transactionDate >= dateRange.from! && transactionDate <= rangeEnd;
         }).map(t => ({...t, date: toDate(t.date)}));
     }, [allTransactions, dateRange]);
 
@@ -103,7 +105,7 @@ export default function DashboardPage() {
     const spendingByCategory = useMemo(() => getSpendingByCategory(filteredTransactions), [filteredTransactions]);
     const upcomingBills = useMemo(() => generateDueInstances(allDues), [allDues]);
     const recentTransactions = useMemo(() => getRecentTransactions(allTransactions, 5), [allTransactions]);
-    const forecastData = useMemo(() => getBudgetForecast(allTransactions, allDues ?? [], period, dateRange), [allTransactions, allDues, period, dateRange]);
+    const moneyFlowData = useMemo(() => getMoneyFlow(filteredTransactions, period, dateRange), [filteredTransactions, period, dateRange]);
 
     const overdueCount = useMemo(() => {
         const today = startOfDay(new Date());
@@ -215,24 +217,24 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <OverviewCards totals={totals} />
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-5">
+        <Card className="md:col-span-3">
           <CardHeader>
-            <CardTitle className="font-headline">Spent by category</CardTitle>
+            <CardTitle className="font-headline">Money Flow</CardTitle>
           </CardHeader>
           <CardContent>
-            <SpendingChart data={spendingByCategory} categories={categories ?? []}/>
+            <MoneyFlowChart data={moneyFlowData} />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle className="font-headline">Expense Forecast</CardTitle>
+            <CardTitle className="font-headline">Budget</CardTitle>
              <CardDescription>
-              A projection of your upcoming expenses.
+              Your spending vs. your budget for the period.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <BudgetForecastChart data={forecastData} />
+            <BudgetSummaryChart data={spendingByCategory} categories={categories ?? []} />
           </CardContent>
         </Card>
       </div>

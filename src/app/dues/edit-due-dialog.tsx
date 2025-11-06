@@ -116,13 +116,10 @@ export default function EditDueDialog({isOpen, onClose, due}: EditDueDialogProps
       category: values.category,
       categoryId: selectedCategory?.id || null,
       isRecurring: values.isRecurring,
+      frequency: values.frequency,
+      recurrenceEndDate: values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null,
     };
     
-    if (values.isRecurring) {
-        dataToUpdate.frequency = values.frequency;
-        dataToUpdate.recurrenceEndDate = values.recurrenceEndDate ? new Date(values.recurrenceEndDate) : null;
-    }
-
     try {
       await updateDue(user.uid, due.id, dataToUpdate);
       toast({

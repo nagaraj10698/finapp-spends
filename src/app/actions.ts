@@ -70,6 +70,7 @@ export async function updateDue(userId: string, dueId: string, updatedData: Part
         // Use deleteField for fields that should not exist on non-recurring dues
         dataToUpdate.frequency = deleteField();
         dataToUpdate.recurrenceEndDate = deleteField();
+        dataToUpdate.paidInstances = deleteField();
     }
 
     await updateDoc(dueRef, dataToUpdate);

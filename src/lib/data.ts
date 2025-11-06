@@ -126,15 +126,17 @@ export function getSpendingByCategory(allTransactions: Transaction[] | null) {
 
 
 export function getBudgets(budgets: Budget[] | null, allTransactions: Transaction[] | null): Budget[] {
-    if (!budgets || !allTransactions) return [];
+    if (!budgets) return [];
 
     const currentMonthStart = startOfMonth(new Date());
     const currentMonthEnd = endOfMonth(new Date());
 
+    const safeTransactions = allTransactions || [];
+
     return budgets.map(budget => {
         if (!budget || !budget.categoryId) return budget;
 
-        const spent = allTransactions
+        const spent = safeTransactions
             .filter(t => 
                 t.type === 'expense' && 
                 t.categoryId === budget.categoryId && 

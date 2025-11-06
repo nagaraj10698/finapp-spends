@@ -1,6 +1,7 @@
 
 "use client"
 
+import * as React from "react"
 import { Cross2Icon } from "@radix-ui/react-icons"
 import { Table } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
@@ -8,12 +9,11 @@ import { Input } from "@/components/ui/input"
 import { DataTableFacetedFilter } from "@/components/ui/data-table-faceted-filter"
 import { getIconByName } from "@/lib/data"
 import { DateRange } from "react-day-picker"
-import * as React from "react"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
+import { format, addDays, startOfMonth, endOfMonth, subMonths, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isSameDay } from "date-fns"
 import type { Category } from "@/lib/types"
 
 interface DataTableToolbarProps<TData> {
@@ -21,6 +21,20 @@ interface DataTableToolbarProps<TData> {
   onDelete: (transactionsToDelete: TData[]) => void;
   categories: Category[];
 }
+
+const PRESET_RANGES = [
+    { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
+    { label: 'Last 7 days', getRange: () => ({ from: addDays(new Date(), -6), to: new Date() }) },
+    { label: 'Last 30 days', getRange: () => ({ from: addDays(new Date(), -29), to: new Date() }) },
+    { label: 'This Month', getRange: () => ({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) }) },
+    { label: 'Last Month', getRange: () => {
+        const lastMonth = subMonths(new Date(), 1);
+        return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
+    }},
+    { label: 'This Quarter', getRange: () => ({ from: startOfQuarter(new Date()), to: endOfQuarter(new Date()) }) },
+    { label: 'This Year', getRange: () => ({ from: startOfYear(new Date()), to: endOfYear(new Date()) }) },
+];
+
 
 export function DataTableToolbar<TData>({
   table,
@@ -30,17 +44,34 @@ export function DataTableToolbar<TData>({
   if (!table) return null;
   
   const [date, setDate] = React.useState<DateRange | undefined>();
+  const [activePreset, setActivePreset] = React.useState<string | null>(null);
+  const [isDatePopoverOpen, setDatePopoverOpen] = React.useState(false);
+
 
   React.useEffect(() => {
-    if (date?.from && date?.to) {
+    if (date?.from && date.to) {
         // The dates from the picker are at midnight, so we extend the 'to' date to the end of the day
         const toDate = new Date(date.to);
         toDate.setHours(23, 59, 59, 999);
         table.getColumn('date')?.setFilterValue([date.from, toDate]);
+        
+        const matchedPreset = PRESET_RANGES.find(p => {
+            const range = p.getRange();
+            return range.from && range.to && date.from && date.to && isSameDay(range.from, date.from) && isSameDay(range.to, date.to)
+          });
+        setActivePreset(matchedPreset ? matchedPreset.label : 'Custom');
     } else {
         table.getColumn('date')?.setFilterValue(undefined);
+        setActivePreset(null);
     }
   }, [date, table]);
+
+  const handlePresetClick = (label: string, getRange?: () => DateRange | undefined) => {
+        if (getRange) {
+            setDate(getRange());
+        }
+        setActivePreset(label);
+  }
 
   const isFiltered = table.getState().columnFilters.length > 0
   const categoryOptions = categories.map(c => {
@@ -81,7 +112,7 @@ export function DataTableToolbar<TData>({
                 options={typeOptions}
             />
         )}
-         <Popover>
+         <Popover open={isDatePopoverOpen} onOpenChange={setDatePopoverOpen}>
             <PopoverTrigger asChild>
             <Button
                 id="date"
@@ -106,15 +137,39 @@ export function DataTableToolbar<TData>({
                 )}
             </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={date?.from}
-                selected={date}
-                onSelect={setDate}
-                numberOfMonths={2}
-            />
+            <PopoverContent className="w-auto p-0 flex flex-col" align="start">
+                <div className='flex'>
+                    <div className="flex flex-col space-y-1 p-2 border-r">
+                        {PRESET_RANGES.map(({label, getRange}) => (
+                            <Button 
+                                key={label}
+                                variant={activePreset === label ? 'default': 'ghost'} 
+                                className="justify-start" 
+                                onClick={() => handlePresetClick(label, getRange)}
+                            >
+                                {label}
+                            </Button>
+                        ))}
+                         <Button
+                            variant={activePreset === 'Custom' ? 'default': 'ghost'}
+                            className="justify-start"
+                            onClick={() => handlePresetClick('Custom')}
+                        >
+                            Custom
+                        </Button>
+                    </div>
+                    <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={date?.from}
+                        selected={date}
+                        onSelect={setDate}
+                        numberOfMonths={2}
+                    />
+                </div>
+                 <div className="flex justify-end p-2 border-t">
+                    <Button size="sm" onClick={() => setDatePopoverOpen(false)}>Apply</Button>
+                </div>
             </PopoverContent>
         </Popover>
 

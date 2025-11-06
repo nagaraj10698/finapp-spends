@@ -1,7 +1,7 @@
 
 'use client';
 
-import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList } from 'recharts';
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import {
   ChartContainer,
   ChartTooltipContent,
@@ -11,35 +11,20 @@ import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 interface BudgetForecastChartProps {
   data: {
     name: string;
-    open: number;
-    overdue: number;
-    closed: number;
+    spent: number;
+    budget: number;
   }[];
 }
 
 const chartConfig = {
-  open: {
-    label: "Open",
-    color: "hsl(var(--chart-1))",
-  },
-  overdue: {
-    label: "Overdue",
+  spent: {
+    label: "Spent",
     color: "hsl(var(--chart-2))",
   },
-  closed: {
-      label: "Closed",
-      color: "hsl(var(--chart-3))",
-  }
-};
-
-const CustomLabel = (props: any) => {
-    const { x, y, stroke, value } = props;
-    if (value === 0) return null;
-    return (
-      <text x={x} y={y} dy={-4} fill={stroke} fontSize={10} textAnchor="middle">
-        {value}
-      </text>
-    );
+  budget: {
+    label: "Budget",
+    color: "hsl(var(--chart-1))",
+  },
 };
 
 export default function BudgetForecastChart({ data }: BudgetForecastChartProps) {
@@ -47,8 +32,8 @@ export default function BudgetForecastChart({ data }: BudgetForecastChartProps) 
   return (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
+        <BarChart data={data} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+            <CartesianGrid vertical={false} />
             <XAxis
                 dataKey="name"
                 stroke="#888888"
@@ -75,16 +60,9 @@ export default function BudgetForecastChart({ data }: BudgetForecastChartProps) 
                 />}
             />
             <Legend />
-            <Line type="monotone" dataKey="open" stroke={chartConfig.open.color} strokeWidth={2} activeDot={{ r: 8 }}>
-                <LabelList dataKey="open" content={<CustomLabel />} />
-            </Line>
-            <Line type="monotone" dataKey="overdue" stroke={chartConfig.overdue.color} strokeWidth={2} >
-                <LabelList dataKey="overdue" content={<CustomLabel />} />
-            </Line>
-             <Line type="monotone" dataKey="closed" stroke={chartConfig.closed.color} strokeWidth={2} >
-                <LabelList dataKey="closed" content={<CustomLabel />} />
-            </Line>
-        </LineChart>
+            <Bar dataKey="budget" fill={chartConfig.budget.color} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="spent" fill={chartConfig.spent.color} radius={[4, 4, 0, 0]} />
+        </BarChart>
       </ResponsiveContainer>
     </ChartContainer>
   );

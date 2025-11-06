@@ -32,27 +32,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
-import { Switch } from '@/components/ui/switch';
 import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Budget, Category } from '@/lib/types';
-import { format } from 'date-fns';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Budget name is required.'),
   budgetAmount: z.coerce.number().positive('Amount must be positive.'),
-  category: z.string().min(1, 'Please select a category.'),
-  budgetStartDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: "Start date is required.",
-  }),
-  budgetEndDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: "End date is required.",
-  }),
-  isRecurring: z.boolean(),
-  type: z.enum(['Bills', 'Subscription', 'Expense'], { required_error: 'Please select a type.' }),
+  categoryId: z.string().min(1, 'Please select a category.'),
 });
 
 export default function AddBudgetDialog({children}: {children: ReactNode}) {
@@ -66,38 +56,41 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
       budgetAmount: 0,
-      category: '',
-      budgetStartDate: format(new Date(), 'yyyy-MM-dd'),
-      budgetEndDate: format(new Date(), 'yyyy-MM-dd'),
-      isRecurring: false,
-      type: 'Expense',
+      categoryId: '',
     },
   });
 
+  const selectedCategoryId = form.watch('categoryId');
+  const selectedCategory = categories?.find(c => c.id === selectedCategoryId);
+
+  useEffect(() => {
+    if (selectedCategory) {
+      form.setValue('name', selectedCategory.name);
+    }
+  }, [selectedCategory, form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !user) {
+    if (!firestore || !user || !selectedCategory) {
         toast({
             variant: "destructive",
             title: "Error",
-            description: "You must be logged in to add a budget."
+            description: "You must be logged in and select a category to add a budget."
         });
         return;
     }
     
-    const selectedCategory = categories?.find(c => c.name === values.category);
-
     const budgetCollection = collection(firestore, 'users', user.uid, 'budgets');
+    
     const newBudget: Omit<Budget, 'id'> = {
-        name: values.name,
+        name: selectedCategory.name,
         budgetAmount: values.budgetAmount,
-        budgetStartDate: new Date(values.budgetStartDate),
-        budgetEndDate: new Date(values.budgetEndDate),
-        isRecurring: values.isRecurring,
-        type: values.type,
-        categoryId: selectedCategory?.id,
-        category: values.category,
+        budgetStartDate: startOfMonth(new Date()),
+        budgetEndDate: endOfMonth(new Date()),
+        isRecurring: false, // Simplified to monthly, not recurring in this context
+        type: 'Expense', // All user-set budgets are for expenses
+        categoryId: values.categoryId,
+        category: selectedCategory.name,
     };
 
     await addDocumentNonBlocking(budgetCollection, newBudget);
@@ -106,8 +99,8 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
       title: 'Budget Added',
       description: (
         <span className="flex items-center gap-1">
-          A budget for {values.name} of <DhiramSymbol />
-          {values.budgetAmount} has been set.
+          A budget for {selectedCategory.name} of <DhiramSymbol />
+          {values.budgetAmount} has been set for this month.
         </span>
       ),
     });
@@ -126,27 +119,14 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
         <DialogHeader>
           <DialogTitle>Add New Budget</DialogTitle>
           <DialogDescription>
-            Set a planned expense for forecasting.
+            Set a monthly budget for an expense category.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-             <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Budget Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Monthly Netflix Subscription" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
-              name="category"
+              name="categoryId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
@@ -163,7 +143,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                       {expenseCategories?.map((cat) => {
                         const Icon = getIconByName(cat.icon);
                         return (
-                          <SelectItem key={cat.id} value={cat.name}>
+                          <SelectItem key={cat.id} value={cat.id}>
                             <div className="flex items-center gap-2">
                               <Icon className={cn('h-4 w-4', cat.color)} />
                               {cat.name}
@@ -182,7 +162,7 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
               name="budgetAmount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount</FormLabel>
+                  <FormLabel>Budget Amount</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -190,76 +170,6 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
                     </div>
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                control={form.control}
-                name="budgetStartDate"
-                render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                    <FormLabel>Start Date</FormLabel>
-                     <FormControl>
-                        <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="budgetEndDate"
-                render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                    <FormLabel>End Date</FormLabel>
-                     <FormControl>
-                        <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
-             <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Type</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a budget type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Bills">Bills</SelectItem>
-                      <SelectItem value="Subscription">Subscription</SelectItem>
-                      <SelectItem value="Expense">Expense</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="isRecurring"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Recurring Budget</FormLabel>
-                     <p className="text-xs text-muted-foreground">
-                      Is this a recurring budget?
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
                 </FormItem>
               )}
             />

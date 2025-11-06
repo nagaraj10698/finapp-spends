@@ -37,10 +37,10 @@ import { Button } from '@/components/ui/button';
 const mainMenuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
+  { href: '/budgets', label: 'Budgets', icon: Wallet },
 ];
 
-const bottomMenuItems = [
-    { href: '/budgets', label: 'Budgets', icon: Wallet },
+const bottomMenuItems: any[] = [
 ];
 
 export default function AppSidebar() {

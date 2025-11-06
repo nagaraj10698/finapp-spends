@@ -160,15 +160,23 @@ export function getSpendingByCategory(allTransactions: Transaction[] | null) {
 export function getBudgets(budgets: Budget[] | null, allTransactions: Transaction[] | null): Budget[] {
     if (!budgets || !allTransactions) return [];
 
+    const currentMonthStart = startOfMonth(new Date());
+    const currentMonthEnd = endOfMonth(new Date());
+
     return budgets.map(budget => {
-        if (!budget || !budget.budgetStartDate || !budget.budgetEndDate) return budget;
+        if (!budget || !budget.categoryId) return budget;
+
         const spent = allTransactions
-            .filter(t => t.type === 'expense' && t.category === budget.category && isWithinInterval(toDate(t.date), {start: toDate(budget.budgetStartDate), end: toDate(budget.budgetEndDate)}))
+            .filter(t => 
+                t.type === 'expense' && 
+                t.categoryId === budget.categoryId && 
+                isWithinInterval(toDate(t.date), { start: currentMonthStart, end: currentMonthEnd })
+            )
             .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        
         return {
             ...budget,
             spent,
-            limit: budget.budgetAmount,
         };
     });
 }

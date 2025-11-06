@@ -127,7 +127,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Budget",
       "type": "object",
-      "description": "Represents a budget set by the user.",
+      "description": "Represents a monthly budget for a specific category.",
       "properties": {
         "id": {
           "type": "string",
@@ -143,32 +143,16 @@
         },
         "name": {
           "type": "string",
-          "description": "Name of the budget."
+          "description": "Name of the budget (usually matches category name)."
         },
         "budgetAmount": {
           "type": "number",
           "description": "Amount allocated for the budget."
         },
-        "budgetStartDate": {
-          "type": "string",
-          "description": "Start date of the budget.",
-          "format": "date-time"
-        },
-        "budgetEndDate": {
-          "type": "string",
-          "description": "End date of the budget.",
-          "format": "date-time"
-        },
-        "isRecurring": {
-          "type": "boolean",
-          "description": "Whether the budget is recurring."
-        },
         "type": {
           "type": "string",
-          "description": "Type of budget.",
+          "description": "Type of budget, always 'Expense' for now.",
           "enum": [
-            "Bills",
-            "Subscription",
             "Expense"
           ]
         },
@@ -182,11 +166,9 @@
         "userId",
         "name",
         "budgetAmount",
-        "budgetStartDate",
-        "budgetEndDate",
-        "isRecurring",
         "type",
-        "category"
+        "category",
+        "categoryId"
       ]
     },
     "Due": {

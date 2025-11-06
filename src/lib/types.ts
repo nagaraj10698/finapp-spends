@@ -25,16 +25,14 @@ export interface Budget {
   id: string;
   name: string;
   budgetAmount: number;
-  budgetStartDate: Date | Timestamp;
-  budgetEndDate: Date | Timestamp;
-  isRecurring?: boolean;
-  type: 'Bills' | 'Subscription' | 'Expense';
+  type: 'Expense';
   category: string;
   categoryId?: string;
   // These are calculated fields, not in Firestore
   spent?: number;
   limit?: number;
 }
+
 
 export interface Income {
   id: string;

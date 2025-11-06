@@ -37,7 +37,6 @@ import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Budget, Category } from '@/lib/types';
-import { startOfMonth, endOfMonth } from 'date-fns';
 import { Slider } from '@/components/ui/slider';
 
 
@@ -87,9 +86,6 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
     const newBudget: Omit<Budget, 'id'> = {
         name: selectedCategory.name,
         budgetAmount: values.budgetAmount,
-        budgetStartDate: startOfMonth(new Date()),
-        budgetEndDate: endOfMonth(new Date()),
-        isRecurring: false, // Simplified to monthly, not recurring in this context
         type: 'Expense', // All user-set budgets are for expenses
         categoryId: values.categoryId,
         category: selectedCategory.name,
@@ -101,8 +97,8 @@ export default function AddBudgetDialog({children}: {children: ReactNode}) {
       title: 'Budget Added',
       description: (
         <span className="flex items-center gap-1">
-          A budget for {selectedCategory.name} of <DhiramSymbol />
-          {values.budgetAmount} has been set for this month.
+          A monthly budget for {selectedCategory.name} of <DhiramSymbol />
+          {values.budgetAmount} has been set.
         </span>
       ),
     });

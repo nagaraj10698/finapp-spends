@@ -114,9 +114,12 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             categoryId: selectedCategory?.id || null,
             date: values.date,
             isRecurring: values.isRecurring,
-            frequency: values.frequency,
             type: 'expense',
         };
+
+        if (values.isRecurring && values.frequency) {
+            newExpense.frequency = values.frequency;
+        }
         
         if (values.attachment) {
             const storage = getStorage(firebaseApp);

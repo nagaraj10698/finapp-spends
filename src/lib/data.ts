@@ -82,7 +82,7 @@ export function toDate(date: Date | Timestamp | undefined | null): Date {
     if (!date) return new Date();
     if (date instanceof Date) return date;
     if ('toDate' in date && typeof date.toDate === 'function') return date.toDate();
-    return new Date(date);
+    return new Date(date as any);
 }
 
 
@@ -106,9 +106,9 @@ export function getUpcomingBills(
   let upcomingCount = 0;
   let overdueCount = 0;
 
-  const unpaidExpenses = allTransactions.filter(
+  const unpaidExpenses = allTransactions ? allTransactions.filter(
     (t) => t.type === 'expense'
-  );
+  ) : [];
 
   unpaidExpenses.forEach((t) => {
     const expenseDate = toDate(t.date);
@@ -178,6 +178,7 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
   const instances: Due[] = [];
   const today = startOfDay(new Date());
   const defaultEndDate = addYears(today, 10); // A far-future default end date
+  const currentMonthEnd = endOfMonth(today);
 
   dues.forEach(due => {
     const startDate = toDate(due.dueDate);
@@ -193,11 +194,19 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
         const instanceDateStr = nextDate.toISOString().split('T')[0];
         const isInstancePaid = !!due.paidInstances?.[instanceDateStr];
 
-        if (isBefore(nextDate, addMonths(today, 6)) || (isBefore(nextDate, today) && !isInstancePaid)) {
-            instances.push({
-              ...due,
-              instanceDate: new Date(nextDate),
-            });
+        // Only generate instances that are overdue or within the current month
+        if (isBefore(nextDate, currentMonthEnd) || isSameDay(nextDate, currentMonthEnd)) {
+           if (isBefore(nextDate, today) && !isInstancePaid) { // Overdue
+             instances.push({
+                ...due,
+                instanceDate: new Date(nextDate),
+              });
+           } else if (isWithinInterval(nextDate, { start: today, end: currentMonthEnd })) { // Upcoming in current month
+             instances.push({
+                ...due,
+                instanceDate: new Date(nextDate),
+              });
+           }
         }
         
         switch (due.frequency) {

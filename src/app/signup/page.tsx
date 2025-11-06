@@ -78,11 +78,8 @@ export default function SignupPage() {
         displayName: `${values.firstName} ${values.lastName}`,
       });
       
-      const batch = writeBatch(firestore);
-
-      // Create user profile document
       const userRef = doc(firestore, 'users', user.uid);
-      batch.set(userRef, {
+      await setDoc(userRef, {
           id: user.uid,
           email: user.email,
           firstName: values.firstName,
@@ -90,15 +87,7 @@ export default function SignupPage() {
           photoURL: user.photoURL,
       });
 
-      // Create default categories for the user
-      const categoriesRef = collection(firestore, `users/${user.uid}/categories`);
-      defaultCategories.forEach(category => {
-          const categoryDoc = doc(categoriesRef);
-          batch.set(categoryDoc, category);
-      });
-      
-      await batch.commit();
-
+      // Default categories are now created by the mock data generator if needed.
 
       toast({
         title: 'Signup Successful',

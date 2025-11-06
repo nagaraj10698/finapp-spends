@@ -7,6 +7,7 @@ import { getAuth, type User } from "firebase/auth";
 import type { Transaction, Budget, Due, Category } from "@/lib/types";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { startOfYear, endOfYear, eachDayOfInterval, format } from 'date-fns';
+import { defaultCategories } from "@/lib/data";
 
 
 async function getCollectionData<T>(userId: string, collectionName: string): Promise<T[]> {
@@ -47,9 +48,31 @@ export async function createBudgetsForAllCategories(userId: string, amount: numb
 export async function generateMockTransactionsForYear(userId: string) {
     const { firestore } = initializeFirebase();
     const batch = writeBatch(firestore);
+
+    // 1. Ensure categories exist
+    let categories = await getCollectionData<Category>(userId, 'categories');
+    if (categories.length === 0) {
+        const categoriesRef = collection(firestore, `users/${userId}/categories`);
+        defaultCategories.forEach(category => {
+            const categoryDoc = doc(categoriesRef);
+            batch.set(categoryDoc, category);
+        });
+        // We need to commit the categories first and then refetch them.
+        await batch.commit(); 
+        // After committing, we need a new batch for transactions.
+        const newBatch = writeBatch(firestore);
+        categories = await getCollectionData<Category>(userId, 'categories');
+        await generateTransactions(userId, categories, newBatch); // Pass new batch
+    } else {
+        await generateTransactions(userId, categories, batch); // Pass original batch
+    }
+}
+
+
+async function generateTransactions(userId: string, categories: Category[], batch: ReturnType<typeof writeBatch>) {
+    const { firestore } = initializeFirebase();
     const transactionsRef = collection(firestore, 'users', userId, 'transactions');
     
-    const categories = await getCollectionData<Category>(userId, 'categories');
     const expenseCategories = categories.filter(c => c.type === 'expense');
     const incomeCategory = categories.find(c => c.name === 'Salary');
 

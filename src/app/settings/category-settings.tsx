@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button, buttonVariants } from '@/components/ui/button';
 import { PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import type { Category } from '@/lib/types';
 import {
   DropdownMenu,
@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { getIconByName } from '@/lib/data';
+import { getIconByName, defaultCategories } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { AddCategoryDialog } from './add-category-dialog';
 import { EditCategoryDialog } from './edit-category-dialog';
@@ -72,25 +72,32 @@ export default function CategorySettings() {
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
   useEffect(() => {
-    // One-time check to ensure "Investment" expense category exists for the user
+    // Ensures all users have the default categories.
     if (categories && user && firestore) {
-      const investmentExpenseExists = categories.some(
-        (cat) => cat.name === 'Investment' && cat.type === 'expense'
-      );
-      
-      if (!investmentExpenseExists) {
-        const newInvestmentCategory: Omit<Category, 'id'> = {
-          name: 'Investment',
-          icon: 'TrendingUp',
-          color: 'text-sky-500',
-          type: 'expense',
-          userId: user.uid,
-        };
-        const categoriesRef = collection(firestore, 'users', user.uid, 'categories');
-        addDoc(categoriesRef, newInvestmentCategory);
-      }
+        const userCategoryNames = new Set(categories.map(c => c.name));
+        const missingCategories = defaultCategories.filter(
+            defaultCat => !userCategoryNames.has(defaultCat.name)
+        );
+
+        if (missingCategories.length > 0) {
+            const batch = writeBatch(firestore);
+            const categoriesRef = collection(firestore, 'users', user.uid, 'categories');
+            
+            missingCategories.forEach(category => {
+                const categoryDoc = doc(categoriesRef); // create a new doc ref
+                const newCat: Omit<Category, 'id'> = {
+                    ...category,
+                    userId: user.uid,
+                };
+                batch.set(categoryDoc, newCat);
+            });
+
+            batch.commit().catch(err => {
+                console.error("Failed to add missing default categories:", err);
+            });
+        }
     }
-  }, [categories, user, firestore]);
+}, [categories, user, firestore]);
 
   const incomeCategories = categories?.filter(c => c.type === 'income') ?? [];
   const expenseCategories = categories?.filter(c => c.type === 'expense') ?? [];

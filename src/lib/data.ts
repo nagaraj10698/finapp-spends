@@ -238,15 +238,36 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
         (t) => t.isRecurring && t.type === 'expense' && t.frequency
     );
 
-    const upcomingDues: Owed[] = [];
+    const allDues: Owed[] = [];
     const today = startOfDay(new Date());
+    // Look 2 years into the future for upcoming dues.
+    const futureLimit = addYears(today, 2);
 
     recurringExpenses.forEach((t) => {
         const startDate = toDate(t.date);
         let nextDueDate = startDate;
         
-        // Loop forward from the start date until the date is on or after today
-        while (isBefore(nextDueDate, today)) {
+        // The original transaction represents the first payment. If it's in the future and unpaid, add it.
+        // And check against already-paid transactions to avoid duplication.
+        const originalTransactionExists = transactions.some(trans => 
+            trans.categoryId === t.categoryId &&
+            trans.description === t.description &&
+            isSameDay(toDate(trans.date), startDate) &&
+            !trans.isRecurring // It's an actual transaction, not the template
+        );
+
+        if (!originalTransactionExists && isAfter(startDate, subDays(today, 90))) { // only show original if it's recent
+             if (!t.recurrenceEndDate || isBefore(startDate, toDate(t.recurrenceEndDate)) || isSameDay(startDate, toDate(t.recurrenceEndDate))) {
+                allDues.push({
+                    ...t,
+                    instanceDate: startDate,
+                });
+            }
+        }
+
+
+        // Generate future instances
+        while (isBefore(nextDueDate, futureLimit)) {
             switch (t.frequency) {
                 case 'weekly':
                     nextDueDate = addWeeks(nextDueDate, 1);
@@ -261,22 +282,40 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
                     nextDueDate = addYears(nextDueDate, 1);
                     break;
                 default:
-                    return; // Should not happen
+                     // Should not happen, exit loop
+                    return;
             }
-        }
-        
-        const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
+            
+            const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
+            if (endDate && isAfter(nextDueDate, endDate)) {
+                break; // Stop if we've passed the recurrence end date
+            }
 
-        // Only add the due if it's within the recurrence end date
-        if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
-             upcomingDues.push({
-                ...t,
-                instanceDate: nextDueDate,
-            });
+            // Check if a transaction for this due date already exists
+            const transactionExists = transactions.some(trans => 
+                trans.categoryId === t.categoryId &&
+                trans.description === t.description &&
+                isSameDay(toDate(trans.date), nextDueDate) &&
+                !trans.isRecurring // Make sure it's not the template itself
+            );
+
+            if (!transactionExists) {
+                allDues.push({
+                    ...t,
+                    instanceDate: nextDueDate,
+                });
+            }
         }
     });
 
-    return upcomingDues;
+    // Remove duplicates by creating a unique key for each due instance
+    const uniqueDues = Array.from(
+        new Map(
+            allDues.map(due => [`${due.id}-${due.instanceDate.toISOString()}`, due])
+        ).values()
+    );
+
+    return uniqueDues;
 }
 
 

@@ -33,6 +33,17 @@ export default function OwedPage() {
     const future: Owed[] = [];
 
     allDues.forEach(due => {
+      // Check if a payment for this specific instance has already been made
+      const isPaid = allTransactions?.some(t => 
+        !t.isRecurring &&
+        t.description === due.description &&
+        t.categoryId === due.categoryId &&
+        isBefore(startOfToday(t.date as Date), startOfToday(due.instanceDate)) &&
+        isBefore(startOfToday(due.instanceDate), endOfDay(t.date as Date))
+      );
+
+      if (isPaid) return; // Don't show paid dues
+
       if (isBefore(due.instanceDate, today)) {
         overdue.push(due);
       } else {
@@ -68,7 +79,7 @@ export default function OwedPage() {
   }
 
   const handleEditRequest = (owed: Owed) => {
-    // The 'owed' object is the original transaction, so we can cast it.
+    // The 'owed' object is derived from a transaction, so we find the source.
     const sourceTransaction = allTransactions?.find(t => t.id === owed.id);
     if (sourceTransaction) {
         setTransactionToEdit(sourceTransaction);

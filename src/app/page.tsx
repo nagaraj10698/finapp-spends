@@ -30,7 +30,7 @@ import RecentTransactions from '@/components/dashboard/recent-transactions';
 import { toDate } from '@/lib/data';
 import MoneyFlowChart from '@/components/dashboard/money-flow-chart';
 import BudgetSummaryChart from '@/components/dashboard/budget-summary-chart';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 

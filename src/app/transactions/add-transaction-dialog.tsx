@@ -317,6 +317,7 @@ export default function AddTransactionDialog({children, type = 'expense'}: AddTr
                           mode="single" 
                           selected={field.value} 
                           onSelect={(date) => {
+                            if (!date) return;
                             field.onChange(date);
                             setDatePickerOpen(false);
                           }} 
@@ -407,6 +408,7 @@ export default function AddTransactionDialog({children, type = 'expense'}: AddTr
                                         mode="single" 
                                         selected={field.value} 
                                         onSelect={(date) => {
+                                          if (!date) return;
                                           field.onChange(date);
                                           setEndDatePickerOpen(false);
                                         }} 

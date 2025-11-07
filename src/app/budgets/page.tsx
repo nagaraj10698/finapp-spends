@@ -21,7 +21,7 @@ import SetAllBudgetsCard from './set-all-budgets-card';
 import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { Progress } from '@/components/ui/progress';
 import { generateBudgetInsight } from '@/ai/flows/budget-insights-flow';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 

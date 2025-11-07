@@ -42,7 +42,7 @@ import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const formSchema = z.object({
@@ -302,6 +302,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
                             mode="single" 
                             selected={field.value} 
                             onSelect={(date) => {
+                              if (!date) return;
                               field.onChange(date);
                               setDatePickerOpen(false);
                             }} 
@@ -392,6 +393,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
                                         mode="single" 
                                         selected={field.value} 
                                         onSelect={(date) => {
+                                          if (!date) return;
                                           field.onChange(date);
                                           setEndDatePickerOpen(false);
                                         }} 

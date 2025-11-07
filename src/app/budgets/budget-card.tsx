@@ -90,7 +90,8 @@ export default function BudgetCard({ budget, category, onEdit, onDelete }: Budge
                 </span>
             </div>
             <Progress value={progress} className={cn(
-                isExpense && progress > 100 && "[&>div]:bg-destructive",
+                isExpense && progress >= 100 && "[&>div]:bg-destructive",
+                isExpense && progress < 100 && "[&>div]:bg-green-500",
                 !isExpense && progress >= 100 && "[&>div]:bg-green-500"
             )} />
             <div className="flex items-baseline gap-1">

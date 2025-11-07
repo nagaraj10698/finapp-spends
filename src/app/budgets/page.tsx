@@ -295,7 +295,7 @@ export default function BudgetsPage() {
                                 </span>
                             </span>
                         </div>
-                        <Progress value={summary.progress} className={cn(summary.progress > 100 && "[&>div]:bg-destructive")} />
+                        <Progress value={summary.progress} className={cn(summary.progress >= 100 && "[&>div]:bg-destructive", summary.progress < 100 && "[&>div]:bg-green-500")} />
                         <div className="flex items-baseline gap-1">
                             <div className="text-2xl font-bold flex items-baseline gap-1">
                                 <CurrencySymbol className="text-xl" />

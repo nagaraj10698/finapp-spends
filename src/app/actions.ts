@@ -4,7 +4,7 @@
 import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, addDoc, writeBatch, deleteField, Timestamp } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase/index.server";
 import { getAuth, type User } from "firebase/auth";
-import type { Transaction, Budget, Category } from "@/lib/types";
+import type { Transaction, Budget, Category, Owed } from "@/lib/types";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { startOfYear, endOfYear, eachDayOfInterval, format } from 'date-fns';
 import { defaultCategories } from "@/lib/data";
@@ -114,4 +114,21 @@ async function generateTransactions(userId: string, categories: Category[], batc
     if (commitCounter > 0) {
         await batch.commit();
     }
+}
+
+export async function processOwedPayment(userId: string, owed: Owed) {
+    const { firestore } = initializeFirebase();
+    const transactionsRef = collection(firestore, 'users', userId, 'transactions');
+    
+    const newTransaction: Omit<Transaction, 'id' | 'isRecurring' | 'frequency' | 'recurrenceEndDate'> = {
+        description: owed.description,
+        amount: owed.amount,
+        date: owed.instanceDate,
+        category: owed.category,
+        categoryId: owed.categoryId,
+        type: 'expense',
+        userId: userId,
+    };
+    
+    await addDoc(transactionsRef, newTransaction);
 }

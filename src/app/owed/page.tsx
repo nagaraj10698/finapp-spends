@@ -1,15 +1,19 @@
 
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Owed, Transaction, Category } from '@/lib/types';
 import OwedCard from './owed-card';
 import { getOwedExpenses } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { processOwedPayment } from '../actions';
 
 export default function OwedPage() {
   const { firestore, user } = useFirebase();
+  const { toast } = useToast();
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
@@ -23,6 +27,25 @@ export default function OwedPage() {
 
   const hasDues = upcomingDues && upcomingDues.length > 0;
   
+  const handlePayOwed = async (owed: Owed) => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+        return;
+    }
+    const owedInstanceId = `${owed.id}-${owed.instanceDate.toISOString()}`;
+    setProcessingId(owedInstanceId);
+    try {
+        await processOwedPayment(user.uid, owed);
+        toast({ title: 'Payment Processed', description: `${owed.description} has been marked as paid and a transaction was created.`});
+    } catch (error) {
+        console.error("Failed to process payment:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to process payment.' });
+    } finally {
+        setProcessingId(null);
+    }
+  }
+
+
   if (transactionsLoading || categoriesLoading) {
     return <div>Loading owed expenses...</div>;
   }
@@ -41,11 +64,14 @@ export default function OwedPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {upcomingDues.map((owed, index) => {
                 const category = categories?.find(c => c.id === owed.categoryId);
+                const owedInstanceId = `${owed.id}-${owed.instanceDate.toISOString()}`;
                 return (
                     <OwedCard
-                        key={`${owed.id}-${index}`}
+                        key={owedInstanceId}
                         owed={owed}
                         category={category}
+                        onPay={handlePayOwed}
+                        isProcessing={processingId === owedInstanceId}
                     />
                 )
             })}

@@ -5,7 +5,7 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { Budget, Transaction, Category } from '@/lib/types';
 import BudgetCard from './budget-card';
-import { getBudgets } from '@/lib/data';
+import { getBudgets, toDate } from '@/lib/data';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { PlusCircle, Calendar as CalendarIcon, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addDays, isSameDay } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addDays, isSameDay, isWithinInterval } from 'date-fns';
 import SetAllBudgetsCard from './set-all-budgets-card';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Progress } from '@/components/ui/progress';
@@ -83,8 +83,30 @@ export default function BudgetsPage() {
   }, [expenseBudgets]);
 
   useEffect(() => {
-    if (summary.totalBudgeted > 0) {
+    if (summary.totalBudgeted > 0 && expenseBudgets.length > 0 && allTransactions) {
       setIsInsightLoading(true);
+
+      const previousMonthsData = Array.from({ length: 3 }).map((_, i) => {
+        const month = subMonths(new Date(), i + 1);
+        const monthStart = startOfMonth(month);
+        const monthEnd = endOfMonth(month);
+
+        const monthTransactions = allTransactions.filter(t => isWithinInterval(toDate(t.date), { start: monthStart, end: monthEnd }));
+        
+        const totalSpent = monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        
+        const spendingByCategory: Record<string, number> = {};
+        monthTransactions.filter(t => t.type === 'expense' && t.category).forEach(t => {
+            spendingByCategory[t.category] = (spendingByCategory[t.category] || 0) + Math.abs(t.amount);
+        });
+
+        return {
+          month: format(monthStart, 'MMMM yyyy'),
+          totalSpent,
+          spendingByCategory,
+        };
+      });
+
       generateBudgetInsight({
         totalBudgeted: summary.totalBudgeted,
         totalSpent: summary.totalSpent,
@@ -93,11 +115,12 @@ export default function BudgetsPage() {
           budgetAmount: b.budgetAmount,
           spent: b.spent ?? 0,
         })),
+        previousMonthsData: previousMonthsData,
       }).then(setInsight).finally(() => setIsInsightLoading(false));
     } else {
-      setInsight(null);
+      setInsight("You don't have any expense budgets set up yet. Create some to get started!");
     }
-  }, [summary, expenseBudgets]);
+  }, [summary, expenseBudgets, allTransactions]);
 
 
   const handleEditRequest = (budget: Budget) => {

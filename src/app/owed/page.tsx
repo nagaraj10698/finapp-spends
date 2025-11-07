@@ -9,6 +9,8 @@ import { getOwedExpenses } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { processOwedPayment } from '../actions';
+import { isBefore, startOfToday } from 'date-fns';
+import { AlertTriangle } from 'lucide-react';
 
 export default function OwedPage() {
   const { firestore, user } = useFirebase();
@@ -21,11 +23,24 @@ export default function OwedPage() {
   const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
-  const upcomingDues = useMemo(() => {
-    return getOwedExpenses(allTransactions);
+  const { overdueDues, futureDues } = useMemo(() => {
+    const allDues = getOwedExpenses(allTransactions);
+    const today = startOfToday();
+    const overdue: Owed[] = [];
+    const future: Owed[] = [];
+
+    allDues.forEach(due => {
+      if (isBefore(due.instanceDate, today)) {
+        overdue.push(due);
+      } else {
+        future.push(due);
+      }
+    });
+
+    return { overdueDues: overdue, futureDues: future };
   }, [allTransactions]);
 
-  const hasDues = upcomingDues && upcomingDues.length > 0;
+  const hasDues = overdueDues.length > 0 || futureDues.length > 0;
   
   const handlePayOwed = async (owed: Owed) => {
     if (!user) {
@@ -61,20 +76,50 @@ export default function OwedPage() {
         </div>
         
         {hasDues ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {upcomingDues.map((owed, index) => {
-                const category = categories?.find(c => c.id === owed.categoryId);
-                const owedInstanceId = `${owed.id}-${owed.instanceDate.toISOString()}`;
-                return (
-                    <OwedCard
-                        key={owedInstanceId}
-                        owed={owed}
-                        category={category}
-                        onPay={handlePayOwed}
-                        isProcessing={processingId === owedInstanceId}
-                    />
-                )
-            })}
+          <div className="space-y-8">
+            {overdueDues.length > 0 && (
+                <div>
+                    <div className="flex items-center gap-2 mb-4">
+                         <AlertTriangle className="h-6 w-6 text-destructive" />
+                        <h2 className="font-headline text-xl font-semibold text-destructive">Overdue</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {overdueDues.map((owed) => {
+                            const category = categories?.find(c => c.id === owed.categoryId);
+                            const owedInstanceId = `${owed.id}-${owed.instanceDate.toISOString()}`;
+                            return (
+                                <OwedCard
+                                    key={owedInstanceId}
+                                    owed={owed}
+                                    category={category}
+                                    onPay={handlePayOwed}
+                                    isProcessing={processingId === owedInstanceId}
+                                />
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+            {futureDues.length > 0 && (
+                <div>
+                    <h2 className="font-headline text-xl font-semibold mb-4">Upcoming Dues</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {futureDues.map((owed) => {
+                            const category = categories?.find(c => c.id === owed.categoryId);
+                            const owedInstanceId = `${owed.id}-${owed.instanceDate.toISOString()}`;
+                            return (
+                                <OwedCard
+                                    key={owedInstanceId}
+                                    owed={owed}
+                                    category={category}
+                                    onPay={handlePayOwed}
+                                    isProcessing={processingId === owedInstanceId}
+                                />
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">

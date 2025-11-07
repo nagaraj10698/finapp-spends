@@ -213,44 +213,25 @@ export default function BudgetsPage() {
         </div>
         
         {hasBudgets || unbudgetedCategories.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-              <div className={cn(
-                "grid gap-4",
-                hasBudgets ? "lg:col-span-2 md:grid-cols-2 xl:grid-cols-3" : "lg:col-span-3 md:grid-cols-2 xl:grid-cols-4"
-              )}>
-                {budgetsWithSpent.map(budget => {
-                    const category = categories?.find(c => c.id === budget.categoryId);
-                    return (
-                        <BudgetCard 
-                        key={budget.id} 
-                        budget={budget} 
-                        category={category} 
-                        onEdit={() => handleEditRequest(budget)}
-                        onDelete={() => handleDeleteRequest(budget)}
-                        />
-                    )
-                })}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
+            {budgetsWithSpent.map(budget => {
+                const category = categories?.find(c => c.id === budget.categoryId);
+                return (
+                    <BudgetCard 
+                    key={budget.id} 
+                    budget={budget} 
+                    category={category} 
+                    onEdit={() => handleEditRequest(budget)}
+                    onDelete={() => handleDeleteRequest(budget)}
+                    />
+                )
+            })}
 
-                {unbudgetedCategories.length > 0 && (
-                    <div className={cn(!hasBudgets && "xl:col-span-2")}>
-                         <SetAllBudgetsCard categories={unbudgetedCategories} />
-                    </div>
-                )}
-              </div>
-              <div className={cn(
-                  "lg:col-span-1",
-                  !hasBudgets && "hidden"
-              )}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Spending by Category</CardTitle>
-                        <CardDescription>How your spending compares to your budgets for the selected period.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <BudgetSummaryChart data={spendingByCategory} categories={categories ?? []}/>
-                    </CardContent>
-                </Card>
-              </div>
+            {unbudgetedCategories.length > 0 && (
+                <div className="xl:col-span-2">
+                     <SetAllBudgetsCard categories={unbudgetedCategories} />
+                </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
@@ -291,5 +272,3 @@ export default function BudgetsPage() {
     </>
   );
 }
-
-    

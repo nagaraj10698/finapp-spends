@@ -114,6 +114,17 @@ export const getColumns = (
       return value.includes(row.getValue(id))
     },
   },
+    {
+    accessorKey: 'isRecurring',
+    header: 'Recurring',
+    cell: ({ row }) => {
+      const isRecurring = row.getValue('isRecurring');
+      const frequency = row.original.frequency;
+      if (!isRecurring) return null;
+      
+      return <Badge variant="secondary" className="capitalize">{frequency}</Badge>;
+    },
+  },
   {
     accessorKey: 'amount',
     header: ({ column }) => (

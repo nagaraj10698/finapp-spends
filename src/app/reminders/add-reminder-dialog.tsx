@@ -31,8 +31,9 @@ import type { Reminder } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 const formSchema = z.object({
   reminderName: z.string().min(1, 'Reminder name is required.'),
@@ -45,6 +46,7 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
   const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -136,6 +138,14 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Reminder Date</FormLabel>
+                   {isMobile ? (
+                     <Input
+                        type="date"
+                        value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
+                        onChange={(e) => field.onChange(parseISO(e.target.value))}
+                        className="w-full"
+                    />
+                  ) : (
                   <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -156,6 +166,7 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
                         mode="single" 
                         selected={field.value} 
                         onSelect={(date) => {
+                            if (!date) return;
                             field.onChange(date);
                             setDatePickerOpen(false);
                         }} 
@@ -163,6 +174,7 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
                       />
                     </PopoverContent>
                   </Popover>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

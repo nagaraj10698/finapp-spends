@@ -30,6 +30,9 @@ import RecentTransactions from '@/components/dashboard/recent-transactions';
 import { toDate } from '@/lib/data';
 import MoneyFlowChart from '@/components/dashboard/money-flow-chart';
 import BudgetSummaryChart from '@/components/dashboard/budget-summary-chart';
+import { useIsMobile } from '@/hooks/use-is-mobile';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 
 const PRESET_RANGES = [
@@ -50,6 +53,7 @@ const PRESET_RANGES = [
 
 export default function DashboardPage() {
     const { firestore, user } = useFirebase();
+    const isMobile = useIsMobile();
     const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
     const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
     const budgetsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
@@ -98,6 +102,9 @@ export default function DashboardPage() {
             setDateRange(undefined);
         }
         setActivePreset(label);
+        if (isMobile) {
+            setDatePopoverOpen(false);
+        }
     }
     
     const filteredTransactions = useMemo(() => {
@@ -175,35 +182,79 @@ export default function DashboardPage() {
                 </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 flex flex-col" align="end">
-                    <div className='flex'>
-                        <div className="flex flex-col space-y-1 p-2 border-r">
-                            {PRESET_RANGES.map(({label, getRange}) => (
-                                <Button 
-                                    key={label}
-                                    variant={activePreset === label ? 'default': 'ghost'} 
-                                    className="justify-start" 
-                                    onClick={() => handlePresetClick(label, getRange)}
-                                >
-                                    {label}
-                                </Button>
-                            ))}
-                            <Button
-                                variant={activePreset === 'Custom' ? 'default': 'ghost'}
-                                className="justify-start"
-                                onClick={() => handlePresetClick('Custom')}
-                            >
-                                Custom
-                            </Button>
+                    {isMobile ? (
+                        <div className="p-4 space-y-4">
+                            <div className="grid grid-cols-2 gap-2">
+                                {PRESET_RANGES.map(({label, getRange}) => (
+                                    <Button 
+                                        key={label}
+                                        variant={activePreset === label ? 'default': 'ghost'} 
+                                        className="justify-center" 
+                                        size="sm"
+                                        onClick={() => handlePresetClick(label, getRange)}
+                                    >
+                                        {label}
+                                    </Button>
+                                ))}
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="from-date">From</Label>
+                                <Input 
+                                    id="from-date"
+                                    type="date"
+                                    value={dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : ''}
+                                    onChange={(e) => {
+                                        const from = e.target.value ? new Date(e.target.value) : undefined;
+                                        setDateRange(prev => ({...prev, from}))
+                                        setActivePreset('Custom');
+                                    }}
+                                />
+                             </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="to-date">To</Label>
+                                <Input 
+                                    id="to-date"
+                                    type="date"
+                                    value={dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : ''}
+                                    onChange={(e) => {
+                                        const to = e.target.value ? new Date(e.target.value) : undefined;
+                                        setDateRange(prev => ({...prev, to}))
+                                        setActivePreset('Custom');
+                                    }}
+                                />
+                             </div>
                         </div>
-                        <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={dateRange?.from}
-                            selected={dateRange}
-                            onSelect={setDateRange}
-                            numberOfMonths={2}
-                        />
-                    </div>
+                    ) : (
+                        <div className='flex'>
+                            <div className="flex flex-col space-y-1 p-2 border-r">
+                                {PRESET_RANGES.map(({label, getRange}) => (
+                                    <Button 
+                                        key={label}
+                                        variant={activePreset === label ? 'default': 'ghost'} 
+                                        className="justify-start" 
+                                        onClick={() => handlePresetClick(label, getRange)}
+                                    >
+                                        {label}
+                                    </Button>
+                                ))}
+                                <Button
+                                    variant={activePreset === 'Custom' ? 'default': 'ghost'}
+                                    className="justify-start"
+                                    onClick={() => handlePresetClick('Custom')}
+                                >
+                                    Custom
+                                </Button>
+                            </div>
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={dateRange?.from}
+                                selected={dateRange}
+                                onSelect={setDateRange}
+                                numberOfMonths={2}
+                            />
+                        </div>
+                    )}
                     <div className="flex justify-end p-2 border-t">
                         <Button size="sm" onClick={() => setDatePopoverOpen(false)}>Apply</Button>
                     </div>

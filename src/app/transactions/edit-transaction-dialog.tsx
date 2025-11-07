@@ -30,7 +30,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { CurrencySymbol } from '@/components/ui/dynamic-currency';
@@ -42,6 +42,7 @@ import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 
 const formSchema = z.object({
@@ -72,6 +73,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [endDatePickerOpen, setEndDatePickerOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
@@ -272,6 +274,14 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date</FormLabel>
+                   {isMobile ? (
+                    <Input
+                        type="date"
+                        value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
+                        onChange={(e) => field.onChange(parseISO(e.target.value))}
+                        className="w-full"
+                    />
+                  ) : (
                     <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                         <PopoverTrigger asChild>
                         <FormControl>
@@ -299,6 +309,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
                           />
                         </PopoverContent>
                     </Popover>
+                   )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -353,6 +364,14 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
                             render={({ field }) => (
                             <FormItem className="flex flex-col">
                                 <FormLabel>End Date</FormLabel>
+                                {isMobile ? (
+                                    <Input
+                                        type="date"
+                                        value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
+                                        onChange={(e) => field.onChange(e.target.value ? parseISO(e.target.value) : undefined)}
+                                        className="w-full"
+                                    />
+                                ) : (
                                 <Popover open={endDatePickerOpen} onOpenChange={setEndDatePickerOpen}>
                                     <PopoverTrigger asChild>
                                     <FormControl>
@@ -380,6 +399,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
                                       />
                                     </PopoverContent>
                                 </Popover>
+                                )}
                                 <FormMessage />
                             </FormItem>
                             )}

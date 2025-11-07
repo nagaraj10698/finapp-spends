@@ -26,8 +26,8 @@ export default function OverviewCards({ totals }: OverviewCardsProps) {
           <ArrowUp className="text-green-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold flex items-center gap-1">
-            <DhiramSymbol />
+          <div className="text-2xl font-bold flex items-baseline gap-1">
+            <DhiramSymbol className="text-xl" />
             {totals.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="text-xs text-muted-foreground">Total income recorded in period</p>
@@ -39,8 +39,8 @@ export default function OverviewCards({ totals }: OverviewCardsProps) {
           <ArrowDown className="text-red-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold flex items-center gap-1 text-red-500">
-             <DhiramSymbol />
+          <div className="text-2xl font-bold flex items-baseline gap-1 text-red-500">
+             <DhiramSymbol className="text-xl" />
             {totals.expenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="text-xs text-muted-foreground">Total expenses recorded in period</p>
@@ -52,8 +52,8 @@ export default function OverviewCards({ totals }: OverviewCardsProps) {
           <DhiramSymbol className="text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={cn("text-2xl font-bold flex items-center gap-1", totals.savings < 0 ? "text-red-500" : "text-green-500")}>
-            <DhiramSymbol />{totals.savings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className={cn("text-2xl font-bold flex items-baseline gap-1", totals.savings < 0 ? "text-red-500" : "text-green-500")}>
+            <DhiramSymbol className="text-xl" />{totals.savings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="text-xs text-muted-foreground">Your balance for the period</p>
         </CardContent>

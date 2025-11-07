@@ -55,8 +55,11 @@ export default function RecentTransactions({
                   <Badge variant="secondary">{transaction.category}</Badge>
                 )}
               </TableCell>
-              <TableCell className={cn("text-right flex items-center justify-end gap-1", amount < 0 ? 'text-red-500' : 'text-green-500')}>
-                <DhiramSymbol />{Math.abs(amount).toFixed(2)}
+              <TableCell className={cn("text-right font-medium", amount < 0 ? 'text-red-500' : 'text-green-500')}>
+                <div className="flex items-baseline justify-end gap-1">
+                    <DhiramSymbol className="text-xs" />
+                    <span>{Math.abs(amount).toFixed(2)}</span>
+                </div>
               </TableCell>
               <TableCell>
                 {(transaction.date as Date).toLocaleDateString()}

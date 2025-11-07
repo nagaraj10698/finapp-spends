@@ -171,7 +171,7 @@ export default function UpcomingBillsTimeline({ bills, categories }: UpcomingBil
                         <p className="text-sm text-muted-foreground">{category?.name}</p>
                     </div>
                     <div className="text-right">
-                        <p className={cn("font-semibold flex items-center gap-1", isOverdue && !isPaid && "text-destructive", isPaid && "text-muted-foreground")}><DhiramSymbol />{Math.abs(bill.dueAmount).toFixed(2)}</p>
+                        <p className={cn("font-semibold flex items-baseline gap-1", isOverdue && !isPaid && "text-destructive", isPaid && "text-muted-foreground")}><DhiramSymbol className="text-sm" />{Math.abs(bill.dueAmount).toFixed(2)}</p>
                     </div>
                     {!isPaid && (
                         <Button size="sm" onClick={() => handlePayDue(bill)} disabled={isProcessing === bill.id}>

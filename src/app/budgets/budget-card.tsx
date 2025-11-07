@@ -72,19 +72,23 @@ export default function BudgetCard({ budget, category, onEdit, onDelete }: Budge
                     <span className={cn(remaining < 0 && "text-destructive")}>
                         {remaining >= 0 ? 'Remaining' : 'Overspent'}
                     </span>
-                    <span className="font-semibold flex items-center gap-1">
-                      <DhiramSymbol className="h-3 w-3"/>
+                    <span className="font-semibold flex items-baseline gap-1">
+                      <DhiramSymbol className="text-xs"/>
                       {Math.abs(remaining).toFixed(2)}
                     </span>
                 </span>
             </div>
             <Progress value={progress} className={cn(progress > 100 && "[&>div]:bg-destructive")} />
-            <div className="text-lg font-bold flex items-center gap-1">
-              <DhiramSymbol className="h-4 w-4" />
-              {spent.toFixed(2)}
+            <div className="flex items-baseline gap-1">
+              <div className="text-lg font-bold flex items-baseline gap-1">
+                <DhiramSymbol className="text-base" />
+                {spent.toFixed(2)}
+              </div>
                <span className="text-sm text-muted-foreground font-normal"> of </span> 
-              <DhiramSymbol className="h-4 w-4" />
-              {limit.toFixed(2)}
+               <div className="flex items-baseline gap-1">
+                <DhiramSymbol className="text-sm" />
+                {limit.toFixed(2)}
+               </div>
             </div>
         </div>
       </CardContent>

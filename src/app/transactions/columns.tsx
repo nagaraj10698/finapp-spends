@@ -134,11 +134,11 @@ export const getColumns = (
       return (
         <div
           className={cn(
-            'text-right font-medium pr-4 flex items-center justify-end gap-1',
+            'text-right font-medium pr-4 flex items-baseline justify-end gap-1',
             amount < 0 ? 'text-red-500' : 'text-green-500'
           )}
         >
-          <DhiramSymbol />
+          <DhiramSymbol className="text-xs" />
           {formatted}
         </div>
       );

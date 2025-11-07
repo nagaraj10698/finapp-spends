@@ -25,7 +25,7 @@ import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
 
-export const defaultCategories: Omit<Category, 'id'>[] = [
+export const defaultCategories: Omit<Category, 'id' | 'userId'>[] = [
     // Expenses
     { name: 'Housing', icon: 'Home', color: 'text-cyan-500', type: 'expense' },
     { name: 'Utilities', icon: 'Lightbulb', color: 'text-yellow-500', type: 'expense' },
@@ -39,6 +39,7 @@ export const defaultCategories: Omit<Category, 'id'>[] = [
     { name: 'Shopping', icon: 'Shirt', color: 'text-pink-500', type: 'expense' },
     { name: 'Subscription', icon: 'Wallet', color: 'text-indigo-500', type: 'expense' },
     { name: 'Loan/EMI', icon: 'Landmark', color: 'text-violet-500', type: 'expense' },
+    { name: 'Investment', icon: 'TrendingUp', color: 'text-sky-500', type: 'expense' },
     { name: 'Miscellaneous', icon: 'Shapes', color: 'text-gray-500', type: 'expense' },
     // Income
     { name: 'Salary', icon: 'Wallet', color: 'text-green-500', type: 'income' },
@@ -341,5 +342,3 @@ export function getNotifications(
     return 0;
   });
 }
-
-    

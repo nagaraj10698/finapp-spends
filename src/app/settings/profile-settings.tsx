@@ -262,21 +262,17 @@ export default function ProfileSettings() {
                     )}
                     />
                     <FormField
-                    control={form.control}
-                    name="mobileNumber"
-                    render={({ field }) => (
+                      control={form.control}
+                      name="mobileNumber"
+                      render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Mobile Number</FormLabel>
-                        <FormControl>
-                            <Input
-                            type="tel"
-                            placeholder="+1 234 567 890"
-                            {...field}
-                            />
-                        </FormControl>
-                        <FormMessage />
+                          <FormLabel>Mobile Number</FormLabel>
+                          <FormControl>
+                            <Input type="tel" placeholder="+1 234 567 890" {...field} />
+                          </FormControl>
+                          <FormMessage />
                         </FormItem>
-                    )}
+                      )}
                     />
                  </div>
                 <FormField

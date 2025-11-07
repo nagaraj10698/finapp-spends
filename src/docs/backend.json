@@ -32,6 +32,10 @@
         "currency": {
             "type": "string",
             "description": "The user's preferred currency code (e.g., 'USD', 'AED')."
+        },
+        "mobileNumber": {
+          "type": "string",
+          "description": "User's mobile phone number."
         }
       },
       "required": [

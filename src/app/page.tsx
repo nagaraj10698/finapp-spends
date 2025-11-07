@@ -215,7 +215,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
         <Card className="lg:col-span-7">
           <CardHeader>
-            <CardTitle className="font-headline">Money Flow</CardTitle>
+            <CardTitle className="font-headline">Cash Flow</CardTitle>
           </CardHeader>
           <CardContent>
             <MoneyFlowChart data={moneyFlowData} />

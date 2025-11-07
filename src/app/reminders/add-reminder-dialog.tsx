@@ -49,7 +49,7 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       reminderName: '',
-      reminderAmount: 0,
+      reminderAmount: undefined,
       reminderDate: new Date(),
     },
   });
@@ -65,18 +65,24 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
     }
     
     const reminderCollection = collection(firestore, 'users', user.uid, 'reminders');
-    const newReminder: Omit<Reminder, 'id'> = {
-        ...values,
+    const newReminder: Omit<Reminder, 'id' | 'userId'> = {
+        reminderName: values.reminderName,
+        reminderAmount: values.reminderAmount,
+        reminderDate: values.reminderDate,
         isPaid: false,
     };
 
-    await addDocumentNonBlocking(reminderCollection, newReminder);
+    await addDoc(reminderCollection, newReminder);
     
     toast({
       title: 'Reminder Added',
       description: `A reminder for ${values.reminderName} has been set.`,
     });
-    form.reset();
+    form.reset({
+        reminderName: '',
+        reminderAmount: undefined,
+        reminderDate: new Date(),
+    });
     setOpen(false);
   }
 
@@ -116,7 +122,7 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
                   <FormControl>
                     <div className="relative">
                       <CurrencySymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="number" placeholder="0.00" {...field} className="pl-12" />
+                      <Input type="number" placeholder="0.00" {...field} className="pl-12" value={field.value ?? ''} />
                     </div>
                   </FormControl>
                   <FormMessage />

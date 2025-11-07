@@ -77,11 +77,13 @@ export interface UserProfile {
 
 export type Reminder = {
     id: string;
+    userId: string;
     reminderName: string;
     reminderAmount: number;
     reminderDate: Date | Timestamp;
     isPaid: boolean;
 };
+
 
 
 

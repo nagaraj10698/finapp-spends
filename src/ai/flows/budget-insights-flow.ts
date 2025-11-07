@@ -59,6 +59,6 @@ const budgetInsightFlow = ai.defineFlow(
         `,
         });
         
-    return output!;
+    return output || "Here's a look at your budget summary for the period.";
   }
 );

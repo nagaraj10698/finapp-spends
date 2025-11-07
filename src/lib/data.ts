@@ -144,12 +144,9 @@ export function getBudgets(
 
     const range = dateRange?.from && dateRange.to
         ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) }
-        : null;
+        : { start: startOfMonth(new Date()), end: endOfMonth(new Date()) };
 
-    const transactionsToConsider = range
-        ? (allTransactions || []).filter(t => isWithinInterval(toDate(t.date), range))
-        : (allTransactions || []);
-
+    const transactionsToConsider = (allTransactions || []).filter(t => isWithinInterval(toDate(t.date), range));
     const recurringExpenseTemplates = (allTransactions || []).filter(t => t.isRecurring && t.type === 'expense' && t.frequency);
 
     return budgets.map(budget => {
@@ -158,43 +155,27 @@ export function getBudgets(
         let totalAmount = 0;
 
         if (budget.type === 'Expense') {
-            // 1. Sum up non-recurring transactions within the range
             const manualSpent = transactionsToConsider
                 .filter(t => t.type === 'expense' && !t.isRecurring && t.categoryId === budget.categoryId)
                 .reduce((sum, t) => sum + Math.abs(t.amount), 0);
             totalAmount += manualSpent;
 
-            // 2. Sum up committed spend from recurring transactions within the range
-             if (range) {
-                const relevantTemplates = recurringExpenseTemplates.filter(t => t.categoryId === budget.categoryId);
+            const relevantTemplates = recurringExpenseTemplates.filter(t => t.categoryId === budget.categoryId);
+            relevantTemplates.forEach(template => {
+                if (!template.frequency) return;
                 
-                relevantTemplates.forEach(template => {
-                    if (!template.frequency) return;
-                    
-                    let nextDueDate = toDate(template.date);
-                    const recurrenceEndDate = template.recurrenceEndDate ? toDate(template.recurrenceEndDate) : null;
+                let nextDueDate = toDate(template.date);
+                const recurrenceEndDate = template.recurrenceEndDate ? toDate(template.recurrenceEndDate) : null;
 
-                    // Loop through all possible instances of this recurring expense
-                    while (true) {
-                        // Stop if the instance is after the budget period
-                        if (isAfter(nextDueDate, range.end)) {
-                            break;
-                        }
-
-                        // Stop if there's a recurrence end date and we've passed it
-                        if (recurrenceEndDate && isAfter(nextDueDate, recurrenceEndDate)) {
-                            break;
-                        }
-
-                        // If the instance falls within the budget period, add its amount
-                        if (isWithinInterval(nextDueDate, range)) {
-                            totalAmount += Math.abs(template.amount);
-                        }
-                        
-                        nextDueDate = addPeriod(nextDueDate, template.frequency);
+                while (true) {
+                    if (isAfter(nextDueDate, range.end)) break;
+                    if (recurrenceEndDate && isAfter(nextDueDate, recurrenceEndDate)) break;
+                    if (isWithinInterval(nextDueDate, range)) {
+                        totalAmount += Math.abs(template.amount);
                     }
-                });
-            }
+                    nextDueDate = addPeriod(nextDueDate, template.frequency);
+                }
+            });
 
             return { ...budget, spent: totalAmount };
         } else { // Income budget
@@ -258,43 +239,40 @@ export function getMoneyFlow(
   return Array.from(flowMap.entries()).map(([name, values]) => ({ name, ...values }));
 }
 
-
-export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
-    if (!transactions) return [];
-
-    const recurringTemplates = transactions.filter(
-        (t) => t.isRecurring && t.type === 'expense' && t.frequency
+export function getOwedExpenses(allTransactions: Transaction[] | null): Owed[] {
+    if (!allTransactions) return [];
+  
+    const recurringTemplates = allTransactions.filter(
+      (t) => t.isRecurring && t.type === 'expense' && t.frequency
     );
-    const manualPayments = transactions.filter(t => !t.isRecurring && t.type === 'expense');
-
+    const manualPayments = allTransactions.filter(t => !t.isRecurring && t.type === 'expense');
+  
     const upcomingDues: Owed[] = [];
     const today = startOfDay(new Date());
-
+  
     recurringTemplates.forEach((template) => {
-        if (!template.frequency) return;
-
-        let nextDueDate = toDate(template.date);
-        const recurrenceEndDate = template.recurrenceEndDate ? toDate(template.recurrenceEndDate) : null;
-        
-        // Loop to find the first due date that is on or after today
-        while (isBefore(nextDueDate, today)) {
-            nextDueDate = addPeriod(nextDueDate, template.frequency);
-        }
-
-        // Now, `nextDueDate` is the next potential upcoming payment.
-        // Check if it's already been paid manually.
-        const isPaid = manualPayments.some(p => 
-            p.categoryId === template.categoryId &&
-            p.description === template.description &&
-            isSameDay(toDate(p.date), nextDueDate)
-        );
-
-        // If it's not paid and within the recurrence end date, add it to the list.
-        if (!isPaid && (!recurrenceEndDate || isBefore(nextDueDate, recurrenceEndDate) || isSameDay(nextDueDate, recurrenceEndDate))) {
-            upcomingDues.push({ ...template, instanceDate: nextDueDate });
-        }
+      if (!template.frequency) return;
+  
+      let nextDueDate = toDate(template.date);
+      const recurrenceEndDate = template.recurrenceEndDate ? toDate(template.recurrenceEndDate) : null;
+  
+      // Find the first due date that is on or after today
+      while (isBefore(nextDueDate, today)) {
+        nextDueDate = addPeriod(nextDueDate, template.frequency);
+      }
+  
+      // Now check if this *next* due date is valid and unpaid
+      const isPaid = manualPayments.some(p => 
+        p.categoryId === template.categoryId &&
+        p.description === template.description &&
+        isSameDay(toDate(p.date), nextDueDate)
+      );
+  
+      if (!isPaid && (!recurrenceEndDate || isBefore(nextDueDate, recurrenceEndDate) || isSameDay(nextDueDate, recurrenceEndDate))) {
+        upcomingDues.push({ ...template, instanceDate: nextDueDate });
+      }
     });
-
+  
     return upcomingDues;
 }
 
@@ -348,26 +326,25 @@ export function getNotifications(
 
     recurringTemplates.forEach(template => {
         if (!template.frequency) return;
-        let nextDueDate = toDate(template.date);
+        let dueDate = toDate(template.date);
         const recurrenceEndDate = template.recurrenceEndDate ? toDate(template.recurrenceEndDate) : null;
         
-        // Find all past due dates that are unpaid
-        while (isBefore(nextDueDate, today)) {
+        while (isBefore(dueDate, today)) {
             const isPaid = manualPayments.some(p => 
                 p.categoryId === template.categoryId &&
                 p.description === template.description &&
-                isSameDay(toDate(p.date), nextDueDate)
+                isSameDay(toDate(p.date), dueDate)
             );
-            if (!isPaid && (!recurrenceEndDate || isBefore(nextDueDate, recurrenceEndDate) || isSameDay(nextDueDate, recurrenceEndDate))) {
+            if (!isPaid && (!recurrenceEndDate || isBefore(dueDate, recurrenceEndDate) || isSameDay(dueDate, recurrenceEndDate))) {
                 notifications.push({
-                    id: `overdue-${template.id}-${nextDueDate.toISOString()}`,
+                    id: `overdue-${template.id}-${dueDate.toISOString()}`,
                     type: 'overdue',
                     title: 'Overdue Payment',
-                    description: `'${template.description}' was due on ${format(nextDueDate, 'MMM d')}.`,
+                    description: `'${template.description}' was due on ${format(dueDate, 'MMM d')}.`,
                     href: '/owed',
                 });
             }
-            nextDueDate = addPeriod(nextDueDate, template.frequency);
+            dueDate = addPeriod(dueDate, template.frequency);
         }
     });
   }

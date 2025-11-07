@@ -13,6 +13,7 @@ import {
   FileQuestion,
   User,
   ChevronDown,
+  CalendarClock,
 } from 'lucide-react';
 import {
   SidebarContent,
@@ -38,6 +39,7 @@ const mainMenuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
+  { href: '/owed', label: 'Owed', icon: CalendarClock },
 ];
 
 const bottomMenuItems: any[] = [

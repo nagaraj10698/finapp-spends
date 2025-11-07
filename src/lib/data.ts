@@ -1,4 +1,5 @@
 
+
 import {
   ShoppingBag,
   HeartPulse,
@@ -19,7 +20,7 @@ import {
   Wallet,
   TrendingUp,
 } from 'lucide-react';
-import type { Category, Transaction, Budget, Notification } from './types';
+import type { Category, Transaction, Budget, Notification, Owed } from './types';
 import { addDays, addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfDay, isSameDay, isAfter, subDays, startOfWeek, endOfWeek, subWeeks, subMonths, startOfYear, endOfYear, startOfQuarter, endOfQuarter, eachYearOfInterval, getYear } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
@@ -228,6 +229,50 @@ export function getMoneyFlow(
   });
   
   return Array.from(flowMap.entries()).map(([name, values]) => ({ name, ...values }));
+}
+
+export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
+  if (!transactions) return [];
+
+  const recurringExpenses = transactions.filter(
+    (t) => t.isRecurring && t.type === 'expense'
+  );
+
+  const upcomingDues: Owed[] = [];
+  const today = startOfDay(new Date());
+  const aYearFromNow = addYears(today, 1);
+
+  recurringExpenses.forEach((t) => {
+    let nextDueDate = toDate(t.date);
+    const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : aYearFromNow;
+
+    while (isBefore(nextDueDate, today)) {
+        switch (t.frequency) {
+          case 'weekly': nextDueDate = addWeeks(nextDueDate, 1); break;
+          case 'monthly': nextDueDate = addMonths(nextDueDate, 1); break;
+          case 'quarterly': nextDueDate = addQuarters(nextDueDate, 1); break;
+          case 'yearly': nextDueDate = addYears(nextDueDate, 1); break;
+          default: nextDueDate = addYears(nextDueDate, 100); break; // Stop loop
+        }
+    }
+
+    while (isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
+      upcomingDues.push({
+        ...t,
+        instanceDate: nextDueDate,
+      });
+
+      switch (t.frequency) {
+        case 'weekly': nextDueDate = addWeeks(nextDueDate, 1); break;
+        case 'monthly': nextDueDate = addMonths(nextDueDate, 1); break;
+        case 'quarterly': nextDueDate = addQuarters(nextDueDate, 1); break;
+        case 'yearly': nextDueDate = addYears(nextDueDate, 1); break;
+        default: break;
+      }
+    }
+  });
+
+  return upcomingDues.sort((a, b) => a.instanceDate.getTime() - b.instanceDate.getTime());
 }
 
 

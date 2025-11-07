@@ -1,4 +1,5 @@
 
+
 import type { LucideIcon } from "lucide-react";
 import { z } from 'zod';
 import type { Timestamp } from 'firebase/firestore';
@@ -24,6 +25,10 @@ export interface Transaction {
   isRecurring?: boolean;
   frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
   recurrenceEndDate?: Date | Timestamp;
+}
+
+export interface Owed extends Transaction {
+  instanceDate: Date;
 }
 
 export interface Budget {
@@ -74,3 +79,4 @@ export type Reminder = {
     reminderDate: Date | Timestamp;
     isPaid: boolean;
 };
+

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button, buttonVariants } from '@/components/ui/button';
 import { PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, deleteDoc, writeBatch, addDoc } from 'firebase/firestore';
 import type { Category } from '@/lib/types';
 import {
   DropdownMenu,
@@ -70,6 +70,27 @@ export default function CategorySettings() {
   const [isEditOpen, setEditOpen] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+
+  useEffect(() => {
+    // One-time check to ensure "Investment" expense category exists for the user
+    if (categories && user && firestore) {
+      const investmentExpenseExists = categories.some(
+        (cat) => cat.name === 'Investment' && cat.type === 'expense'
+      );
+      
+      if (!investmentExpenseExists) {
+        const newInvestmentCategory: Omit<Category, 'id'> = {
+          name: 'Investment',
+          icon: 'TrendingUp',
+          color: 'text-sky-500',
+          type: 'expense',
+          userId: user.uid,
+        };
+        const categoriesRef = collection(firestore, 'users', user.uid, 'categories');
+        addDoc(categoriesRef, newInvestmentCategory);
+      }
+    }
+  }, [categories, user, firestore]);
 
   const incomeCategories = categories?.filter(c => c.type === 'income') ?? [];
   const expenseCategories = categories?.filter(c => c.type === 'expense') ?? [];

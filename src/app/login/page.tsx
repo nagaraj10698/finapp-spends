@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -90,6 +91,7 @@ export default function LoginPage() {
       lastName: lastName,
       photoURL: user.photoURL,
       currency: currency,
+      mobileNumber: user.phoneNumber || '',
     });
   };
 

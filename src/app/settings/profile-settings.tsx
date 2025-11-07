@@ -36,7 +36,8 @@ const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
   lastName: z.string().min(1, 'Last name is required.'),
   email: z.string().email(),
-  currency: z.string().min(1, "Currency is required.")
+  currency: z.string().min(1, "Currency is required."),
+  mobileNumber: z.string().optional(),
 });
 
 export default function ProfileSettings() {
@@ -60,6 +61,7 @@ export default function ProfileSettings() {
         lastName: '',
         email: '',
         currency: 'AED',
+        mobileNumber: '',
     },
   });
 
@@ -70,6 +72,7 @@ export default function ProfileSettings() {
             lastName: userProfile.lastName || user?.displayName?.split(' ')[1] || '',
             email: userProfile.email || user?.email || '',
             currency: userProfile.currency || 'AED',
+            mobileNumber: userProfile.mobileNumber || '',
         })
     }
   }, [userProfile, user, form]);
@@ -150,6 +153,7 @@ export default function ProfileSettings() {
         firstName: values.firstName,
         lastName: values.lastName,
         currency: values.currency,
+        mobileNumber: values.mobileNumber || '',
       });
 
       toast({
@@ -166,25 +170,6 @@ export default function ProfileSettings() {
     }
   }
   
-  const handleGenerateMockData = () => {
-    if (!user) return;
-    startTransition(async () => {
-        try {
-            await generateMockTransactionsForYear(user.uid);
-            toast({
-                title: "Mock Data Generated",
-                description: "A year's worth of mock transactions has been added to your account."
-            });
-        } catch (error) {
-            console.error("Failed to generate mock data", error);
-            toast({
-                variant: "destructive",
-                title: "Generation Failed",
-                description: "Could not generate mock data.",
-            });
-        }
-    })
-  }
 
   return (
     <>
@@ -257,24 +242,43 @@ export default function ProfileSettings() {
                     )}
                 />
                 </div>
-                <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                        <Input
-                        type="email"
-                        placeholder="m@example.com"
-                        {...field}
-                        disabled
-                        />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                            <Input
+                            type="email"
+                            placeholder="m@example.com"
+                            {...field}
+                            disabled
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="mobileNumber"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Mobile Number</FormLabel>
+                        <FormControl>
+                            <Input
+                            type="tel"
+                            placeholder="+1 234 567 890"
+                            {...field}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                 </div>
                 <FormField
                   control={form.control}
                   name="currency"

@@ -99,6 +99,7 @@ export default function SignupPage() {
       lastName: lastName,
       photoURL: user.photoURL,
       currency: defaultCurrency,
+      mobileNumber: user.phoneNumber || '',
     });
   };
 
@@ -167,6 +168,7 @@ export default function SignupPage() {
           lastName: values.lastName,
           photoURL: user.photoURL,
           currency: defaultCurrency,
+          mobileNumber: '',
       });
 
       // Default categories are now created by the mock data generator if needed.

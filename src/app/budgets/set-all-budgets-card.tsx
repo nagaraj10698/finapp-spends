@@ -39,9 +39,9 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultValues = useMemo(() => {
-      const budgetMap: Record<string, number> = {};
+      const budgetMap: Record<string, number | undefined> = {};
       categories.forEach(cat => {
-          budgetMap[cat.id] = 500;
+          budgetMap[cat.id] = undefined; // Set default to undefined
       });
       return { budgets: budgetMap };
   }, [categories]);
@@ -138,10 +138,11 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
                                                 <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                                 <Input 
                                                     type="number" 
-                                                    placeholder="500.00" 
+                                                    placeholder="0.00" 
                                                     {...field}
+                                                    value={field.value ?? ''} // Ensure empty string if undefined
                                                     className="pl-12 font-medium"
-                                                    onChange={e => field.onChange(parseFloat(e.target.value))}
+                                                    onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                                                 />
                                             </div>
                                         </FormControl>

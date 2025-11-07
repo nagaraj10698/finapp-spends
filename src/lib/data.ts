@@ -97,7 +97,7 @@ export function getRecentTransactions(allTransactions: Transaction[] | null, cou
 }
 
 export function getTotals(allTransactions: Transaction[] | null) {
-  if (!allTransactions) return { income: 0, expenses: 0, savings: 0 };
+  if (!allTransactions) return { income: 0, expenses: 0, savings: 0, totalTransactions: 0 };
   const income = allTransactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -107,7 +107,7 @@ export function getTotals(allTransactions: Transaction[] | null) {
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
   const savings = income - expenses;
-  return { income, expenses, savings };
+  return { income, expenses, savings, totalTransactions: allTransactions.length };
 }
 
 export function getSpendingByCategory(allTransactions: Transaction[] | null) {
@@ -231,10 +231,12 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
     const recurringExpenses = transactions.filter(
         (t) => t.isRecurring && t.type === 'expense' && t.frequency
     );
+    const manualTransactions = transactions.filter(t => !t.isRecurring);
+    
     const today = startOfDay(new Date());
     const owedInstances: Owed[] = [];
 
-    const addPeriod = (date: Date, frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly') => {
+    const addPeriod = (date: Date, frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly'): Date => {
         switch (frequency) {
             case 'weekly': return addWeeks(date, 1);
             case 'monthly': return addMonths(date, 1);
@@ -247,61 +249,52 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
         if (!t.frequency) return;
 
         let nextDueDate = toDate(t.date);
-        
-        // Immediately find the first occurrence *after* the start date
-        nextDueDate = addPeriod(nextDueDate, t.frequency);
+        const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
 
-        // Fast-forward to the first due date that is on or after today
+        // Loop to find the *first* due date that is on or after today and has not been paid.
         while (isBefore(nextDueDate, today)) {
+            // Check if this past due date was paid
+            const isPaid = manualTransactions.some(p => 
+                p.categoryId === t.categoryId &&
+                p.description === t.description &&
+                isSameDay(toDate(p.date), nextDueDate)
+            );
+            
+            // If it was not paid, add it to the owed list as overdue
+            if (!isPaid) {
+                // Check if it's already in the list to avoid duplicates
+                const alreadyExists = owedInstances.some(o => 
+                    o.id === t.id && isSameDay(o.instanceDate, nextDueDate)
+                );
+                if (!alreadyExists && (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate))) {
+                    owedInstances.push({ ...t, instanceDate: nextDueDate });
+                }
+            }
+            
+            // Move to the next period
             nextDueDate = addPeriod(nextDueDate, t.frequency);
         }
         
-        const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
-        
-        // Check if this upcoming due date is valid
-        if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
-             // Check if this specific instance has already been paid
-            const isPaid = transactions.some(p => 
-                !p.isRecurring &&
+        // At this point, nextDueDate is on or after today. Find the next unpaid one.
+        while (endDate === null || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
+            const isPaid = manualTransactions.some(p => 
                 p.categoryId === t.categoryId &&
                 p.description === t.description &&
                 isSameDay(toDate(p.date), nextDueDate)
             );
 
             if (!isPaid) {
-                 owedInstances.push({
-                    ...t,
-                    instanceDate: nextDueDate,
-                });
+                // This is the next upcoming, unpaid due date. Add it and break.
+                owedInstances.push({ ...t, instanceDate: nextDueDate });
+                break; // Exit the loop after finding the single next due date
             }
+            
+            // If it was paid, check the next period.
+            nextDueDate = addPeriod(nextDueDate, t.frequency);
         }
     });
 
-    // Handle overdue items separately
-     recurringExpenses.forEach((t) => {
-        if (!t.frequency) return;
-        let pastDueDate = toDate(t.date);
-        
-        while(isBefore(pastDueDate, today)) {
-            const isPastPaid = transactions.some(p => 
-                !p.isRecurring &&
-                p.categoryId === t.categoryId &&
-                p.description === t.description &&
-                isSameDay(toDate(p.date), pastDueDate)
-            );
-            if (!isPastPaid) {
-                const alreadyInOwed = owedInstances.some(o => isSameDay(o.instanceDate, pastDueDate) && o.id === t.id);
-                if (!alreadyInOwed) {
-                    owedInstances.push({
-                        ...t,
-                        instanceDate: pastDueDate
-                    });
-                }
-            }
-            pastDueDate = addPeriod(pastDueDate, t.frequency);
-        }
-    });
-
+    // Use a Map to ensure all instances are unique by ID and date
     const uniqueDues = Array.from(
         new Map(
             owedInstances.map(due => [`${due.id}-${due.instanceDate.toISOString()}`, due])
@@ -310,6 +303,7 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
 
     return uniqueDues;
 }
+
 
 
 
@@ -378,3 +372,6 @@ export function getNotifications(
     return 0;
   });
 }
+
+
+    

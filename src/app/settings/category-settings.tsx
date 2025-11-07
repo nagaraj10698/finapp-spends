@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -118,7 +119,7 @@ export default function CategorySettings() {
           Add Category
         </Button>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="grid md:grid-cols-2 gap-6">
         <CategoryList title="Expense Categories" categories={expenseCategories} onEdit={handleEdit} onDelete={handleDeleteRequest} />
         <CategoryList title="Income Categories" categories={incomeCategories} onEdit={handleEdit} onDelete={handleDeleteRequest} />
       </CardContent>

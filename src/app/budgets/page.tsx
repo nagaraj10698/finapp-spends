@@ -128,6 +128,7 @@ export default function BudgetsPage() {
     return categories.filter(c => !budgetedCategoryIds.has(c.id));
   }, [categories, allBudgets]);
 
+  const hasUnbudgeted = unbudgetedCategories.length > 0;
 
   if (budgetsLoading || transactionsLoading || categoriesLoading) {
     return <div>Loading budgets...</div>;
@@ -206,15 +207,14 @@ export default function BudgetsPage() {
           </div>
         </div>
         
-        {hasBudgets || unbudgetedCategories.length > 0 ? (
+        {hasBudgets || hasUnbudgeted ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            {unbudgetedCategories.length > 0 ? (
+            {hasUnbudgeted && (
               <div className="lg:col-span-1">
                 <SetAllBudgetsCard categories={unbudgetedCategories} />
               </div>
-            ) : <div className="lg:col-span-1" />
-            }
-            <div className={cn("lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 items-start")}>
+            )}
+            <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-8 items-start", hasUnbudgeted ? "lg:col-span-2" : "lg:col-span-3")}>
                 <div>
                   <h2 className="font-headline text-xl font-semibold mb-4">Income Budgets</h2>
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

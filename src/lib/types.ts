@@ -21,6 +21,9 @@ export interface Transaction {
   categoryId?: string | null;
   type: 'income' | 'expense';
   userId: string;
+  isRecurring?: boolean;
+  frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  recurrenceEndDate?: Date | Timestamp;
 }
 
 export interface Budget {
@@ -64,4 +67,10 @@ export interface UserProfile {
     photoURL?: string;
 }
 
-    
+export type Reminder = {
+    id: string;
+    reminderName: string;
+    reminderAmount: number;
+    reminderDate: Date | Timestamp;
+    isPaid: boolean;
+};

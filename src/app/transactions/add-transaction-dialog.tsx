@@ -39,6 +39,10 @@ import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking } f
 import { collection } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
 
 
 const formSchema = z.object({
@@ -46,8 +50,16 @@ const formSchema = z.object({
     description: z.string().min(2, 'Description must be at least 2 characters.'),
     amount: z.coerce.number().positive('Amount must be positive.'),
     category: z.string().min(1, 'Please select a category.'),
-    date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Date is required." }),
-  });
+    date: z.date(),
+    isRecurring: z.boolean().default(false),
+    frequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
+    recurrenceEndDate: z.date().optional(),
+}).refine(data => {
+    return !data.isRecurring || !!data.frequency;
+}, {
+    message: 'Frequency is required for recurring transactions.',
+    path: ['frequency'],
+});
 
 export default function AddTransactionDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
@@ -65,11 +77,13 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
       description: '',
       amount: 0,
       category: '',
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: new Date(),
+      isRecurring: false,
     },
   });
   
   const transactionType = form.watch('type');
+  const isRecurring = form.watch('isRecurring');
 
   useEffect(() => {
     form.resetField('category', { defaultValue: '' });
@@ -98,8 +112,11 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
             amount: amount,
             category: values.category,
             categoryId: selectedCategory?.id || null,
-            date: new Date(values.date),
+            date: values.date,
             type: values.type,
+            isRecurring: values.isRecurring,
+            frequency: values.isRecurring ? values.frequency : undefined,
+            recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : undefined,
         };
         
         await addDocumentNonBlocking(transactionCollection, newTransaction);
@@ -241,13 +258,106 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={'outline'}
+                          className={cn(
+                            'w-full pl-3 text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                        >
+                          {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
             />
+             {transactionType === 'expense' && (
+                <>
+                <FormField
+                    control={form.control}
+                    name="isRecurring"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5">
+                                <FormLabel>Recurring Expense</FormLabel>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+                {isRecurring && (
+                    <div className="space-y-4 rounded-md border p-4">
+                        <FormField
+                            control={form.control}
+                            name="frequency"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Frequency</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Select frequency" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="weekly">Weekly</SelectItem>
+                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                                        <SelectItem value="yearly">Yearly</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="recurrenceEndDate"
+                            render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>End Date</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button
+                                        variant={'outline'}
+                                        className={cn(
+                                            'w-full pl-3 text-left font-normal',
+                                            !field.value && 'text-muted-foreground'
+                                        )}
+                                        >
+                                        {field.value ? format(field.value, 'PPP') : <span>Pick an end date</span>}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </div>
+                )}
+                </>
+            )}
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : 'Save Transaction'}

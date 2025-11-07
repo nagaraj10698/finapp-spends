@@ -54,9 +54,9 @@ export default function RootLayout({
         <FirebaseClientProvider>
             <CurrencyProvider>
                 <AuthWrapper>{children}</AuthWrapper>
+                <Toaster />
             </CurrencyProvider>
         </FirebaseClientProvider>
-        <Toaster />
       </body>
     </html>
   );

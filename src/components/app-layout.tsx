@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Sidebar,
@@ -11,6 +12,7 @@ import { UserNav } from '@/components/user-nav';
 import { Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import Notifications from '@/components/notifications';
 import Logo from '@/components/logo';
+import { Button } from '@/components/ui/button';
 
 function DesktopSidebarToggle() {
     const { state, toggleSidebar } = useSidebar();

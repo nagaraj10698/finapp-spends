@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addDays, isSameDay } from 'date-fns';
 import { createBudgetsForAllCategories } from '@/app/actions';
+import SetAllBudgetsDialog from './set-all-budgets-dialog';
 
 
 const PRESET_RANGES = [
@@ -44,7 +45,8 @@ export default function BudgetsPage() {
   const [isEditOpen, setEditOpen] = useState(false);
   const [budgetToEdit, setBudgetToEdit] = useState<Budget | null>(null);
   const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null);
-  const [showConfirmSetAll, setShowConfirmSetAll] = useState(false);
+  const [isSetAllOpen, setSetAllOpen] = useState(false);
+
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
     return { from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
@@ -101,24 +103,6 @@ export default function BudgetsPage() {
     }
   };
 
-  const handleSetAllBudgets = async () => {
-    if (!user) return;
-    try {
-        await createBudgetsForAllCategories(user.uid, 6000);
-        toast({
-            title: "Budgets Created",
-            description: "Budgets of 6000 AED have been set for all missing expense categories."
-        });
-    } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Failed to Set Budgets",
-            description: "An error occurred while creating the budgets.",
-        });
-    } finally {
-        setShowConfirmSetAll(false);
-    }
-  }
 
     const handlePresetClick = (label: string, getRange?: () => DateRange | undefined) => {
         if (getRange) {
@@ -221,7 +205,7 @@ export default function BudgetsPage() {
             </Popover>
         </div>
         <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowConfirmSetAll(true)}>Set All Budgets</Button>
+            <Button variant="outline" onClick={() => setSetAllOpen(true)}>Set All Budgets</Button>
             <AddBudgetDialog>
                 <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -281,6 +265,15 @@ export default function BudgetsPage() {
         />
       )}
 
+      {categories && allBudgets && (
+        <SetAllBudgetsDialog
+            isOpen={isSetAllOpen}
+            onClose={() => setSetAllOpen(false)}
+            categories={categories}
+            budgets={allBudgets}
+        />
+      )}
+
       <AlertDialog open={!!budgetToDelete} onOpenChange={(open) => !open && setBudgetToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -298,27 +291,6 @@ export default function BudgetsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-       <AlertDialog open={showConfirmSetAll} onOpenChange={setShowConfirmSetAll}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Set Budgets for All Categories?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This will create a budget of <span className='font-bold'>6000 AED</span> for any expense category that does not already have a budget. This action cannot be undone.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleSetAllBudgets}>
-                    Confirm & Create
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
-
-    
-
-    

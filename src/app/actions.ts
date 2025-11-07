@@ -18,32 +18,28 @@ async function getCollectionData<T>(userId: string, collectionName: string): Pro
     return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as T[];
 }
 
-export async function createBudgetsForAllCategories(userId: string, amount: number) {
+export async function createBudgets(userId: string, budgetsToCreate: { categoryId: string, name: string, amount: number }[]) {
+    if (!userId || budgetsToCreate.length === 0) return;
+
     const { firestore } = initializeFirebase();
     const batch = writeBatch(firestore);
-    
-    const categories = await getCollectionData<Category>(userId, 'categories');
-    const budgets = await getCollectionData<Budget>(userId, 'budgets');
+    const budgetsCollectionRef = collection(firestore, 'users', userId, 'budgets');
 
-    const expenseCategories = categories.filter(c => c.type === 'expense');
-    const budgetedCategoryIds = new Set(budgets.map(b => b.categoryId));
-
-    expenseCategories.forEach(category => {
-        if (!budgetedCategoryIds.has(category.id)) {
-            const newBudgetRef = doc(collection(firestore, 'users', userId, 'budgets'));
-            const newBudget: Omit<Budget, 'id'> = {
-                name: category.name,
-                budgetAmount: amount,
-                type: 'Expense',
-                categoryId: category.id,
-                category: category.name,
-            };
-            batch.set(newBudgetRef, newBudget);
-        }
+    budgetsToCreate.forEach(budget => {
+        const newBudgetRef = doc(budgetsCollectionRef);
+        const newBudget: Omit<Budget, 'id'> = {
+            name: budget.name,
+            budgetAmount: budget.amount,
+            type: 'Expense',
+            categoryId: budget.categoryId,
+            category: budget.name,
+        };
+        batch.set(newBudgetRef, newBudget);
     });
-
+    
     await batch.commit();
 }
+
 
 export async function generateMockTransactionsForYear(userId: string) {
     const { firestore } = initializeFirebase();

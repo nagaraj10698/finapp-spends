@@ -108,6 +108,7 @@ export default function SetAllBudgetsDialog({ isOpen, onClose, categories, budge
         });
         onClose();
     } catch(e) {
+        console.error("Failed to create budgets:", e);
         toast({
             variant: 'destructive',
             title: 'Failed to create budgets'

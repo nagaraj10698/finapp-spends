@@ -25,15 +25,15 @@ export async function createBudgets(userId: string, budgetsToCreate: { categoryI
     const batch = writeBatch(firestore);
     const budgetsCollectionRef = collection(firestore, 'users', userId, 'budgets');
 
-    budgetsToCreate.forEach(budget => {
+    budgetsToCreate.forEach(budgetInfo => {
         const newBudgetRef = doc(budgetsCollectionRef);
         const newBudget: Omit<Budget, 'id'> = {
             userId: userId,
-            name: budget.name,
-            budgetAmount: budget.amount,
+            name: budgetInfo.name,
+            budgetAmount: budgetInfo.amount,
             type: 'Expense',
-            categoryId: budget.categoryId,
-            category: budget.name,
+            categoryId: budgetInfo.categoryId,
+            category: budgetInfo.name,
         };
         batch.set(newBudgetRef, newBudget);
     });
@@ -52,7 +52,10 @@ export async function generateMockTransactionsForYear(userId: string) {
         const categoriesRef = collection(firestore, `users/${userId}/categories`);
         defaultCategories.forEach(category => {
             const categoryDoc = doc(categoriesRef);
-            batch.set(categoryDoc, category);
+            batch.set(categoryDoc, {
+                ...category,
+                userId: userId,
+            });
         });
         // We need to commit the categories first and then refetch them.
         await batch.commit(); 

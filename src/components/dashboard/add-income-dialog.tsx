@@ -25,8 +25,8 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
 import {
   Select,
@@ -78,20 +78,19 @@ export default function AddIncomeDialog({children}: {children: ReactNode}) {
 
     try {
         const incomeCollection = collection(firestore, 'users', user.uid, 'transactions');
-        const newIncomeRef = doc(incomeCollection);
-
+        
         const selectedCategory = categories?.find(c => c.name === values.category);
 
         const newIncome: Omit<Transaction, 'id' | 'userId'> = {
             description: values.description,
-            amount: values.amount,
+            amount: Math.abs(values.amount),
             category: values.category,
             categoryId: selectedCategory?.id || null,
             date: new Date(values.date),
             type: 'income',
         };
         
-        await setDoc(newIncomeRef, newIncome);
+        await addDocumentNonBlocking(incomeCollection, newIncome);
 
         toast({
           title: 'Income Added',

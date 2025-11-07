@@ -35,8 +35,8 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -89,7 +89,6 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
     
     try {
         const transactionCollection = collection(firestore, 'users', user.uid, 'transactions');
-        const newTransactionRef = doc(transactionCollection);
         
         const amount = values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
         const selectedCategory = categories?.find(c => c.name === values.category);
@@ -103,7 +102,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
             type: values.type,
         };
         
-        await setDoc(newTransactionRef, newTransaction);
+        await addDocumentNonBlocking(transactionCollection, newTransaction);
 
         toast({
           title: 'Transaction Added',

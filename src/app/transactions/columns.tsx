@@ -66,7 +66,7 @@ export const getColumns = (
       const category = getCategoryByName(categoryName, categories);
       const Icon = category ? getIconByName(category.icon) : null;
       if (!category || !Icon) {
-        return <Badge variant="secondary">{categoryName}</Badge>;
+        return <Badge variant="secondary">{categoryName || 'Uncategorized'}</Badge>;
       }
       return (
         <Badge variant="outline" className="flex w-fit items-center gap-2">

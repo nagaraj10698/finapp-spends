@@ -35,8 +35,8 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
 
 
@@ -79,7 +79,6 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
     
     try {
         const expenseCollectionRef = collection(firestore, 'users', user.uid, 'transactions');
-        const newExpenseRef = doc(expenseCollectionRef);
 
         const selectedCategory = categories?.find(c => c.name === values.category);
 
@@ -92,7 +91,7 @@ export default function AddExpenseDialog({children}: {children: ReactNode}) {
             type: 'expense',
         };
         
-        await setDoc(newExpenseRef, newExpense);
+        await addDocumentNonBlocking(expenseCollectionRef, newExpense);
         
         toast({
           title: 'Expense Added',

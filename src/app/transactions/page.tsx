@@ -33,7 +33,7 @@ export default function TransactionsPage() {
 
   const [isEditOpen, setEditOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
-  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [transactionsToDelete, setTransactionsToDelete] = useState<Transaction[] | null>(null);
 
   
   const handleEdit = (transaction: Transaction) => {
@@ -41,12 +41,12 @@ export default function TransactionsPage() {
     setEditOpen(true);
   };
 
-  const handleDeleteRequest = (transaction: Transaction) => {
-    setTransactionToDelete(transaction);
+  const handleDeleteRequest = (transactions: Transaction[]) => {
+    setTransactionsToDelete(transactions);
   };
   
-  const handleDeleteMany = async (transactionsToDelete: Transaction[]) => {
-    if (!user || !firestore || transactionsToDelete.length === 0) return;
+  const handleDeleteConfirm = async () => {
+    if (!transactionsToDelete || !user || !firestore) return;
 
     const batch = writeBatch(firestore);
     transactionsToDelete.forEach(transaction => {
@@ -67,29 +67,12 @@ export default function TransactionsPage() {
         description: "An error occurred while deleting transactions.",
       });
       console.error("Error deleting transactions: ", error);
-    }
-  };
-  
-  const handleDeleteConfirm = async () => {
-    if (!transactionToDelete || !user || !firestore) return;
-    try {
-      await deleteDoc(doc(firestore, 'users', user.uid, 'transactions', transactionToDelete.id));
-      toast({
-        title: 'Transaction Deleted',
-        description: `The transaction has been deleted.`,
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Delete Failed',
-        description: 'Could not delete the transaction.',
-      });
     } finally {
-      setTransactionToDelete(null);
+        setTransactionsToDelete(null);
     }
   };
 
-  const tableColumns = useMemo(() => getColumns(categories ?? [], handleEdit, handleDeleteRequest), [categories]);
+  const tableColumns = useMemo(() => getColumns(categories ?? [], handleEdit, (t) => handleDeleteRequest([t])), [categories]);
   
   const transactionData = useMemo(() => {
     if (!allTransactions) return [];
@@ -132,13 +115,13 @@ export default function TransactionsPage() {
                         </TabsList>
                     </div>
                     <TabsContent value="all" className="p-4">
-                         <DataTable columns={tableColumns} data={transactionData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={categories ?? []} />} />
+                         <DataTable columns={tableColumns} data={transactionData} toolbar={<DataTableToolbar onDelete={handleDeleteRequest} categories={categories ?? []} />} />
                     </TabsContent>
                     <TabsContent value="income" className="p-4">
-                        <DataTable columns={tableColumns} data={incomeData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={incomeCategories} />} />
+                        <DataTable columns={tableColumns} data={incomeData} toolbar={<DataTableToolbar onDelete={handleDeleteRequest} categories={incomeCategories} />} />
                     </TabsContent>
                     <TabsContent value="expenses" className="p-4">
-                         <DataTable columns={tableColumns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDeleteMany} categories={expenseCategories} />} />
+                         <DataTable columns={tableColumns} data={expenseData} toolbar={<DataTableToolbar onDelete={handleDeleteRequest} categories={expenseCategories} />} />
                     </TabsContent>
                 </Tabs>
             </CardContent>
@@ -156,16 +139,16 @@ export default function TransactionsPage() {
         />
       )}
 
-      <AlertDialog open={!!transactionToDelete} onOpenChange={(open) => !open && setTransactionToDelete(null)}>
+      <AlertDialog open={!!transactionsToDelete} onOpenChange={(open) => !open && setTransactionsToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure you want to delete this transaction?</AlertDialogTitle>
+                <AlertDialogTitle>Are you sure you want to delete this?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the transaction.
+                    This action cannot be undone. This will permanently delete {transactionsToDelete?.length} transaction(s).
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setTransactionToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setTransactionsToDelete(null)}>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteConfirm} className={cn(buttonVariants({variant: 'destructive'}))}>
                     Delete
                 </AlertDialogAction>

@@ -18,11 +18,14 @@ import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addDays, isSameDay } from 'date-fns';
 import { createBudgetsForAllCategories } from '@/app/actions';
 
 
 const PRESET_RANGES = [
+    { label: 'Today', getRange: () => ({ from: new Date(), to: new Date() }) },
+    { label: 'Last 7 days', getRange: () => ({ from: addDays(new Date(), -6), to: new Date() }) },
+    { label: 'Last 30 days', getRange: () => ({ from: addDays(new Date(), -29), to: new Date() }) },
     { label: 'This Month', getRange: () => ({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) }) },
     { label: 'Last Month', getRange: () => {
         const lastMonth = subMonths(new Date(), 1);
@@ -30,6 +33,7 @@ const PRESET_RANGES = [
     }},
     { label: 'This Quarter', getRange: () => ({ from: startOfQuarter(new Date()), to: endOfQuarter(new Date()) }) },
     { label: 'This Year', getRange: () => ({ from: startOfYear(new Date()), to: endOfYear(new Date()) }) },
+    { label: 'All Time', getRange: () => undefined },
 ];
 
 
@@ -116,15 +120,30 @@ export default function BudgetsPage() {
     }
   }
 
-  const handlePresetClick = (label: string, getRange?: () => DateRange | undefined) => {
-    if (getRange) {
-        setDateRange(getRange());
+    const handlePresetClick = (label: string, getRange?: () => DateRange | undefined) => {
+        if (getRange) {
+            setDateRange(getRange());
+        }
+        setActivePreset(label);
     }
-    setActivePreset(label);
-    if(label !== 'Custom') {
-        setDatePopoverOpen(false);
-    }
-  }
+    
+    useMemo(() => {
+        if (dateRange?.from && dateRange.to) {
+          const matchedPreset = PRESET_RANGES.find(p => {
+            if (!p.getRange) return false;
+            const range = p.getRange();
+            return range?.from && range?.to && dateRange?.from && dateRange?.to && isSameDay(range.from, dateRange.from) && isSameDay(range.to, dateRange.to)
+          });
+          setActivePreset(matchedPreset ? matchedPreset.label : 'Custom');
+        } else {
+             const allTimePreset = PRESET_RANGES.find(p => p.label === 'All Time');
+            if (!dateRange && allTimePreset) {
+                setActivePreset(allTimePreset.label);
+            } else {
+                setActivePreset(null);
+            }
+        }
+    }, [dateRange]);
 
 
   if (budgetsLoading || transactionsLoading || categoriesLoading) {
@@ -161,7 +180,7 @@ export default function BudgetsPage() {
                         format(dateRange.from, "LLL dd, y")
                     )
                     ) : (
-                    <span>Pick a date</span>
+                    <span>All Time</span>
                     )}
                 </Button>
                 </PopoverTrigger>
@@ -192,8 +211,11 @@ export default function BudgetsPage() {
                             defaultMonth={dateRange?.from}
                             selected={dateRange}
                             onSelect={setDateRange}
-                            numberOfMonths={1}
+                            numberOfMonths={2}
                         />
+                    </div>
+                     <div className="flex justify-end p-2 border-t">
+                        <Button size="sm" onClick={() => setDatePopoverOpen(false)}>Apply</Button>
                     </div>
                 </PopoverContent>
             </Popover>
@@ -296,5 +318,7 @@ export default function BudgetsPage() {
     </>
   );
 }
+
+    
 
     

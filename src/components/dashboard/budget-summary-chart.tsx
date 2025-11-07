@@ -5,13 +5,9 @@ import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip, Legend } from 'recha
 import {
   ChartContainer,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
 } from '@/components/ui/chart';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import type { Category } from '@/lib/types';
-import { getIconByName } from '@/lib/data';
-import { cn } from '@/lib/utils';
 
 
 interface BudgetSummaryChartProps {
@@ -32,6 +28,20 @@ const COLORS = [
   "hsl(260, 100%, 80%)",
 ];
 
+const RADIAN = Math.PI / 180;
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central">
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
+
 export default function BudgetSummaryChart({ data, categories }: BudgetSummaryChartProps) {
   const chartData = useMemo(() => {
     return data.map((item, index) => ({
@@ -45,20 +55,15 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
   }, [data]);
 
   const chartConfig = useMemo(() => {
-    const config: any = {
-      total: { label: 'Total' },
-    };
+    const config: any = {};
     chartData.forEach(item => {
-        const category = categories.find(c => c.name === item.name);
-        const Icon = category ? getIconByName(category.icon) : null;
         config[item.name] = { 
             label: item.name, 
             color: item.fill,
-            icon: Icon ? () => <Icon className={cn('h-4 w-4', category.color)} /> : undefined,
         };
     });
     return config;
-  }, [chartData, categories]);
+  }, [chartData]);
 
 
   if (chartData.length === 0) {
@@ -70,60 +75,52 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
   }
 
   return (
-    <ChartContainer
-      config={chartConfig}
-      className="mx-auto aspect-square min-h-[250px] w-full max-w-[300px] relative"
-    >
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Tooltip
-            cursor={false}
-            content={<ChartTooltipContent 
-                hideLabel 
-                indicator='dot'
-                formatter={(value, name, item) => (
-                    <div className='flex items-center gap-2'>
-                        <div className="flex flex-col">
-                            <span className='font-bold'>{item.payload.name}</span>
-                            <span className='text-muted-foreground'>{totalBudgeted > 0 ? ((item.payload.total / totalBudgeted) * 100).toFixed(0) : 0}%</span>
-                        </div>
-                        <div className="ml-auto flex items-center gap-1 font-bold">
-                           <DhiramSymbol /> {item.payload.total.toFixed(2)}
-                        </div>
-                    </div>
-                )}
-            />}
-          />
-           <Pie
-            data={chartData}
-            dataKey="total"
-            nameKey="name"
-            innerRadius="60%"
-            strokeWidth={2}
-            startAngle={90}
-            endAngle={450}
-          >
-             {chartData.map((entry) => (
-              <Cell
-                key={entry.name}
-                fill={entry.fill}
-                className="focus:outline-none"
-              />
-            ))}
-          </Pie>
-           <ChartLegend
-            content={<ChartLegendContent nameKey="name" />}
-            className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-          />
-        </PieChart>
-      </ResponsiveContainer>
-       <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center pointer-events-none">
-            <span className="text-xs text-muted-foreground">Total Budgeted</span>
-            <div className="flex items-baseline font-bold">
-              <DhiramSymbol className="text-lg" />
-              <span className="text-2xl">{totalBudgeted.toFixed(2)}</span>
+    <div className="flex items-center w-full">
+      <ChartContainer
+        config={chartConfig}
+        className="mx-auto aspect-square min-h-[250px] w-full max-w-[300px] relative"
+      >
+        <ResponsiveContainer width="100%" height={250}>
+          <PieChart>
+            <Tooltip
+              cursor={false}
+              content={<ChartTooltipContent hideLabel />}
+            />
+            <Pie
+              data={chartData}
+              dataKey="total"
+              nameKey="name"
+              innerRadius="60%"
+              strokeWidth={2}
+              labelLine={false}
+              label={renderCustomizedLabel}
+            >
+              {chartData.map((entry) => (
+                <Cell
+                  key={entry.name}
+                  fill={entry.fill}
+                  className="focus:outline-none"
+                />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center pointer-events-none">
+              <span className="text-xs text-muted-foreground">Total</span>
+              <div className="flex items-baseline font-bold">
+                <DhiramSymbol className="text-lg" />
+                <span className="text-2xl">{totalBudgeted.toFixed(2)}</span>
+              </div>
+        </div>
+      </ChartContainer>
+      <div className="flex flex-col gap-2 text-sm">
+        {chartData.map((item) => (
+            <div key={item.name} className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full" style={{backgroundColor: item.fill}} />
+                <span>{item.name}</span>
             </div>
+        ))}
       </div>
-    </ChartContainer>
+    </div>
   );
 }

@@ -217,8 +217,8 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <OverviewCards totals={totals} />
       </div>
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card className="md:col-span-3">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle className="font-headline">Money Flow</CardTitle>
           </CardHeader>
@@ -226,7 +226,7 @@ export default function DashboardPage() {
             <MoneyFlowChart data={moneyFlowData} />
           </CardContent>
         </Card>
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle className="font-headline">Budgeted Spending</CardTitle>
              <CardDescription>

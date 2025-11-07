@@ -8,7 +8,6 @@ import BudgetCard from './budget-card';
 import { getBudgets } from '@/lib/data';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
-import AddBudgetDialog from './add-budget-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import BudgetSummaryChart from '@/components/dashboard/budget-summary-chart';
 import EditBudgetDialog from './edit-budget-dialog';
@@ -210,12 +209,6 @@ export default function BudgetsPage() {
                     </div>
                 </PopoverContent>
             </Popover>
-             <AddBudgetDialog>
-                <Button size="sm">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add
-                </Button>
-            </AddBudgetDialog>
           </div>
         </div>
         
@@ -262,13 +255,7 @@ export default function BudgetsPage() {
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
               <h3 className="text-lg font-semibold text-muted-foreground">No budgets created yet</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Get started by creating a new budget or setting budgets for your existing categories.</p>
-              <AddBudgetDialog>
-                  <Button className="mt-6">
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Individual Budget
-                  </Button>
-              </AddBudgetDialog>
+              <p className="mt-2 text-sm text-muted-foreground">Set budgets for your existing categories to get started.</p>
           </div>
         )}
       </div>

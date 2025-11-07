@@ -33,9 +33,13 @@
             "type": "string",
             "description": "The user's preferred currency code (e.g., 'USD', 'AED')."
         },
-        "mobileNumber": {
+        "countryCode": {
           "type": "string",
-          "description": "User's mobile phone number."
+          "description": "User's selected country code for their phone number."
+        },
+        "phone": {
+          "type": "string",
+          "description": "User's local phone number, without the country code."
         }
       },
       "required": [
@@ -175,7 +179,8 @@
           "type": "string",
           "description": "Type of budget, always 'Expense' for now.",
           "enum": [
-            "Expense"
+            "Expense",
+            "Income"
           ]
         },
         "category": {
@@ -196,7 +201,8 @@
   },
   "auth": {
     "providers": [
-      "password"
+      "password",
+      "google.com"
     ]
   },
   "firestore": {

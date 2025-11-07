@@ -3,7 +3,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -14,6 +13,7 @@ import { Check, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { format, isBefore, startOfToday } from 'date-fns';
+import { toDate } from '@/lib/data';
 
 interface ReminderCardProps {
   reminder: Reminder;
@@ -21,11 +21,6 @@ interface ReminderCardProps {
 }
 
 export default function ReminderCard({ reminder, onTogglePaid }: ReminderCardProps) {
-    const toDate = (date: any): Date => {
-        if (date.toDate) return date.toDate();
-        return new Date(date);
-    };
-
     const reminderDate = toDate(reminder.reminderDate);
     const isOverdue = !reminder.isPaid && isBefore(reminderDate, startOfToday());
     
@@ -41,7 +36,7 @@ export default function ReminderCard({ reminder, onTogglePaid }: ReminderCardPro
       </CardHeader>
       <CardContent className="space-y-2">
         <div className={cn("text-3xl font-bold flex items-center gap-1", isOverdue && "text-destructive")}>
-            <CurrencySymbol className={cn("h-7 w-7", !isOverdue && "text-muted-foreground")} />
+            <CurrencySymbol className={cn("text-2xl", !isOverdue && "text-muted-foreground")} />
             {reminder.reminderAmount.toFixed(2)}
         </div>
         <div className="text-xs text-muted-foreground flex items-center gap-1.5">

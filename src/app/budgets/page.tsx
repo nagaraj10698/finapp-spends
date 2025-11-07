@@ -44,10 +44,8 @@ export default function BudgetsPage() {
   const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null);
 
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-    return { from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
-  });
-  const [activePreset, setActivePreset] = useState<string | null>('This Month');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [activePreset, setActivePreset] = useState<string | null>('All Time');
   const [isDatePopoverOpen, setDatePopoverOpen] = useState(false);
 
   const budgetsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
@@ -98,6 +96,8 @@ export default function BudgetsPage() {
     const handlePresetClick = (label: string, getRange?: () => DateRange | undefined) => {
         if (getRange) {
             setDateRange(getRange());
+        } else {
+            setDateRange(undefined);
         }
         setActivePreset(label);
     }

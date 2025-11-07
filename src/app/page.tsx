@@ -58,12 +58,10 @@ export default function DashboardPage() {
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
     const { data: allBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
 
-    const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-        return { from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
-    });
-    const [activePreset, setActivePreset] = useState<string | null>('This Month');
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+    const [activePreset, setActivePreset] = useState<string | null>('All Time');
     const [isDatePopoverOpen, setDatePopoverOpen] = useState(false);
-    const [period, setPeriod] = useState<'daily' | 'monthly' | 'yearly'>('monthly');
+    const [period, setPeriod] = useState<'daily' | 'monthly' | 'yearly'>('yearly');
 
     useEffect(() => {
         if (dateRange?.from && dateRange.to) {
@@ -105,9 +103,10 @@ export default function DashboardPage() {
         if (!dateRange?.from || !dateRange.to) return allTransactions.map(t => ({...t, date: toDate(t.date)}));
     
         const rangeEnd = endOfDay(dateRange.to);
+        const rangeStart = startOfDay(dateRange.from);
         return allTransactions.filter(t => {
             const transactionDate = toDate(t.date);
-            return transactionDate >= dateRange.from! && transactionDate <= rangeEnd;
+            return transactionDate >= rangeStart && transactionDate <= rangeEnd;
         }).map(t => ({...t, date: toDate(t.date)}));
     }, [allTransactions, dateRange]);
 

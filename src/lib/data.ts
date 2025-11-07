@@ -235,7 +235,7 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
     if (!transactions) return [];
 
     const recurringExpenses = transactions.filter(
-        (t) => t.isRecurring && t.type === 'expense'
+        (t) => t.isRecurring && t.type === 'expense' && t.frequency
     );
 
     const upcomingDues: Owed[] = [];
@@ -244,23 +244,31 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
     recurringExpenses.forEach((t) => {
         const startDate = toDate(t.date);
         let nextDueDate = startDate;
-        
-        // Loop forward from the start date until we find a date that is on or after today
+
+        // Loop forward from the start date until we find the first date that is on or after today
         while (isBefore(nextDueDate, today)) {
             switch (t.frequency) {
-                case 'weekly': nextDueDate = addWeeks(nextDueDate, 1); break;
-                case 'monthly': nextDueDate = addMonths(nextDueDate, 1); break;
-                case 'quarterly': nextDueDate = addQuarters(nextDueDate, 1); break;
-                case 'yearly': nextDueDate = addYears(nextDueDate, 1); break;
-                default: return; // Prevent infinite loop
+                case 'weekly':
+                    nextDueDate = addWeeks(nextDueDate, 1);
+                    break;
+                case 'monthly':
+                    nextDueDate = addMonths(nextDueDate, 1);
+                    break;
+                case 'quarterly':
+                    nextDueDate = addQuarters(nextDueDate, 1);
+                    break;
+                case 'yearly':
+                    nextDueDate = addYears(nextDueDate, 1);
+                    break;
+                default:
+                    // Should not happen due to filter, but good for safety
+                    return; 
             }
         }
-
-        // Now, nextDueDate is the first occurrence that is on or after today.
-        // We need to check if this falls within the recurrence end date.
+        
         const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
         if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
-            upcomingDues.push({
+             upcomingDues.push({
                 ...t,
                 instanceDate: nextDueDate,
             });

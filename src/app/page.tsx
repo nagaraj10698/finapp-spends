@@ -11,10 +11,10 @@ import {
 import OverviewCards from '@/components/dashboard/overview-cards';
 import {
   getRecentTransactions,
-  getSpendingByCategory,
   getTotals,
   getMoneyFlow,
   generateDueInstances,
+  getBudgets,
 } from '@/lib/data';
 import type { Transaction, Category, Due, Budget } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
@@ -56,10 +56,12 @@ export default function DashboardPage() {
     const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
     const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
     const duesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'dues') : null, [firestore, user]);
+    const budgetsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
     
     const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
     const { data: allDues, isLoading: duesLoading } = useCollection<Due>(duesCollection);
+    const { data: allBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
 
     const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
         return { from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
@@ -116,10 +118,19 @@ export default function DashboardPage() {
 
 
     const totals = useMemo(() => getTotals(filteredTransactions), [filteredTransactions]);
-    const spendingByCategory = useMemo(() => getSpendingByCategory(filteredTransactions.filter(t => t.type === 'expense')), [filteredTransactions]);
     const upcomingBills = useMemo(() => generateDueInstances(allDues), [allDues]);
     const recentTransactions = useMemo(() => getRecentTransactions(allTransactions, 5), [allTransactions]);
     const moneyFlowData = useMemo(() => getMoneyFlow(filteredTransactions, period, dateRange), [filteredTransactions, period, dateRange]);
+
+    const budgetsWithCalculations = useMemo(() => {
+        return getBudgets(allBudgets, filteredTransactions);
+    }, [allBudgets, filteredTransactions]);
+
+    const expenseBudgetsChartData = useMemo(() => {
+        return budgetsWithCalculations
+            .filter(b => b.type === 'Expense' && (b.spent ?? 0) > 0)
+            .map(b => ({ name: b.name, total: b.spent ?? 0 }));
+    }, [budgetsWithCalculations]);
 
     const overdueCount = useMemo(() => {
         const today = startOfDay(new Date());
@@ -142,7 +153,7 @@ export default function DashboardPage() {
     }, [upcomingBills]);
 
 
-    if (transactionsLoading || categoriesLoading || duesLoading) {
+    if (transactionsLoading || categoriesLoading || duesLoading || budgetsLoading) {
         return <div>Loading...</div>
     }
 
@@ -248,7 +259,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <BudgetSummaryChart data={spendingByCategory} categories={categories ?? []} />
+            <BudgetSummaryChart data={expenseBudgetsChartData} categories={categories ?? []} />
           </CardContent>
         </Card>
       </div>

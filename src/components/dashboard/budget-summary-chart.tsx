@@ -72,7 +72,7 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
   return (
     <ChartContainer
       config={chartConfig}
-      className="mx-auto aspect-square min-h-[250px] w-full max-w-[300px]"
+      className="mx-auto aspect-square min-h-[250px] w-full max-w-[300px] relative"
     >
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
@@ -117,7 +117,7 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
           />
         </PieChart>
       </ResponsiveContainer>
-       <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center">
+       <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center pointer-events-none">
             <span className="text-xs text-muted-foreground">Total Spent</span>
             <div className="flex items-baseline font-bold">
               <DhiramSymbol className="text-lg" />

@@ -47,6 +47,7 @@ const PRESET_RANGES = [
     { label: 'This Quarter', getRange: () => ({ from: startOfQuarter(new Date()), to: endOfQuarter(new Date()) }) },
     { label: 'Last 6 Months', getRange: () => ({ from: subMonths(new Date(), 6), to: new Date() }) },
     { label: 'This Year', getRange: () => ({ from: startOfYear(new Date()), to: endOfYear(new Date()) }) },
+    { label: 'All Time', getRange: () => undefined },
 ];
 
 
@@ -70,15 +71,21 @@ export default function DashboardPage() {
     useEffect(() => {
         if (dateRange?.from && dateRange.to) {
           const matchedPreset = PRESET_RANGES.find(p => {
+            if (!p.getRange) return false;
             const range = p.getRange();
-            return range.from && range.to && dateRange.from && dateRange.to && isSameDay(range.from, dateRange.from) && isSameDay(range.to, dateRange.to)
+            return range?.from && range?.to && dateRange?.from && dateRange?.to && isSameDay(range.from, dateRange.from) && isSameDay(range.to, dateRange.to)
           });
           setActivePreset(matchedPreset ? matchedPreset.label : 'Custom');
           
           const diff = differenceInDays(dateRange.to, dateRange.from);
           setPeriod(diff > 62 ? 'monthly' : 'daily');
         } else {
-            setActivePreset(null);
+             const allTimePreset = PRESET_RANGES.find(p => p.label === 'All Time');
+            if (!dateRange && allTimePreset) {
+                setActivePreset(allTimePreset.label);
+            } else {
+                setActivePreset(null);
+            }
         }
     }, [dateRange]);
 
@@ -173,7 +180,7 @@ export default function DashboardPage() {
                         format(dateRange.from, "LLL dd, y")
                     )
                     ) : (
-                    <span>Pick a date</span>
+                    <span>All Time</span>
                     )}
                 </Button>
                 </PopoverTrigger>

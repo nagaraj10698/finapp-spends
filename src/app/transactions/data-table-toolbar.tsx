@@ -33,6 +33,7 @@ const PRESET_RANGES = [
     }},
     { label: 'This Quarter', getRange: () => ({ from: startOfQuarter(new Date()), to: endOfQuarter(new Date()) }) },
     { label: 'This Year', getRange: () => ({ from: startOfYear(new Date()), to: endOfYear(new Date()) }) },
+    { label: 'All Time', getRange: () => undefined },
 ];
 
 
@@ -43,9 +44,8 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   if (!table) return null;
   
-  const [date, setDate] = React.useState<DateRange | undefined>({
-    from: startOfYear(new Date()),
-    to: endOfYear(new Date()),
+  const [date, setDate] = React.useState<DateRange | undefined>(() => {
+    return { from: startOfYear(new Date()), to: new Date() };
   });
   const [activePreset, setActivePreset] = React.useState<string | null>('This Year');
   const [isDatePopoverOpen, setDatePopoverOpen] = React.useState(false);
@@ -59,13 +59,16 @@ export function DataTableToolbar<TData>({
         table.getColumn('date')?.setFilterValue([date.from, toDate]);
         
         const matchedPreset = PRESET_RANGES.find(p => {
+            if (!p.getRange) return false;
             const range = p.getRange();
-            return range.from && range.to && date.from && date.to && isSameDay(range.from, date.from) && isSameDay(range.to, date.to)
+            return range?.from && range?.to && date.from && date.to && isSameDay(range.from, date.from) && isSameDay(range.to, date.to)
           });
         setActivePreset(matchedPreset ? matchedPreset.label : 'Custom');
     } else {
         table.getColumn('date')?.setFilterValue(undefined);
-        setActivePreset(null);
+        if (!date) {
+            setActivePreset('All Time');
+        }
     }
   }, [date, table]);
 
@@ -136,7 +139,7 @@ export function DataTableToolbar<TData>({
                     format(date.from, "LLL dd, y")
                 )
                 ) : (
-                <span>Pick a date range</span>
+                <span>All Time</span>
                 )}
             </Button>
             </PopoverTrigger>

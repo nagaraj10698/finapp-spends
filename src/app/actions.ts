@@ -27,13 +27,14 @@ export async function createBudgets(userId: string, budgetsToCreate: { categoryI
 
     budgetsToCreate.forEach(budgetInfo => {
         const newBudgetRef = doc(budgetsCollectionRef);
+        // Ensure the object conforms to the Omit<Budget, 'id'> type
         const newBudget: Omit<Budget, 'id'> = {
             userId: userId,
             name: budgetInfo.name,
             budgetAmount: budgetInfo.amount,
-            type: 'Expense',
+            type: 'Expense', // Budgets are always for expenses
             categoryId: budgetInfo.categoryId,
-            category: budgetInfo.name,
+            category: budgetInfo.name, // Add the category name
         };
         batch.set(newBudgetRef, newBudget);
     });
@@ -57,7 +58,6 @@ export async function generateMockTransactionsForYear(userId: string) {
                 icon: category.icon,
                 color: category.color,
                 type: category.type,
-                // userId: userId, // userId is not part of the Category type in types.ts
             }
             batch.set(categoryDoc, newCat);
         });

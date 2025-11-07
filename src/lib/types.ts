@@ -71,7 +71,8 @@ export interface UserProfile {
     lastName: string;
     photoURL?: string;
     currency?: string;
-    mobileNumber?: string;
+    countryCode?: string;
+    phone?: string;
 }
 
 export type Reminder = {
@@ -81,5 +82,6 @@ export type Reminder = {
     reminderDate: Date | Timestamp;
     isPaid: boolean;
 };
+
 
 

@@ -34,6 +34,7 @@ import { useFirestore } from '@/firebase/provider';
 import { defaultCategories } from '@/lib/data';
 import { getCurrencyByCountry } from '@/lib/currencies';
 import { useEffect, useState } from 'react';
+import { countries } from '@/lib/countries';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
@@ -57,16 +58,22 @@ export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [defaultCurrency, setDefaultCurrency] = useState('AED');
+  const [defaultCountryCode, setDefaultCountryCode] = useState('AE');
+
 
   useEffect(() => {
     // This runs on the client and will not cause a hydration mismatch.
-    const userLocale = navigator.language;
+    const userLocale = navigator.language; // e.g., 'en-US'
     if (userLocale) {
         const countryCode = userLocale.split('-')[1];
         if (countryCode) {
             const currency = getCurrencyByCountry(countryCode);
             if (currency) {
                 setDefaultCurrency(currency.code);
+            }
+            const country = countries.find(c => c.code.toUpperCase() === countryCode.toUpperCase());
+            if (country) {
+                setDefaultCountryCode(country.code);
             }
         }
     }
@@ -99,7 +106,8 @@ export default function SignupPage() {
       lastName: lastName,
       photoURL: user.photoURL,
       currency: defaultCurrency,
-      mobileNumber: user.phoneNumber || '',
+      countryCode: defaultCountryCode,
+      phone: '',
     });
   };
 
@@ -168,7 +176,8 @@ export default function SignupPage() {
           lastName: values.lastName,
           photoURL: user.photoURL,
           currency: defaultCurrency,
-          mobileNumber: '',
+          countryCode: defaultCountryCode,
+          phone: '',
       });
 
       // Default categories are now created by the mock data generator if needed.

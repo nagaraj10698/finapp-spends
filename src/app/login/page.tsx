@@ -32,6 +32,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { getCurrencyByCountry } from '@/lib/currencies';
 import { User, getAdditionalUserInfo } from 'firebase/auth';
+import { countries } from '@/lib/countries';
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -73,6 +74,7 @@ export default function LoginPage() {
     const lastName = lastNameParts.join(' ');
 
     let currency = 'AED'; // Default currency
+    let countryCodeForPhone = 'AE';
     const userLocale = navigator.language;
     if (userLocale) {
         const countryCode = userLocale.split('-')[1];
@@ -80,6 +82,10 @@ export default function LoginPage() {
             const countryCurrency = getCurrencyByCountry(countryCode);
             if (countryCurrency) {
                 currency = countryCurrency.code;
+            }
+             const country = countries.find(c => c.code.toUpperCase() === countryCode.toUpperCase());
+            if (country) {
+                countryCodeForPhone = country.code;
             }
         }
     }
@@ -91,7 +97,8 @@ export default function LoginPage() {
       lastName: lastName,
       photoURL: user.photoURL,
       currency: currency,
-      mobileNumber: user.phoneNumber || '',
+      countryCode: countryCodeForPhone,
+      phone: '',
     });
   };
 

@@ -24,20 +24,23 @@ import { useRef, useState, useTransition, useEffect } from 'react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Loader2 } from 'lucide-react';
 import ImageCropperDialog from '@/app/profile/image-cropper-dialog';
-import { Separator } from '@/components/ui/separator';
-import { generateMockTransactionsForYear } from '@/app/actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { currencies } from '@/lib/currencies';
 import { useUser } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { useDoc, useMemoFirebase } from '@/firebase';
+import { countries, getCountry } from '@/lib/countries';
+import { Flag } from '@/components/flags';
+import { cn } from '@/lib/utils';
+
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
   lastName: z.string().min(1, 'Last name is required.'),
   email: z.string().email(),
   currency: z.string().min(1, "Currency is required."),
-  mobileNumber: z.string().optional(),
+  countryCode: z.string().optional(),
+  phone: z.string().optional(),
 });
 
 export default function ProfileSettings() {
@@ -45,7 +48,6 @@ export default function ProfileSettings() {
   const { user, auth, firestore, firebaseApp } = useFirebase();
   const [photoURL, setPhotoURL] = useState(user?.photoURL);
   const [isUploading, setIsUploading] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -61,7 +63,8 @@ export default function ProfileSettings() {
         lastName: '',
         email: '',
         currency: 'AED',
-        mobileNumber: '',
+        countryCode: 'AE',
+        phone: '',
     },
   });
 
@@ -72,7 +75,8 @@ export default function ProfileSettings() {
             lastName: userProfile.lastName || user?.displayName?.split(' ')[1] || '',
             email: userProfile.email || user?.email || '',
             currency: userProfile.currency || 'AED',
-            mobileNumber: userProfile.mobileNumber || '',
+            countryCode: userProfile.countryCode || 'AE',
+            phone: userProfile.phone || '',
         })
     }
   }, [userProfile, user, form]);
@@ -153,7 +157,8 @@ export default function ProfileSettings() {
         firstName: values.firstName,
         lastName: values.lastName,
         currency: values.currency,
-        mobileNumber: values.mobileNumber || '',
+        countryCode: values.countryCode || '',
+        phone: values.phone || '',
       });
 
       toast({
@@ -170,6 +175,8 @@ export default function ProfileSettings() {
     }
   }
   
+  const watchedCountryCode = form.watch('countryCode');
+  const selectedCountry = getCountry(watchedCountryCode);
 
   return (
     <>
@@ -261,19 +268,54 @@ export default function ProfileSettings() {
                         </FormItem>
                     )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="mobileNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Mobile Number</FormLabel>
-                          <FormControl>
-                            <Input type="tel" placeholder="+1 234 567 890" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="space-y-2">
+                        <FormLabel>Mobile Number</FormLabel>
+                        <div className="flex gap-2">
+                            <FormField
+                                control={form.control}
+                                name="countryCode"
+                                render={({ field }) => (
+                                <FormItem className='w-40'>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Country">
+                                                <div className='flex items-center gap-2'>
+                                                   {selectedCountry && <Flag code={selectedCountry.code} className="w-5 h-5 rounded-sm" />}
+                                                   <span>{selectedCountry?.phone}</span>
+                                                </div>
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {countries.map((country) => (
+                                        <SelectItem key={country.code} value={country.code}>
+                                            <div className='flex items-center gap-2'>
+                                                <Flag code={country.code} className="w-5 h-5 rounded-sm" />
+                                                <span>{country.name} ({country.phone})</span>
+                                            </div>
+                                        </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                    <FormControl>
+                                        <Input type="tel" placeholder="123-456-7890" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    </div>
                  </div>
                 <FormField
                   control={form.control}

@@ -136,22 +136,21 @@ export function getBudgets(
 
     const range = dateRange?.from && dateRange.to 
         ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) }
-        : { start: startOfMonth(new Date()), end: endOfMonth(new Date()) };
+        : undefined;
 
     const safeTransactions = allTransactions || [];
 
     return budgets.map(budget => {
         if (!budget || !budget.categoryId) return budget;
         
-        const budgetInterval = range;
+        let relevantTransactions = safeTransactions;
+        if (range) {
+            relevantTransactions = safeTransactions.filter(t => isWithinInterval(toDate(t.date), range));
+        }
 
         if (budget.type === 'Expense') {
-            const spent = safeTransactions
-                .filter(t => 
-                    t.type === 'expense' && 
-                    t.categoryId === budget.categoryId && 
-                    isWithinInterval(toDate(t.date), budgetInterval)
-                )
+            const spent = relevantTransactions
+                .filter(t => t.type === 'expense' && t.categoryId === budget.categoryId)
                 .reduce((sum, t) => sum + Math.abs(t.amount), 0);
             
             return {
@@ -159,12 +158,8 @@ export function getBudgets(
                 spent,
             };
         } else { // Income budget
-             const received = safeTransactions
-                .filter(t => 
-                    t.type === 'income' && 
-                    t.categoryId === budget.categoryId && 
-                    isWithinInterval(toDate(t.date), budgetInterval)
-                )
+             const received = relevantTransactions
+                .filter(t => t.type === 'income' && t.categoryId === budget.categoryId)
                 .reduce((sum, t) => sum + Math.abs(t.amount), 0);
             
             return {
@@ -248,7 +243,6 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
         let nextDueDate = toDate(t.date);
         const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
         
-        // Fast-forward to the first due date that is on or after today
         while(isBefore(nextDueDate, today)) {
              switch (t.frequency) {
                 case 'weekly':

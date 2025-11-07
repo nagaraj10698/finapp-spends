@@ -360,3 +360,5 @@
     "reasoning": "The Firestore structure is designed to ensure data isolation and ownership based on the user. Each user has their own collection of transactions, categories, budgets, and dues. Transactions are stored as a subcollection of accounts, ensuring that transactions are always associated with a specific account owned by the user.\\n\\nThis design ensures Authorization Independence by storing all user-specific data under paths specific to the user's ID.  There are no dependencies on parent documents (no `get()` calls are needed in the rules). The database adheres to the principle that Rules are not Filters (QAPs). Data segregation by path enables secure `list` operations, as rules can simply verify that `request.auth.uid` matches the `userId` in the path. Because data is segregated by user ID, listing accounts, categories, and other entities will only return data for the authenticated user.\\n"
   }
 }
+
+    

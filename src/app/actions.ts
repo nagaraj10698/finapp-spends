@@ -201,6 +201,6 @@ export async function saveDue(userId: string, dueData: Partial<Due>) {
             delete (dataToCreate as Partial<Due>).isPaid; 
         }
         
-        await addDoc(duesCollection, { ...dataToCreate, userId });
+        await addDoc(duesCollection, dataToCreate);
     }
 }

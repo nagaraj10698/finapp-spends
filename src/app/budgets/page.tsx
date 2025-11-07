@@ -19,8 +19,7 @@ import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addDays, isSameDay } from 'date-fns';
-import { createBudgetsForAllCategories } from '@/app/actions';
-import SetAllBudgetsDialog from './set-all-budgets-dialog';
+import SetAllBudgetsCard from './set-all-budgets-card';
 
 
 const PRESET_RANGES = [
@@ -45,7 +44,6 @@ export default function BudgetsPage() {
   const [isEditOpen, setEditOpen] = useState(false);
   const [budgetToEdit, setBudgetToEdit] = useState<Budget | null>(null);
   const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null);
-  const [isSetAllOpen, setSetAllOpen] = useState(false);
 
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
@@ -129,6 +127,14 @@ export default function BudgetsPage() {
         }
     }, [dateRange]);
 
+  const hasBudgets = budgetsWithSpent && budgetsWithSpent.length > 0;
+
+  const unbudgetedCategories = useMemo(() => {
+    if (!categories || !allBudgets) return [];
+    const budgetedCategoryIds = new Set(allBudgets.map(b => b.categoryId));
+    return categories.filter(c => c.type === 'expense' && !budgetedCategoryIds.has(c.id));
+  }, [categories, allBudgets]);
+
 
   if (budgetsLoading || transactionsLoading || categoriesLoading) {
     return <div>Loading budgets...</div>;
@@ -137,12 +143,13 @@ export default function BudgetsPage() {
   return (
     <>
       <div className="space-y-8">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h1 className="font-headline text-2xl font-semibold">Budgets</h1>
             <p className="text-muted-foreground">Set and track your monthly spending budgets.</p>
           </div>
-          <Popover open={isDatePopoverOpen} onOpenChange={setDatePopoverOpen}>
+          <div className="flex w-full md:w-auto items-center gap-2">
+            <Popover open={isDatePopoverOpen} onOpenChange={setDatePopoverOpen}>
                 <PopoverTrigger asChild>
                 <Button
                     id="date"
@@ -203,51 +210,63 @@ export default function BudgetsPage() {
                     </div>
                 </PopoverContent>
             </Popover>
-        </div>
-        <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setSetAllOpen(true)}>Set All Budgets</Button>
-            <AddBudgetDialog>
-                <Button>
+             <AddBudgetDialog>
+                <Button size="sm">
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Add Budget
+                Add
                 </Button>
             </AddBudgetDialog>
+          </div>
         </div>
         
-        {budgetsWithSpent && budgetsWithSpent.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {budgetsWithSpent.map(budget => {
-                  const category = categories?.find(c => c.id === budget.categoryId);
-                  return (
-                    <BudgetCard 
-                      key={budget.id} 
-                      budget={budget} 
-                      category={category} 
-                      onEdit={() => handleEditRequest(budget)}
-                      onDelete={() => handleDeleteRequest(budget)}
-                    />
-                  )
-              })}
+        {hasBudgets || unbudgetedCategories.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <div className={cn(
+                "grid gap-4",
+                hasBudgets ? "lg:col-span-2 md:grid-cols-2 xl:grid-cols-3" : "lg:col-span-3 md:grid-cols-2 xl:grid-cols-4"
+              )}>
+                {budgetsWithSpent.map(budget => {
+                    const category = categories?.find(c => c.id === budget.categoryId);
+                    return (
+                        <BudgetCard 
+                        key={budget.id} 
+                        budget={budget} 
+                        category={category} 
+                        onEdit={() => handleEditRequest(budget)}
+                        onDelete={() => handleDeleteRequest(budget)}
+                        />
+                    )
+                })}
+
+                {unbudgetedCategories.length > 0 && (
+                    <div className={cn(!hasBudgets && "xl:col-span-2")}>
+                         <SetAllBudgetsCard categories={unbudgetedCategories} />
+                    </div>
+                )}
               </div>
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Spending by Category</CardTitle>
-                      <CardDescription>How your spending compares to your budgets for the selected period.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <BudgetSummaryChart data={spendingByCategory} categories={categories ?? []}/>
-                  </CardContent>
-              </Card>
+              <div className={cn(
+                  "lg:col-span-1",
+                  !hasBudgets && "hidden"
+              )}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Spending by Category</CardTitle>
+                        <CardDescription>How your spending compares to your budgets for the selected period.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <BudgetSummaryChart data={spendingByCategory} categories={categories ?? []}/>
+                    </CardContent>
+                </Card>
+              </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
               <h3 className="text-lg font-semibold text-muted-foreground">No budgets created yet</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Get started by creating a new budget.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Get started by creating a new budget or setting budgets for your existing categories.</p>
               <AddBudgetDialog>
                   <Button className="mt-6">
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Budget
+                      Add Individual Budget
                   </Button>
               </AddBudgetDialog>
           </div>
@@ -262,15 +281,6 @@ export default function BudgetsPage() {
             setBudgetToEdit(null);
           }}
           budget={budgetToEdit}
-        />
-      )}
-
-      {categories && allBudgets && (
-        <SetAllBudgetsDialog
-            isOpen={isSetAllOpen}
-            onClose={() => setSetAllOpen(false)}
-            categories={categories}
-            budgets={allBudgets}
         />
       )}
 
@@ -294,3 +304,5 @@ export default function BudgetsPage() {
     </>
   );
 }
+
+    

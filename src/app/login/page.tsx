@@ -29,10 +29,13 @@ import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
 import Logo from '@/components/logo';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { getCurrencyByCountry } from '@/lib/currencies';
 import { User, getAdditionalUserInfo } from 'firebase/auth';
 import { countries } from '@/lib/countries';
+import { defaultCategories } from '@/lib/data';
+import type { Category } from '@/lib/types';
+
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -62,6 +65,27 @@ export default function LoginPage() {
       password: '',
     },
   });
+
+  const checkAndCreateDefaultCategories = async (user: User) => {
+    const categoriesRef = collection(firestore, 'users', user.uid, 'categories');
+    const categoriesSnapshot = await getDocs(categoriesRef);
+
+    if (categoriesSnapshot.empty) {
+      const batch = writeBatch(firestore);
+      defaultCategories.forEach(category => {
+        const categoryDoc = doc(categoriesRef);
+        const newCat: Omit<Category, 'id'> = {
+            name: category.name,
+            icon: category.icon,
+            color: category.color,
+            type: category.type,
+            userId: user.uid,
+        }
+        batch.set(categoryDoc, newCat);
+      });
+      await batch.commit();
+    }
+  };
 
   const handleNewUserSetup = async (user: User) => {
     const userDocRef = doc(firestore, 'users', user.uid);
@@ -107,16 +131,17 @@ export default function LoginPage() {
       const userCredential = await initiateGoogleSignIn(auth);
       const isNewUser = getAdditionalUserInfo(userCredential)?.isNewUser;
       
-      await handleNewUserSetup(userCredential.user);
-
       if (isNewUser) {
+        await handleNewUserSetup(userCredential.user);
+        await checkAndCreateDefaultCategories(userCredential.user);
         await sendEmailVerification(userCredential.user);
         toast({
           title: 'Welcome!',
           description: "Your account has been created. We've sent you a verification email.",
         });
       } else {
-         toast({
+        await checkAndCreateDefaultCategories(userCredential.user);
+        toast({
           title: 'Login Successful',
           description: "You've been successfully logged in.",
         });
@@ -188,6 +213,7 @@ export default function LoginPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       const userCredential = await initiateEmailSignIn(auth, values.email, values.password);
+      await checkAndCreateDefaultCategories(userCredential.user);
       toast({
         title: 'Login Successful',
         description: "You've been successfully logged in.",

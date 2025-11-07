@@ -28,25 +28,25 @@ import { DateRange } from 'react-day-picker';
 
 export const defaultCategories: Omit<Category, 'id' | 'userId'>[] = [
     // Expenses
-    { name: 'Housing', icon: 'Home', color: 'text-cyan-500', type: 'expense', userId: '' },
-    { name: 'Utilities', icon: 'Lightbulb', color: 'text-yellow-500', type: 'expense', userId: '' },
-    { name: 'Food', icon: 'Utensils', color: 'text-orange-500', type: 'expense', userId: '' },
-    { name: 'Groceries', icon: 'ShoppingBag', color: 'text-emerald-500', type: 'expense', userId: '' },
-    { name: 'Transport', icon: 'Car', color: 'text-blue-500', type: 'expense', userId: '' },
-    { name: 'Health & Fitness', icon: 'HeartPulse', color: 'text-red-500', type: 'expense', userId: '' },
-    { name: 'Family Support', icon: 'HeartPulse', color: 'text-rose-500', type: 'expense', userId: '' },
-    { name: 'Medical & Wellness', icon: 'Stethoscope', color: 'text-red-600', type: 'expense', userId: '' },
-    { name: 'Entertainment', icon: 'Film', color: 'text-purple-500', type: 'expense', userId: '' },
-    { name: 'Shopping', icon: 'Shirt', color: 'text-pink-500', type: 'expense', userId: '' },
-    { name: 'Subscription', icon: 'Wallet', color: 'text-indigo-500', type: 'expense', userId: '' },
-    { name: 'Loan/EMI', icon: 'Landmark', color: 'text-violet-500', type: 'expense', userId: '' },
-    { name: 'Investment', icon: 'TrendingUp', color: 'text-sky-500', type: 'expense', userId: '' },
-    { name: 'Miscellaneous', icon: 'Shapes', color: 'text-gray-500', type: 'expense', userId: '' },
+    { name: 'Housing', icon: 'Home', color: 'text-cyan-500', type: 'expense' },
+    { name: 'Utilities', icon: 'Lightbulb', color: 'text-yellow-500', type: 'expense' },
+    { name: 'Food', icon: 'Utensils', color: 'text-orange-500', type: 'expense' },
+    { name: 'Groceries', icon: 'ShoppingBag', color: 'text-emerald-500', type: 'expense' },
+    { name: 'Transport', icon: 'Car', color: 'text-blue-500', type: 'expense' },
+    { name: 'Health & Fitness', icon: 'HeartPulse', color: 'text-red-500', type: 'expense' },
+    { name: 'Family Support', icon: 'HeartPulse', color: 'text-rose-500', type: 'expense' },
+    { name: 'Medical & Wellness', icon: 'Stethoscope', color: 'text-red-600', type: 'expense' },
+    { name: 'Entertainment', icon: 'Film', color: 'text-purple-500', type: 'expense' },
+    { name: 'Shopping', icon: 'Shirt', color: 'text-pink-500', type: 'expense' },
+    { name: 'Subscription', icon: 'Wallet', color: 'text-indigo-500', type: 'expense' },
+    { name: 'Loan/EMI', icon: 'Landmark', color: 'text-violet-500', type: 'expense' },
+    { name: 'Investment', icon: 'TrendingUp', color: 'text-sky-500', type: 'expense' },
+    { name: 'Miscellaneous', icon: 'Shapes', color: 'text-gray-500', type: 'expense' },
     // Income
-    { name: 'Salary', icon: 'Wallet', color: 'text-green-500', type: 'income', userId: '' },
-    { name: 'Business / Side Hustle', icon: 'Briefcase', color: 'text-green-600', type: 'income', userId: '' },
-    { name: 'Investments', icon: 'LineChart', color: 'text-green-700', type: 'income', userId: '' },
-    { name: 'Other Income', icon: 'Gift', color: 'text-green-800', type: 'income', userId: '' },
+    { name: 'Salary', icon: 'Wallet', color: 'text-green-500', type: 'income' },
+    { name: 'Business / Side Hustle', icon: 'Briefcase', color: 'text-green-600', type: 'income' },
+    { name: 'Investments', icon: 'LineChart', color: 'text-green-700', type: 'income' },
+    { name: 'Other Income', icon: 'Gift', color: 'text-green-800', type: 'income' },
 ];
 
 export const ICONS: Record<string, LucideIcon> = {

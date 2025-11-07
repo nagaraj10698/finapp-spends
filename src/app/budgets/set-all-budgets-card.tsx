@@ -21,9 +21,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase } from '@/firebase';
 import type { Budget, Category } from '@/lib/types';
-import { createBudgets } from '@/app/actions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
+import { collection, writeBatch, doc } from 'firebase/firestore';
 
 const formSchema = z.object({
   budgets: z.record(z.coerce.number().min(0, 'Must be positive').optional()),
@@ -35,7 +35,7 @@ interface SetAllBudgetsCardProps {
 
 export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps) {
   const { toast } = useToast();
-  const { user } = useFirebase();
+  const { user, firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultValues = useMemo(() => {
@@ -57,7 +57,7 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
+    if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Not logged in' });
       return;
     }
@@ -86,12 +86,30 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
     }
 
     try {
-        await createBudgets(user.uid, budgetsToCreate);
+        const batch = writeBatch(firestore);
+        const budgetsCollectionRef = collection(firestore, 'users', user.uid, 'budgets');
+
+        budgetsToCreate.forEach(budgetInfo => {
+            const newBudgetRef = doc(budgetsCollectionRef);
+            // This object MUST match the Budget type in src/lib/types.ts and the schema in docs/backend.json (excluding id)
+            const newBudget: Omit<Budget, 'id'> = {
+                userId: user.uid,
+                name: budgetInfo.name,
+                budgetAmount: budgetInfo.amount,
+                type: 'Expense', // Budgets are always for expenses
+                categoryId: budgetInfo.categoryId,
+                category: budgetInfo.name, // Ensure the category name is included
+            };
+            batch.set(newBudgetRef, newBudget);
+        });
+    
+        await batch.commit();
+
         toast({
             title: 'Budgets Created',
             description: `${budgetsToCreate.length} new budget(s) have been set.`
         });
-        form.reset(); // Reset form after successful submission
+        form.reset(defaultValues); 
     } catch(e) {
         console.error("Failed to create budgets:", e);
         toast({

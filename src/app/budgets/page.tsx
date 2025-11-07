@@ -18,6 +18,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addDays, isSameDay } from 'date-fns';
 import SetAllBudgetsCard from './set-all-budgets-card';
+import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { Progress } from '@/components/ui/progress';
 
 
 const PRESET_RANGES = [
@@ -62,6 +64,20 @@ export default function BudgetsPage() {
   
   const expenseBudgets = useMemo(() => budgetsWithCalculations.filter(b => b.type === 'Expense'), [budgetsWithCalculations]);
   const incomeBudgets = useMemo(() => budgetsWithCalculations.filter(b => b.type === 'Income'), [budgetsWithCalculations]);
+
+  const summary = useMemo(() => {
+    const totalBudgeted = expenseBudgets.reduce((acc, b) => acc + b.budgetAmount, 0);
+    const totalSpent = expenseBudgets.reduce((acc, b) => acc + (b.spent ?? 0), 0);
+    const remaining = totalBudgeted - totalSpent;
+    const progress = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
+    
+    return {
+        totalBudgeted,
+        totalSpent,
+        remaining,
+        progress
+    };
+  }, [expenseBudgets]);
 
 
   const handleEditRequest = (budget: Budget) => {
@@ -207,6 +223,43 @@ export default function BudgetsPage() {
           </div>
         </div>
         
+        {hasBudgets && (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Budget Summary</CardTitle>
+                    <CardDescription>A summary of your expense budgets for the selected period.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-baseline">
+                            <span className="text-muted-foreground">Spent</span>
+                            <span className="text-muted-foreground">
+                                <span className={cn(summary.remaining < 0 && "text-destructive font-semibold")}>
+                                    {summary.remaining >= 0 ? "Remaining" : "Overspent"}
+                                </span>
+                                <span className="font-semibold flex items-baseline gap-1">
+                                    <DhiramSymbol className="text-sm" />
+                                    {Math.abs(summary.remaining).toFixed(2)}
+                                </span>
+                            </span>
+                        </div>
+                        <Progress value={summary.progress} className={cn(summary.progress > 100 && "[&>div]:bg-destructive")} />
+                        <div className="flex items-baseline gap-1">
+                            <div className="text-2xl font-bold flex items-baseline gap-1">
+                                <DhiramSymbol className="text-xl" />
+                                {summary.totalSpent.toFixed(2)}
+                            </div>
+                            <span className="text-sm text-muted-foreground font-normal">of</span>
+                            <div className="flex items-baseline gap-1">
+                                <DhiramSymbol className="text-sm" />
+                                {summary.totalBudgeted.toFixed(2)}
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        )}
+
         {hasBudgets || hasUnbudgeted ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             {hasUnbudgeted && (

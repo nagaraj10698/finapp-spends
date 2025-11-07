@@ -30,12 +30,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, toDate as convertToDate } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteField } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
@@ -120,7 +120,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
         const amount = values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
         const selectedCategory = categories?.find(c => c.name === values.category);
 
-        const updatedTransaction: Partial<Transaction> = {
+        const updatedTransaction: Partial<Transaction> & { frequency?: any, recurrenceEndDate?: any } = {
             description: values.description,
             amount: amount,
             category: values.category,
@@ -128,9 +128,15 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
             date: values.date,
             type: values.type,
             isRecurring: values.isRecurring,
-            frequency: values.isRecurring ? values.frequency : undefined,
-            recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : undefined,
         };
+        
+        if (values.isRecurring) {
+            updatedTransaction.frequency = values.frequency;
+            updatedTransaction.recurrenceEndDate = values.recurrenceEndDate || deleteField();
+        } else {
+            updatedTransaction.frequency = deleteField();
+            updatedTransaction.recurrenceEndDate = deleteField();
+        }
         
         await updateDoc(transactionRef, updatedTransaction);
 
@@ -345,7 +351,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
                                             !field.value && 'text-muted-foreground'
                                         )}
                                         >
-                                        {field.value ? format(field.value, 'PPP') : <span>Pick an end date</span>}
+                                        {field.value ? format(field.value, 'PPP') : <span>Pick an end date (Optional)</span>}
                                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                         </Button>
                                     </FormControl>
@@ -374,3 +380,5 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
     </Dialog>
   );
 }
+
+    

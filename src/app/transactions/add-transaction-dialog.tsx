@@ -115,9 +115,14 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
             date: values.date,
             type: values.type,
             isRecurring: values.isRecurring,
-            frequency: values.isRecurring ? values.frequency : undefined,
-            recurrenceEndDate: values.isRecurring ? values.recurrenceEndDate : undefined,
         };
+
+        if (values.isRecurring) {
+            newTransaction.frequency = values.frequency;
+            if (values.recurrenceEndDate) {
+                newTransaction.recurrenceEndDate = values.recurrenceEndDate;
+            }
+        }
         
         await addDocumentNonBlocking(transactionCollection, newTransaction);
 
@@ -341,7 +346,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
                                             !field.value && 'text-muted-foreground'
                                         )}
                                         >
-                                        {field.value ? format(field.value, 'PPP') : <span>Pick an end date</span>}
+                                        {field.value ? format(field.value, 'PPP') : <span>Pick an end date (Optional)</span>}
                                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                         </Button>
                                     </FormControl>
@@ -369,3 +374,5 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
     </Dialog>
   );
 }
+
+    

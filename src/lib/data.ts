@@ -244,25 +244,20 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
     recurringExpenses.forEach((t) => {
         const startDate = toDate(t.date);
         let nextDueDate = startDate;
-
-        // If the start date is in the past, find the next occurrence on or after today
-        if (isBefore(nextDueDate, today)) {
-            while (isBefore(nextDueDate, today)) {
-                switch (t.frequency) {
-                    case 'weekly': nextDueDate = addWeeks(nextDueDate, 1); break;
-                    case 'monthly': nextDueDate = addMonths(nextDueDate, 1); break;
-                    case 'quarterly': nextDueDate = addQuarters(nextDueDate, 1); break;
-                    case 'yearly': nextDueDate = addYears(nextDueDate, 1); break;
-                    default:
-                        // Prevent infinite loops for unknown frequencies
-                        return;
-                }
+        
+        // Loop forward from the start date until we find a date that is on or after today
+        while (isBefore(nextDueDate, today)) {
+            switch (t.frequency) {
+                case 'weekly': nextDueDate = addWeeks(nextDueDate, 1); break;
+                case 'monthly': nextDueDate = addMonths(nextDueDate, 1); break;
+                case 'quarterly': nextDueDate = addQuarters(nextDueDate, 1); break;
+                case 'yearly': nextDueDate = addYears(nextDueDate, 1); break;
+                default: return; // Prevent infinite loop
             }
         }
-        
-        // If the start date is in the future, it is the next due date.
 
-        // Check if the calculated next due date is within the recurrence end date
+        // Now, nextDueDate is the first occurrence that is on or after today.
+        // We need to check if this falls within the recurrence end date.
         const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
         if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
             upcomingDues.push({

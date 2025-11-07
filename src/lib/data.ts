@@ -232,44 +232,47 @@ export function getMoneyFlow(
 }
 
 export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
-  if (!transactions) return [];
+    if (!transactions) return [];
 
-  const recurringExpenses = transactions.filter(
-    (t) => t.isRecurring && t.type === 'expense'
-  );
+    const recurringExpenses = transactions.filter(
+        (t) => t.isRecurring && t.type === 'expense'
+    );
 
-  const upcomingDues: Owed[] = [];
-  const today = startOfDay(new Date());
+    const upcomingDues: Owed[] = [];
+    const today = startOfDay(new Date());
 
-  recurringExpenses.forEach((t) => {
-    let nextDueDate = toDate(t.date);
+    recurringExpenses.forEach((t) => {
+        const startDate = toDate(t.date);
+        let nextDueDate = startDate;
 
-    // If the start date is in the past, calculate the next occurrence
-    // that is on or after today.
-    while (isBefore(nextDueDate, today)) {
-        switch (t.frequency) {
-          case 'weekly': nextDueDate = addWeeks(nextDueDate, 1); break;
-          case 'monthly': nextDueDate = addMonths(nextDueDate, 1); break;
-          case 'quarterly': nextDueDate = addQuarters(nextDueDate, 1); break;
-          case 'yearly': nextDueDate = addYears(nextDueDate, 1); break;
-          default: 
-            // If frequency is somehow undefined, break the loop to avoid infinite loops
-            nextDueDate = addYears(today, 100); 
-            break;
+        // If the start date is in the past, find the next occurrence on or after today
+        if (isBefore(nextDueDate, today)) {
+            while (isBefore(nextDueDate, today)) {
+                switch (t.frequency) {
+                    case 'weekly': nextDueDate = addWeeks(nextDueDate, 1); break;
+                    case 'monthly': nextDueDate = addMonths(nextDueDate, 1); break;
+                    case 'quarterly': nextDueDate = addQuarters(nextDueDate, 1); break;
+                    case 'yearly': nextDueDate = addYears(nextDueDate, 1); break;
+                    default:
+                        // Prevent infinite loops for unknown frequencies
+                        return;
+                }
+            }
         }
-    }
+        
+        // If the start date is in the future, it is the next due date.
 
-    // Check if the calculated next due date is within the recurrence end date
-    const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
-    if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
-      upcomingDues.push({
-        ...t,
-        instanceDate: nextDueDate,
-      });
-    }
-  });
+        // Check if the calculated next due date is within the recurrence end date
+        const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
+        if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
+            upcomingDues.push({
+                ...t,
+                instanceDate: nextDueDate,
+            });
+        }
+    });
 
-  return upcomingDues.sort((a, b) => a.instanceDate.getTime() - b.instanceDate.getTime());
+    return upcomingDues.sort((a, b) => a.instanceDate.getTime() - b.instanceDate.getTime());
 }
 
 

@@ -155,40 +155,41 @@ export function getBudgets(
 
         let totalAmount = 0;
 
-        // Calculate based on the budget type (Expense or Income)
         if (budget.type === 'Expense') {
-            const expenseTransactions = transactionsToConsider.filter(t => t.type === 'expense' && !t.isRecurring && t.categoryId === budget.categoryId);
-            const manualSpent = expenseTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            // 1. Sum of non-recurring transactions in the period
+            const manualSpent = transactionsToConsider
+                .filter(t => !t.isRecurring && t.categoryId === budget.categoryId && t.type === 'expense')
+                .reduce((sum, t) => sum + Math.abs(t.amount), 0);
             totalAmount += manualSpent;
 
-            // Add committed spending from recurring expenses within the range
+            // 2. Sum of recurring transaction instances that fall within the period
             if (range) {
-                const recurringExpenseTemplates = (allTransactions || []).filter(t => t.isRecurring && t.type === 'expense' && t.categoryId === budget.categoryId);
+                const recurringTemplates = (allTransactions || []).filter(t => t.isRecurring && t.type === 'expense' && t.categoryId === budget.categoryId);
                 
-                recurringExpenseTemplates.forEach(template => {
+                recurringTemplates.forEach(template => {
                     if (!template.frequency) return;
                     
                     let nextDueDate = toDate(template.date);
                     const recurrenceEndDate = template.recurrenceEndDate ? toDate(template.recurrenceEndDate) : null;
-    
-                    while (true) {
-                        if (isAfter(nextDueDate, range.end)) break;
+
+                    while(true) {
                         if (recurrenceEndDate && isAfter(nextDueDate, recurrenceEndDate)) break;
+                        if (isAfter(nextDueDate, range.end)) break;
+                        
                         if (isWithinInterval(nextDueDate, range)) {
                             totalAmount += Math.abs(template.amount);
                         }
+                        
                         nextDueDate = addPeriod(nextDueDate, template.frequency);
                     }
                 });
             }
 
             return { ...budget, spent: totalAmount };
-
         } else { // Income budget
             const received = transactionsToConsider
                 .filter(t => t.type === 'income' && t.categoryId === budget.categoryId)
                 .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-            
             return { ...budget, received: received };
         }
     });
@@ -261,12 +262,12 @@ export function getOwedExpenses(allTransactions: Transaction[] | null): Owed[] {
       if (!template.frequency) return;
   
       let nextDueDate = toDate(template.date);
-      
-      // Loop until we find the first due date that is on or after today
+  
+      // Find the first due date that is on or after today
       while (isBefore(nextDueDate, today)) {
-        nextDueDate = addPeriod(nextDueDate, template.frequency);
+          nextDueDate = addPeriod(nextDueDate, template.frequency);
       }
-      
+  
       // Check if this upcoming date has been paid
       const isPaid = manualPayments.some(p => 
         p.categoryId === template.categoryId &&
@@ -277,7 +278,7 @@ export function getOwedExpenses(allTransactions: Transaction[] | null): Owed[] {
       // Check if the recurrence is still active
       const recurrenceEndDate = template.recurrenceEndDate ? toDate(template.recurrenceEndDate) : null;
       const isActive = !recurrenceEndDate || isBefore(nextDueDate, recurrenceEndDate) || isSameDay(nextDueDate, recurrenceEndDate);
-
+  
       if (!isPaid && isActive) {
         upcomingDues.push({ ...template, instanceDate: nextDueDate });
       }

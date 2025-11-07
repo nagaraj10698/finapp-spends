@@ -1,13 +1,13 @@
 
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { Budget, Transaction, Category } from '@/lib/types';
 import BudgetCard from './budget-card';
 import { getBudgets } from '@/lib/data';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import EditBudgetDialog from './edit-budget-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -20,6 +20,7 @@ import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuart
 import SetAllBudgetsCard from './set-all-budgets-card';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import { Progress } from '@/components/ui/progress';
+import { generateBudgetInsight } from '@/ai/flows/budget-insights-flow';
 
 
 const PRESET_RANGES = [
@@ -49,6 +50,8 @@ export default function BudgetsPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
   const [activePreset, setActivePreset] = useState<string | null>('This Month');
   const [isDatePopoverOpen, setDatePopoverOpen] = useState(false);
+  const [insight, setInsight] = useState<string | null>(null);
+  const [isInsightLoading, setIsInsightLoading] = useState(false);
 
   const budgetsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
   const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
@@ -78,6 +81,23 @@ export default function BudgetsPage() {
         progress
     };
   }, [expenseBudgets]);
+
+  useEffect(() => {
+    if (summary.totalBudgeted > 0) {
+      setIsInsightLoading(true);
+      generateBudgetInsight({
+        totalBudgeted: summary.totalBudgeted,
+        totalSpent: summary.totalSpent,
+        budgets: expenseBudgets.map(b => ({
+          name: b.name,
+          budgetAmount: b.budgetAmount,
+          spent: b.spent ?? 0,
+        })),
+      }).then(setInsight).finally(() => setIsInsightLoading(false));
+    } else {
+      setInsight(null);
+    }
+  }, [summary, expenseBudgets]);
 
 
   const handleEditRequest = (budget: Budget) => {
@@ -227,7 +247,16 @@ export default function BudgetsPage() {
              <Card>
                 <CardHeader>
                     <CardTitle>Budget Summary</CardTitle>
-                    <CardDescription>A summary of your expense budgets for the selected period.</CardDescription>
+                    <CardDescription className="flex items-center gap-2 pt-1">
+                        {isInsightLoading ? (
+                            <>
+                                <Sparkles className="h-4 w-4 animate-pulse" /> 
+                                Generating insights...
+                            </>
+                        ) : (
+                            insight
+                        )}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">

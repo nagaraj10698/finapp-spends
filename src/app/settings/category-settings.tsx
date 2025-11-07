@@ -79,7 +79,7 @@ export default function CategorySettings() {
       );
       
       if (!investmentExpenseExists) {
-        const newInvestmentCategory: Omit<Category, 'id'> = {
+        const newInvestmentCategory: Omit<Category, 'id' | 'userId'> = {
           name: 'Investment',
           icon: 'TrendingUp',
           color: 'text-sky-500',

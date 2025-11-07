@@ -120,14 +120,16 @@ async function generateTransactions(userId: string, categories: Category[], batc
 export async function processDuePayment(userId: string, due: Due) {
     const { firestore } = initializeFirebase();
     const batch = writeBatch(firestore);
+    
+    // Correctly reference the user's dues and transactions collections
     const dueRef = doc(firestore, 'users', userId, 'dues', due.id);
-
+    const transactionsCollectionRef = collection(firestore, 'users', userId, 'transactions');
+    
     const instanceDate = due.instanceDate ? new Date(due.instanceDate) : new Date();
     const instanceDateStr = instanceDate?.toISOString().split('T')[0];
 
     // Create a new transaction for the payment
-    const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
-    const newTransactionDocRef = doc(transactionsCollection); // Create a new doc ref for the transaction
+    const newTransactionDocRef = doc(transactionsCollectionRef); // Use the correct collection ref
     const newTransaction: Omit<Transaction, 'id'> = {
       description: due.dueName,
       amount: -Math.abs(due.dueAmount),
@@ -158,7 +160,7 @@ export async function saveDue(userId: string, dueData: Partial<Due>) {
     if (isEditing) {
         const dueRef = doc(firestore, 'users', userId, dueData.id!);
         const dataToUpdate: { [key: string]: any } = {
-            userId: userId,
+            userId: userId, // Ensure userId is included for security rules
             dueName: dueData.dueName,
             dueAmount: dueData.dueAmount,
             dueDate: dueData.dueDate,
@@ -169,39 +171,35 @@ export async function saveDue(userId: string, dueData: Partial<Due>) {
 
         if (dueData.isRecurring) {
             dataToUpdate.frequency = dueData.frequency;
-            // Ensure recurrenceEndDate is either a valid date or null
             dataToUpdate.recurrenceEndDate = dueData.recurrenceEndDate || null;
-            // Clear fields that are for non-recurring dues
             dataToUpdate.isPaid = deleteField();
             dataToUpdate.paidDate = deleteField();
         } else {
-            // Use deleteField for fields that should be removed when not recurring
             dataToUpdate.frequency = deleteField();
             dataToUpdate.recurrenceEndDate = deleteField();
             dataToUpdate.paidInstances = deleteField();
-            dataToUpdate.isPaid = dueData.isPaid || false; // Keep existing or set for non-recurring
+            dataToUpdate.isPaid = dueData.isPaid || false;
         }
         await updateDoc(dueRef, dataToUpdate);
 
     } else {
         // Creating a new due
         const duesCollection = collection(firestore, 'users', userId, 'dues');
-        const dataToCreate: Omit<Due, 'id'> = {
-            userId: userId,
+        const dataToCreate: Omit<Due, 'id' | 'paidDate' | 'paidInstances'> & {isPaid?: boolean} = {
+            userId: userId, // Ensure userId is included for security rules
             dueName: dueData.dueName!,
             dueAmount: dueData.dueAmount!,
             dueDate: dueData.dueDate!,
             category: dueData.category!,
             categoryId: dueData.categoryId!,
             isRecurring: dueData.isRecurring!,
-            isPaid: false, // Default for new non-recurring dues
         };
 
         if (dueData.isRecurring) {
             dataToCreate.frequency = dueData.frequency;
             dataToCreate.recurrenceEndDate = dueData.recurrenceEndDate || null;
-            // for new recurring dues, isPaid is not relevant at the top level
-            delete (dataToCreate as Partial<Due>).isPaid; 
+        } else {
+             dataToCreate.isPaid = false;
         }
         
         await addDoc(duesCollection, dataToCreate);

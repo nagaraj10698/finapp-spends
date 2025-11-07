@@ -30,10 +30,21 @@ interface BudgetCardProps {
 
 export default function BudgetCard({ budget, category, onEdit, onDelete }: BudgetCardProps) {
   const Icon = category ? getIconByName(category.icon) : null;
-  const spent = budget.spent ?? 0;
-  const limit = budget.budgetAmount;
-  const remaining = limit - spent;
-  const progress = limit > 0 ? (spent / limit) * 100 : 0;
+  
+  const isExpense = budget.type === 'Expense';
+  
+  // Use 'spent' for expenses and 'received' for income
+  const amount = isExpense ? (budget.spent ?? 0) : (budget.received ?? 0);
+  const target = budget.budgetAmount;
+  
+  const remaining = target - amount;
+  const progress = target > 0 ? (amount / target) * 100 : 0;
+  
+  const description = isExpense ? "Monthly Budget" : "Monthly Target";
+  const amountPrefix = isExpense ? "Spent" : "Received";
+  const remainingPrefix = isExpense 
+    ? (remaining >= 0 ? 'Remaining' : 'Overspent')
+    : (remaining <= 0 ? 'Surplus' : 'Shortfall');
 
 
   return (
@@ -44,7 +55,7 @@ export default function BudgetCard({ budget, category, onEdit, onDelete }: Budge
                 {category && Icon && <Icon className={cn('h-5 w-5', category.color)} />}
                 <CardTitle className="font-headline text-lg">{budget.name}</CardTitle>
             </div>
-             <CardDescription>Monthly Budget</CardDescription>
+             <CardDescription>{description}</CardDescription>
         </div>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -67,10 +78,10 @@ export default function BudgetCard({ budget, category, onEdit, onDelete }: Budge
       <CardContent className="space-y-4">
         <div className="space-y-1">
             <div className="flex justify-between items-baseline">
-                <span className="text-sm text-muted-foreground">Spent</span>
+                <span className="text-sm text-muted-foreground">{amountPrefix}</span>
                 <span className="text-sm text-muted-foreground">
-                    <span className={cn(remaining < 0 && "text-destructive")}>
-                        {remaining >= 0 ? 'Remaining' : 'Overspent'}
+                    <span className={cn(isExpense && remaining < 0 && "text-destructive", !isExpense && remaining < 0 && "text-green-500")}>
+                        {remainingPrefix}
                     </span>
                     <span className="font-semibold flex items-baseline gap-1">
                       <DhiramSymbol className="text-xs"/>
@@ -78,16 +89,16 @@ export default function BudgetCard({ budget, category, onEdit, onDelete }: Budge
                     </span>
                 </span>
             </div>
-            <Progress value={progress} className={cn(progress > 100 && "[&>div]:bg-destructive")} />
+            <Progress value={progress} className={cn(isExpense && progress > 100 && "[&>div]:bg-destructive")} />
             <div className="flex items-baseline gap-1">
               <div className="text-lg font-bold flex items-baseline gap-1">
                 <DhiramSymbol className="text-base" />
-                {spent.toFixed(2)}
+                {amount.toFixed(2)}
               </div>
                <span className="text-sm text-muted-foreground font-normal"> of </span> 
                <div className="flex items-baseline gap-1">
                 <DhiramSymbol className="text-sm" />
-                {limit.toFixed(2)}
+                {target.toFixed(2)}
                </div>
             </div>
         </div>

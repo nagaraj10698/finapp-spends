@@ -28,11 +28,11 @@ export interface Budget {
   userId: string;
   name: string;
   budgetAmount: number;
-  type: 'Expense';
+  type: 'Expense' | 'Income';
   categoryId: string;
   // These are calculated fields, not in Firestore
   spent?: number;
-  limit?: number;
+  received?: number;
 }
 
 

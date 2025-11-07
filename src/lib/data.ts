@@ -142,18 +142,33 @@ export function getBudgets(
     return budgets.map(budget => {
         if (!budget || !budget.categoryId) return budget;
 
-        const spent = safeTransactions
-            .filter(t => 
-                t.type === 'expense' && 
-                t.categoryId === budget.categoryId && 
-                isWithinInterval(toDate(t.date), range)
-            )
-            .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-        
-        return {
-            ...budget,
-            spent,
-        };
+        if (budget.type === 'Expense') {
+            const spent = safeTransactions
+                .filter(t => 
+                    t.type === 'expense' && 
+                    t.categoryId === budget.categoryId && 
+                    isWithinInterval(toDate(t.date), range)
+                )
+                .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            
+            return {
+                ...budget,
+                spent,
+            };
+        } else { // Income budget
+             const received = safeTransactions
+                .filter(t => 
+                    t.type === 'income' && 
+                    t.categoryId === budget.categoryId && 
+                    isWithinInterval(toDate(t.date), range)
+                )
+                .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            
+            return {
+                ...budget,
+                received,
+            };
+        }
     });
 }
 
@@ -317,7 +332,7 @@ export function getNotifications(
   if (allBudgets && allTransactions) {
     const budgetsWithSpent = getBudgets(allBudgets, allTransactions);
     budgetsWithSpent.forEach(budget => {
-      if (!budget) return;
+      if (!budget || budget.type === 'Income') return; // Only alert for expense budgets
       const spent = budget.spent ?? 0;
       const limit = budget.budgetAmount ?? 0;
       const usage = limit > 0 ? (spent / limit) * 100 : 0;

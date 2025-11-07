@@ -9,7 +9,6 @@ import { getBudgets } from '@/lib/data';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import BudgetSummaryChart from '@/components/dashboard/budget-summary-chart';
 import EditBudgetDialog from './edit-budget-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -59,18 +58,13 @@ export default function BudgetsPage() {
   const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
 
-  const budgetsWithSpent = useMemo(() => {
+  const budgetsWithCalculations = useMemo(() => {
     return getBudgets(allBudgets, allTransactions, dateRange);
   }, [allBudgets, allTransactions, dateRange]);
   
-  const spendingByCategory = useMemo(() => {
-    return getBudgets(allBudgets, allTransactions, dateRange)
-        .filter(b => (b.spent ?? 0) > 0)
-        .map(b => ({
-            name: b.name,
-            total: b.spent ?? 0,
-        }));
-    }, [allBudgets, allTransactions, dateRange]);
+  const expenseBudgets = useMemo(() => budgetsWithCalculations.filter(b => b.type === 'Expense'), [budgetsWithCalculations]);
+  const incomeBudgets = useMemo(() => budgetsWithCalculations.filter(b => b.type === 'Income'), [budgetsWithCalculations]);
+
 
   const handleEditRequest = (budget: Budget) => {
     setBudgetToEdit(budget);
@@ -126,12 +120,12 @@ export default function BudgetsPage() {
         }
     }, [dateRange]);
 
-  const hasBudgets = budgetsWithSpent && budgetsWithSpent.length > 0;
+  const hasBudgets = allBudgets && allBudgets.length > 0;
 
   const unbudgetedCategories = useMemo(() => {
     if (!categories || !allBudgets) return [];
     const budgetedCategoryIds = new Set(allBudgets.map(b => b.categoryId));
-    return categories.filter(c => c.type === 'expense' && !budgetedCategoryIds.has(c.id));
+    return categories.filter(c => !budgetedCategoryIds.has(c.id));
   }, [categories, allBudgets]);
 
 
@@ -145,7 +139,7 @@ export default function BudgetsPage() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h1 className="font-headline text-2xl font-semibold">Budgets</h1>
-            <p className="text-muted-foreground">Set and track your monthly spending budgets.</p>
+            <p className="text-muted-foreground">Set and track your spending and income budgets.</p>
           </div>
           <div className="flex w-full md:w-auto items-center gap-2">
             <Popover open={isDatePopoverOpen} onOpenChange={setDatePopoverOpen}>
@@ -219,28 +213,49 @@ export default function BudgetsPage() {
                  <SetAllBudgetsCard categories={unbudgetedCategories} />
                </div>
              )}
-             <div className={cn(
-                "grid grid-cols-1 md:grid-cols-2 gap-6",
-                unbudgetedCategories.length > 0 ? "lg:col-span-2" : "lg:col-span-3 xl:grid-cols-3"
-             )}>
-               {budgetsWithSpent.map(budget => {
-                 const category = categories?.find(c => c.id === budget.categoryId);
-                 return (
-                   <BudgetCard
-                     key={budget.id}
-                     budget={budget}
-                     category={category}
-                     onEdit={() => handleEditRequest(budget)}
-                     onDelete={() => handleDeleteRequest(budget)}
-                   />
-                 )
-               })}
+             <div className={cn("lg:col-span-2 space-y-8")}>
+                <div>
+                  <h2 className="font-headline text-xl font-semibold mb-4">Expense Budgets</h2>
+                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                     {expenseBudgets.map(budget => {
+                       const category = categories?.find(c => c.id === budget.categoryId);
+                       return (
+                         <BudgetCard
+                           key={budget.id}
+                           budget={budget}
+                           category={category}
+                           onEdit={() => handleEditRequest(budget)}
+                           onDelete={() => handleDeleteRequest(budget)}
+                         />
+                       )
+                     })}
+                   </div>
+                   {expenseBudgets.length === 0 && <p className="text-muted-foreground text-sm mt-4">No expense budgets set for this period.</p>}
+                </div>
+                 <div>
+                  <h2 className="font-headline text-xl font-semibold mb-4">Income Budgets</h2>
+                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                     {incomeBudgets.map(budget => {
+                       const category = categories?.find(c => c.id === budget.categoryId);
+                       return (
+                         <BudgetCard
+                           key={budget.id}
+                           budget={budget}
+                           category={category}
+                           onEdit={() => handleEditRequest(budget)}
+                           onDelete={() => handleDeleteRequest(budget)}
+                         />
+                       )
+                     })}
+                   </div>
+                   {incomeBudgets.length === 0 && <p className="text-muted-foreground text-sm mt-4">No income budgets set for this period.</p>}
+                </div>
              </div>
            </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
               <h3 className="text-lg font-semibold text-muted-foreground">No budgets created yet</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Set budgets for your existing categories to get started.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Set budgets for your categories to get started.</p>
           </div>
         )}
       </div>

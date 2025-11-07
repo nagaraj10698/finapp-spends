@@ -24,6 +24,7 @@ import type { Budget, Category } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { collection, writeBatch, doc } from 'firebase/firestore';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   budgets: z.record(z.coerce.number().min(0, 'Must be positive').optional()),
@@ -38,10 +39,17 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
   const { user, firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { expenseCategories, incomeCategories } = useMemo(() => {
+    return {
+      expenseCategories: categories.filter(c => c.type === 'expense'),
+      incomeCategories: categories.filter(c => c.type === 'income'),
+    }
+  }, [categories]);
+
   const defaultValues = useMemo(() => {
       const budgetMap: Record<string, number | undefined> = {};
       categories.forEach(cat => {
-          budgetMap[cat.id] = undefined; // Set default to undefined
+          budgetMap[cat.id] = undefined;
       });
       return { budgets: budgetMap };
   }, [categories]);
@@ -68,12 +76,14 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
         .filter(([_, amount]) => amount !== undefined && amount > 0)
         .map(([categoryId, amount]) => {
             const category = categories.find(c => c.id === categoryId);
+            if (!category) return null;
             return {
                 categoryId,
-                name: category!.name,
+                name: category.name,
+                type: category.type === 'expense' ? 'Expense' : 'Income',
                 amount: amount!,
             };
-        });
+        }).filter(Boolean);
         
     if (budgetsToCreate.length === 0) {
         toast({
@@ -90,15 +100,14 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
         const budgetsCollectionRef = collection(firestore, 'users', user.uid, 'budgets');
 
         budgetsToCreate.forEach(budgetInfo => {
+            if (!budgetInfo) return;
             const newBudgetRef = doc(budgetsCollectionRef);
-            // This object MUST match the Budget type in src/lib/types.ts and the schema in docs/backend.json (excluding id)
             const newBudget: Omit<Budget, 'id'> = {
                 userId: user.uid,
                 name: budgetInfo.name,
                 budgetAmount: budgetInfo.amount,
-                type: 'Expense', // Budgets are always for expenses
+                type: budgetInfo.type as 'Expense' | 'Income',
                 categoryId: budgetInfo.categoryId,
-                category: budgetInfo.name, // Ensure the category name is included
             };
             batch.set(newBudgetRef, newBudget);
         });
@@ -127,7 +136,7 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
         <CardHeader>
           <CardTitle>Set New Budgets</CardTitle>
           <CardDescription>
-            Quickly set a budget for your unbudgeted expense categories.
+            Quickly set budgets for any unbudgeted categories.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-grow">
@@ -135,42 +144,94 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
                 <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 h-full flex flex-col">
                     <ScrollArea className='flex-grow pr-4 -mr-4'>
-                        <div className='space-y-4'>
-                        {categories.map((cat) => {
-                            const Icon = getIconByName(cat.icon);
-                            return (
-                            <FormField
-                                key={cat.id}
-                                control={form.control}
-                                name={`budgets.${cat.id}`}
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className='sr-only'>{cat.name}</FormLabel>
-                                    <div className='flex items-center gap-4'>
-                                        <div className='flex items-center gap-2 w-40'>
-                                            <Icon className={cn('h-5 w-5', cat.color)} />
-                                            <span>{cat.name}</span>
-                                        </div>
-                                        <FormControl>
-                                            <div className="relative flex-1">
-                                                <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                                                <Input 
-                                                    type="number" 
-                                                    placeholder="0.00" 
-                                                    {...field}
-                                                    value={field.value ?? ''} // Ensure empty string if undefined
-                                                    className="pl-12 font-medium"
-                                                    onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                                                />
+                        <div className='space-y-6'>
+                          {expenseCategories.length > 0 && (
+                            <div className='space-y-2'>
+                              <h4 className='font-medium text-sm text-muted-foreground'>Expense Categories</h4>
+                              <div className='space-y-4'>
+                                {expenseCategories.map((cat) => {
+                                    const Icon = getIconByName(cat.icon);
+                                    return (
+                                    <FormField
+                                        key={cat.id}
+                                        control={form.control}
+                                        name={`budgets.${cat.id}`}
+                                        render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className='sr-only'>{cat.name}</FormLabel>
+                                            <div className='flex items-center gap-4'>
+                                                <div className='flex items-center gap-2 w-40'>
+                                                    <Icon className={cn('h-5 w-5', cat.color)} />
+                                                    <span>{cat.name}</span>
+                                                </div>
+                                                <FormControl>
+                                                    <div className="relative flex-1">
+                                                        <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                                        <Input 
+                                                            type="number" 
+                                                            placeholder="0.00" 
+                                                            {...field}
+                                                            value={field.value ?? ''} // Ensure empty string if undefined
+                                                            className="pl-12 font-medium"
+                                                            onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                                                        />
+                                                    </div>
+                                                </FormControl>
                                             </div>
-                                        </FormControl>
-                                    </div>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            )
-                        })}
+                                            <FormMessage />
+                                        </FormItem>
+                                        )}
+                                    />
+                                    )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {incomeCategories.length > 0 && expenseCategories.length > 0 && <Separator />}
+
+                          {incomeCategories.length > 0 && (
+                            <div className='space-y-2'>
+                              <h4 className='font-medium text-sm text-muted-foreground'>Income Categories</h4>
+                              <div className='space-y-4'>
+                              {incomeCategories.map((cat) => {
+                                  const Icon = getIconByName(cat.icon);
+                                  return (
+                                  <FormField
+                                      key={cat.id}
+                                      control={form.control}
+                                      name={`budgets.${cat.id}`}
+                                      render={({ field }) => (
+                                      <FormItem>
+                                          <FormLabel className='sr-only'>{cat.name}</FormLabel>
+                                          <div className='flex items-center gap-4'>
+                                              <div className='flex items-center gap-2 w-40'>
+                                                  <Icon className={cn('h-5 w-5', cat.color)} />
+                                                  <span>{cat.name}</span>
+                                              </div>
+                                              <FormControl>
+                                                  <div className="relative flex-1">
+                                                      <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                                      <Input 
+                                                          type="number" 
+                                                          placeholder="0.00" 
+                                                          {...field}
+                                                          value={field.value ?? ''} // Ensure empty string if undefined
+                                                          className="pl-12 font-medium"
+                                                          onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                                                      />
+                                                  </div>
+                                              </FormControl>
+                                          </div>
+                                          <FormMessage />
+                                      </FormItem>
+                                      )}
+                                  />
+                                  )
+                              })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                     </ScrollArea>
                     <div className="flex justify-end pt-4">
@@ -183,11 +244,10 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
                 </Form>
             ) : (
                 <div className='py-8 text-center text-muted-foreground h-full flex items-center justify-center'>
-                    All your expense categories already have a budget!
+                    All your categories already have a budget!
                 </div>
             )}
         </CardContent>
     </Card>
   );
 }
-    

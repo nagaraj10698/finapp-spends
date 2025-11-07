@@ -49,7 +49,6 @@ export default function OverviewCards({ totals }: OverviewCardsProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Net Savings</CardTitle>
-          <CurrencySymbol className="text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className={cn("text-2xl font-bold", totals.savings < 0 ? "text-red-500" : "text-green-500")}>

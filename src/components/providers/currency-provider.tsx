@@ -29,17 +29,12 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   }, [userProfile]);
 
   const formatCurrency = (amount: number) => {
-    try {
-      return new Intl.NumberFormat(undefined, { // Use user's locale
-        style: 'currency',
-        currency: currency.code,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(amount);
-    } catch (e) {
-      console.error(`Failed to format currency for code: ${currency.code}`, e);
-      return `${currency.symbol}${amount.toFixed(2)}`;
-    }
+    const formattedAmount = new Intl.NumberFormat(undefined, {
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+    return `${currency.code} ${formattedAmount}`;
   };
 
   const value = useMemo(() => ({
@@ -70,4 +65,3 @@ export function useCurrency(): CurrencyContextType {
   }
   return context;
 }
-

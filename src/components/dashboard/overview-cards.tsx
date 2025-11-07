@@ -5,9 +5,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { DhiramSymbol } from '../ui/dhiram-symbol';
+import { CurrencySymbol } from '../ui/dynamic-currency';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCurrency } from '../providers/currency-provider';
 
 interface OverviewCardsProps {
   totals: {
@@ -18,6 +19,7 @@ interface OverviewCardsProps {
 }
 
 export default function OverviewCards({ totals }: OverviewCardsProps) {
+  const { formatCurrency } = useCurrency();
   return (
     <>
       <Card>
@@ -26,9 +28,8 @@ export default function OverviewCards({ totals }: OverviewCardsProps) {
           <ArrowUp className="text-green-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold flex items-baseline gap-1">
-            <DhiramSymbol className="text-xl" />
-            {totals.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className="text-2xl font-bold">
+            {formatCurrency(totals.income)}
           </div>
           <p className="text-xs text-muted-foreground">Total income recorded in period</p>
         </CardContent>
@@ -39,9 +40,8 @@ export default function OverviewCards({ totals }: OverviewCardsProps) {
           <ArrowDown className="text-red-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold flex items-baseline gap-1 text-red-500">
-             <DhiramSymbol className="text-xl" />
-            {totals.expenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className="text-2xl font-bold text-red-500">
+             {formatCurrency(totals.expenses)}
           </div>
           <p className="text-xs text-muted-foreground">Total expenses recorded in period</p>
         </CardContent>
@@ -49,11 +49,11 @@ export default function OverviewCards({ totals }: OverviewCardsProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Net Savings</CardTitle>
-          <DhiramSymbol className="text-muted-foreground" />
+          <CurrencySymbol className="text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={cn("text-2xl font-bold flex items-baseline gap-1", totals.savings < 0 ? "text-red-500" : "text-green-500")}>
-            <DhiramSymbol className="text-xl" />{totals.savings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className={cn("text-2xl font-bold", totals.savings < 0 ? "text-red-500" : "text-green-500")}>
+            {formatCurrency(totals.savings)}
           </div>
           <p className="text-xs text-muted-foreground">Your balance for the period</p>
         </CardContent>

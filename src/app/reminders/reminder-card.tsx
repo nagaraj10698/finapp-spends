@@ -12,7 +12,7 @@ import type { Reminder } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Check, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { format, isBefore, startOfToday } from 'date-fns';
 
 interface ReminderCardProps {
@@ -41,7 +41,7 @@ export default function ReminderCard({ reminder, onTogglePaid }: ReminderCardPro
       </CardHeader>
       <CardContent className="space-y-2">
         <div className={cn("text-3xl font-bold flex items-center gap-1", isOverdue && "text-destructive")}>
-            <DhiramSymbol className={cn("h-7 w-7", !isOverdue && "text-muted-foreground")} />
+            <CurrencySymbol className={cn("h-7 w-7", !isOverdue && "text-muted-foreground")} />
             {reminder.reminderAmount.toFixed(2)}
         </div>
         <div className="text-xs text-muted-foreground flex items-center gap-1.5">

@@ -28,6 +28,10 @@
           "type": "string",
           "description": "URL of the user's profile picture.",
           "format": "uri"
+        },
+        "currency": {
+            "type": "string",
+            "description": "The user's preferred currency code (e.g., 'USD', 'AED')."
         }
       },
       "required": [

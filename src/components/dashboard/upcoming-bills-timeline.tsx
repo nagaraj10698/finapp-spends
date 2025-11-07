@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { getCategoryByName, getIconByName, toDate } from '@/lib/data';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { AlertTriangle } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { processDuePayment } from '@/app/actions';
@@ -171,7 +171,7 @@ export default function UpcomingBillsTimeline({ bills, categories }: UpcomingBil
                         <p className="text-sm text-muted-foreground">{category?.name}</p>
                     </div>
                     <div className="text-right">
-                        <p className={cn("font-semibold flex items-baseline gap-1", isOverdue && !isPaid && "text-destructive", isPaid && "text-muted-foreground")}><DhiramSymbol className="text-sm" />{Math.abs(bill.dueAmount).toFixed(2)}</p>
+                        <p className={cn("font-semibold flex items-baseline gap-1", isOverdue && !isPaid && "text-destructive", isPaid && "text-muted-foreground")}><CurrencySymbol className="text-sm" />{Math.abs(bill.dueAmount).toFixed(2)}</p>
                     </div>
                     {!isPaid && (
                         <Button size="sm" onClick={() => handlePayDue(bill)} disabled={isProcessing === bill.id}>

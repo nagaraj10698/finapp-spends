@@ -12,7 +12,7 @@ import type { Budget, Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { Progress } from '@/components/ui/progress';
 import {
   DropdownMenu,
@@ -84,7 +84,7 @@ export default function BudgetCard({ budget, category, onEdit, onDelete }: Budge
                         {remainingPrefix}
                     </span>
                     <span className="font-semibold flex items-baseline gap-1">
-                      <DhiramSymbol className="text-xs"/>
+                      <CurrencySymbol className="text-xs"/>
                       {Math.abs(remaining).toFixed(2)}
                     </span>
                 </span>
@@ -92,12 +92,12 @@ export default function BudgetCard({ budget, category, onEdit, onDelete }: Budge
             <Progress value={progress} className={cn(isExpense && progress > 100 && "[&>div]:bg-destructive")} />
             <div className="flex items-baseline gap-1">
               <div className="text-lg font-bold flex items-baseline gap-1">
-                <DhiramSymbol className="text-base" />
+                <CurrencySymbol className="text-base" />
                 {amount.toFixed(2)}
               </div>
                <span className="text-sm text-muted-foreground font-normal"> of </span> 
                <div className="flex items-baseline gap-1">
-                <DhiramSymbol className="text-sm" />
+                <CurrencySymbol className="text-sm" />
                 {target.toFixed(2)}
                </div>
             </div>

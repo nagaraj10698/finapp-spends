@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addDays, isSameDay, isWithinInterval } from 'date-fns';
 import SetAllBudgetsCard from './set-all-budgets-card';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { Progress } from '@/components/ui/progress';
 import { generateBudgetInsight } from '@/ai/flows/budget-insights-flow';
 
@@ -290,7 +290,7 @@ export default function BudgetsPage() {
                                     {summary.remaining >= 0 ? "Remaining" : "Overspent"}
                                 </span>
                                 <span className="font-semibold flex items-baseline gap-1">
-                                    <DhiramSymbol className="text-sm" />
+                                    <CurrencySymbol className="text-sm" />
                                     {Math.abs(summary.remaining).toFixed(2)}
                                 </span>
                             </span>
@@ -298,12 +298,12 @@ export default function BudgetsPage() {
                         <Progress value={summary.progress} className={cn(summary.progress > 100 && "[&>div]:bg-destructive")} />
                         <div className="flex items-baseline gap-1">
                             <div className="text-2xl font-bold flex items-baseline gap-1">
-                                <DhiramSymbol className="text-xl" />
+                                <CurrencySymbol className="text-xl" />
                                 {summary.totalSpent.toFixed(2)}
                             </div>
                             <span className="text-sm text-muted-foreground font-normal">of</span>
                             <div className="flex items-baseline gap-1">
-                                <DhiramSymbol className="text-sm" />
+                                <CurrencySymbol className="text-sm" />
                                 {summary.totalBudgeted.toFixed(2)}
                             </div>
                         </div>

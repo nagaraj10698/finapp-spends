@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { Checkbox } from "@/components/ui/checkbox";
 
 
@@ -149,7 +149,7 @@ export const getColumns = (
             amount < 0 ? 'text-red-500' : 'text-green-500'
           )}
         >
-          <DhiramSymbol className="text-xs" />
+          <CurrencySymbol className="text-xs" />
           {formatted}
         </div>
       );

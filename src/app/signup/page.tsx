@@ -85,6 +85,7 @@ export default function SignupPage() {
           firstName: values.firstName,
           lastName: values.lastName,
           photoURL: user.photoURL,
+          currency: 'AED',
       });
 
       // Default categories are now created by the mock data generator if needed.

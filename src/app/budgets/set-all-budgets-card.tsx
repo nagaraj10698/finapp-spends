@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useMemo, useEffect } from 'react';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { useFirebase } from '@/firebase';
 import type { Budget, Category } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -168,7 +168,7 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
                                               </div>
                                               <FormControl>
                                                   <div className="relative flex-1">
-                                                      <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                                      <CurrencySymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                                       <Input 
                                                           type="number" 
                                                           placeholder="0.00" 
@@ -213,7 +213,7 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
                                                 </div>
                                                 <FormControl>
                                                     <div className="relative flex-1">
-                                                        <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                                        <CurrencySymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                                         <Input 
                                                             type="number" 
                                                             placeholder="0.00" 

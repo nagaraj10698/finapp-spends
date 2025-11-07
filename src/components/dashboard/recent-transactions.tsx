@@ -11,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { getCategoryByName, getIconByName } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { DhiramSymbol } from '../ui/dhiram-symbol';
+import { CurrencySymbol } from '../ui/dynamic-currency';
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
@@ -57,7 +57,7 @@ export default function RecentTransactions({
               </TableCell>
               <TableCell className={cn("text-right font-medium", amount < 0 ? 'text-red-500' : 'text-green-500')}>
                 <div className="flex items-baseline justify-end gap-1">
-                    <DhiramSymbol className="text-xs" />
+                    <CurrencySymbol className="text-xs" />
                     <span>{Math.abs(amount).toFixed(2)}</span>
                 </div>
               </TableCell>

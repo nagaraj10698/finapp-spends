@@ -6,7 +6,7 @@ import {
   ChartContainer,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import type { Category } from '@/lib/types';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -110,7 +110,7 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
         <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center pointer-events-none">
               <span className="text-xs text-muted-foreground">Total</span>
               <div className="flex items-baseline font-bold">
-                <DhiramSymbol className="text-lg" />
+                <CurrencySymbol className="text-lg" />
                 <span className="text-2xl">{totalBudgeted.toFixed(0)}</span>
               </div>
         </div>
@@ -121,7 +121,7 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
                 <div key={item.name} className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full" style={{backgroundColor: item.fill}} />
                     <span className="text-muted-foreground">{item.name}</span>
-                    <span className="font-semibold flex items-center gap-0.5"><DhiramSymbol className="text-xs"/>{item.total.toFixed(0)}</span>
+                    <span className="font-semibold flex items-center gap-0.5"><CurrencySymbol className="text-xs"/>{item.total.toFixed(0)}</span>
                 </div>
             ))}
         </div>

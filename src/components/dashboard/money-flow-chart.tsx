@@ -6,7 +6,7 @@ import {
   ChartContainer,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 
 interface MoneyFlowChartProps {
   data: {
@@ -44,7 +44,7 @@ export default function MoneyFlowChart({ data }: MoneyFlowChartProps) {
                 <ChartTooltipContent 
                     formatter={(value) => (
                         <div className="flex items-center gap-1.5">
-                            <DhiramSymbol />
+                            <CurrencySymbol />
                             <span>{Number(value).toFixed(2)}</span>
                         </div>
                     )} 

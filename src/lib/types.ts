@@ -70,6 +70,7 @@ export interface UserProfile {
     firstName: string;
     lastName: string;
     photoURL?: string;
+    currency?: string;
 }
 
 export type Reminder = {
@@ -79,3 +80,4 @@ export type Reminder = {
     reminderDate: Date | Timestamp;
     isPaid: boolean;
 };
+

@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, updateDoc, deleteField } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
@@ -223,7 +223,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <CurrencySymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input type="number" placeholder="0.00" {...field} className="pl-12" />
                     </div>
                   </FormControl>
@@ -382,5 +382,3 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
     </Dialog>
   );
 }
-
-    

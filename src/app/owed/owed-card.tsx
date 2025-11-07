@@ -11,7 +11,7 @@ import { getIconByName } from '@/lib/data';
 import type { Owed, Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Calendar, Check, MoreVertical, Edit } from 'lucide-react';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { format, isBefore, startOfToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {
@@ -60,7 +60,7 @@ export default function OwedCard({ owed, category, onPay, onEdit, isProcessing }
       <CardContent className="space-y-4">
         <div className="space-y-1">
             <div className={cn("flex items-baseline gap-1 text-2xl font-bold", isOverdue && "text-destructive")}>
-              <DhiramSymbol className="text-xl" />
+              <CurrencySymbol className="text-xl" />
               {Math.abs(owed.amount).toFixed(2)}
             </div>
              <div className="flex items-center gap-2 text-sm text-muted-foreground">

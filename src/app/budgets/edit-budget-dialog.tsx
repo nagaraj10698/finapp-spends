@@ -25,11 +25,12 @@ import { z } from 'zod';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, updateDoc } from 'firebase/firestore';
 import type { Budget, Category } from '@/lib/types';
 import { Slider } from '@/components/ui/slider';
+import { useCurrency } from '@/components/providers/currency-provider';
 
 
 const formSchema = z.object({
@@ -45,6 +46,7 @@ interface EditBudgetDialogProps {
 export default function EditBudgetDialog({ isOpen, onClose, budget }: EditBudgetDialogProps) {
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
+  const { currency } = useCurrency();
 
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
   const { data: categories } = useCollection<Category>(categoriesCollection);
@@ -123,7 +125,7 @@ export default function EditBudgetDialog({ isOpen, onClose, budget }: EditBudget
                   <FormControl>
                     <div className="space-y-4">
                         <div className="relative">
-                            <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                            <CurrencySymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                             <Input 
                                 type="number" 
                                 placeholder="0.00" 
@@ -139,8 +141,8 @@ export default function EditBudgetDialog({ isOpen, onClose, budget }: EditBudget
                             step={50}
                         />
                         <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>AED 0</span>
-                            <span>AED 5,000</span>
+                            <span>{currency.code} 0</span>
+                            <span>{currency.code} 5,000</span>
                         </div>
                     </div>
                   </FormControl>

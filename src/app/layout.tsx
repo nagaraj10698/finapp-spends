@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 import AuthWrapper from '@/components/auth-wrapper';
+import { CurrencyProvider } from '@/components/providers/currency-provider';
 
 
 export const metadata: Metadata = {
@@ -51,7 +52,9 @@ export default function RootLayout({
         )}
       >
         <FirebaseClientProvider>
-          <AuthWrapper>{children}</AuthWrapper>
+            <CurrencyProvider>
+                <AuthWrapper>{children}</AuthWrapper>
+            </CurrencyProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>

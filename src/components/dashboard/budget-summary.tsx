@@ -4,7 +4,7 @@ import type { Budget, Category } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { getBudgets, getIconByName } from '@/lib/data';
-import { DhiramSymbol } from '../ui/dhiram-symbol';
+import { CurrencySymbol } from '../ui/dynamic-currency';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
@@ -49,7 +49,7 @@ export default function BudgetSummary() {
                 <span className="font-medium">{budget.name}</span>
               </div>
               <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <DhiramSymbol className="h-3 w-3" />{spent.toFixed(0)} / <DhiramSymbol className="h-3 w-3" />{limit}
+                <CurrencySymbol className="h-3 w-3" />{spent.toFixed(0)} / <CurrencySymbol className="h-3 w-3" />{limit}
               </span>
             </div>
             <Progress value={progress} />

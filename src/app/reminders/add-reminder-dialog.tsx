@@ -24,7 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState } from 'react';
-import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
+import { CurrencySymbol } from '@/components/ui/dynamic-currency';
 import { useFirebase, addDocumentNonBlocking } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Reminder } from '@/lib/types';
@@ -115,7 +115,7 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <CurrencySymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input type="number" placeholder="0.00" {...field} className="pl-12" />
                     </div>
                   </FormControl>

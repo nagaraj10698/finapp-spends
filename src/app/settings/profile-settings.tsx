@@ -20,17 +20,23 @@ import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useRef, useState, useTransition } from 'react';
+import { useRef, useState, useTransition, useEffect } from 'react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Loader2 } from 'lucide-react';
 import ImageCropperDialog from '@/app/profile/image-cropper-dialog';
 import { Separator } from '@/components/ui/separator';
 import { generateMockTransactionsForYear } from '@/app/actions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { currencies } from '@/lib/currencies';
+import { useUser } from '@/firebase';
+import type { UserProfile } from '@/lib/types';
+import { useDoc, useMemoFirebase } from '@/firebase';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
   lastName: z.string().min(1, 'Last name is required.'),
   email: z.string().email(),
+  currency: z.string().min(1, "Currency is required.")
 });
 
 export default function ProfileSettings() {
@@ -44,14 +50,29 @@ export default function ProfileSettings() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [cropperOpen, setCropperOpen] = useState(false);
 
+  const userDocRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
+  const { data: userProfile } = useDoc<UserProfile>(userDocRef);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    values: {
-        firstName: user?.displayName?.split(' ')[0] || '',
-        lastName: user?.displayName?.split(' ')[1] || '',
-        email: user?.email || '',
+    defaultValues: {
+        firstName: '',
+        lastName: '',
+        email: '',
+        currency: 'AED',
     },
   });
+
+  useEffect(() => {
+    if (userProfile) {
+        form.reset({
+            firstName: userProfile.firstName || user?.displayName?.split(' ')[0] || '',
+            lastName: userProfile.lastName || user?.displayName?.split(' ')[1] || '',
+            email: userProfile.email || user?.email || '',
+            currency: userProfile.currency || 'AED',
+        })
+    }
+  }, [userProfile, user, form]);
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -128,6 +149,7 @@ export default function ProfileSettings() {
       await updateDoc(userDocRef, {
         firstName: values.firstName,
         lastName: values.lastName,
+        currency: values.currency,
       });
 
       toast({
@@ -252,6 +274,30 @@ export default function ProfileSettings() {
                     <FormMessage />
                     </FormItem>
                 )}
+                />
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencies.map((currency) => (
+                            <SelectItem key={currency.code} value={currency.code}>
+                              {currency.name} ({currency.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <Button type="submit">Save Changes</Button>
             </form>

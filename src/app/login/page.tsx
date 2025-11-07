@@ -28,7 +28,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
 import Logo from '@/components/logo';
-import { getAuth } from 'firebase/auth';
+import { getAuth, sendEmailVerification } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { getCurrencyByCountry } from '@/lib/currencies';
 import { User, getAdditionalUserInfo } from 'firebase/auth';
@@ -105,16 +105,60 @@ export default function LoginPage() {
   const onGoogleSignIn = async () => {
     try {
       const userCredential = await initiateGoogleSignIn(auth);
+      const isNewUser = getAdditionalUserInfo(userCredential)?.isNewUser;
+      
       await handleNewUserSetup(userCredential.user);
-      toast({
-        title: 'Login Successful',
-        description: "You've been successfully logged in.",
-      });
+
+      if (isNewUser) {
+        await sendEmailVerification(userCredential.user);
+        toast({
+          title: 'Welcome!',
+          description: "Your account has been created. We've sent you a verification email.",
+        });
+      } else {
+         toast({
+          title: 'Login Successful',
+          description: "You've been successfully logged in.",
+        });
+        checkEmailVerification(userCredential.user);
+      }
       router.push('/');
     } catch (error) {
       handleAuthError(error, 'Google Sign-In Failed');
     }
   };
+
+  const checkEmailVerification = (user: User) => {
+    if (user && !user.emailVerified) {
+      toast({
+        variant: "destructive",
+        title: "Email not verified",
+        description: "Please check your inbox to verify your email address.",
+        action: (
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              try {
+                await sendEmailVerification(user);
+                toast({
+                  title: "Verification Email Sent",
+                  description: "A new verification email has been sent.",
+                });
+              } catch (error) {
+                toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "Failed to send verification email.",
+                });
+              }
+            }}
+          >
+            Resend Email
+          </Button>
+        ),
+      });
+    }
+  }
 
 
   const handleAuthError = (error: any, title: string) => {
@@ -143,11 +187,12 @@ export default function LoginPage() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await initiateEmailSignIn(auth, values.email, values.password);
+      const userCredential = await initiateEmailSignIn(auth, values.email, values.password);
       toast({
         title: 'Login Successful',
         description: "You've been successfully logged in.",
       });
+      checkEmailVerification(userCredential.user);
       router.push('/');
     } catch (error) {
       handleAuthError(error, 'Login Failed');

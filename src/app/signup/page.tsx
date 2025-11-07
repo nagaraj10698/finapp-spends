@@ -27,7 +27,7 @@ import { useAuth, initiateEmailSignUp, initiateGoogleSignIn } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
-import { User, updateProfile } from 'firebase/auth';
+import { User, updateProfile, sendEmailVerification, getAdditionalUserInfo } from 'firebase/auth';
 import Logo from '@/components/logo';
 import { collection, doc, serverTimestamp, setDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
@@ -136,10 +136,17 @@ export default function SignupPage() {
   const onGoogleSignIn = async () => {
     try {
       const userCredential = await initiateGoogleSignIn(auth);
+      const isNewUser = getAdditionalUserInfo(userCredential)?.isNewUser;
+
       await handleNewUserSetup(userCredential.user);
+      
+      if (isNewUser) {
+        await sendEmailVerification(userCredential.user);
+      }
+
       toast({
         title: 'Signup Successful',
-        description: 'Your account has been created.',
+        description: "Your account has been created. We've sent you a verification email.",
       });
       router.push('/');
     } catch (error) {
@@ -164,6 +171,8 @@ export default function SignupPage() {
       );
       const user = userCredential.user;
 
+      await sendEmailVerification(user);
+
       await updateProfile(user, {
         displayName: `${values.firstName} ${values.lastName}`,
       });
@@ -184,7 +193,7 @@ export default function SignupPage() {
 
       toast({
         title: 'Signup Successful',
-        description: 'Your account has been created.',
+        description: "Your account has been created. We've sent you a verification email.",
       });
       router.push('/');
     } catch (error) {

@@ -58,6 +58,7 @@ export async function generateMockTransactionsForYear(userId: string) {
                 icon: category.icon,
                 color: category.color,
                 type: category.type,
+                userId: userId,
             }
             batch.set(categoryDoc, newCat);
         });

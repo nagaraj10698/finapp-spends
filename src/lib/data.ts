@@ -253,7 +253,7 @@ export function getMoneyFlow(
 
   if (period === 'daily') {
       periods = eachDayOfInterval(range);
-      getPeriodKey = (date) => format(date, 'dd MMM');
+      getPeriodKey = (date) => format(date, 'd MMM');
   } else if (period === 'monthly') {
       periods = eachMonthOfInterval(range);
       getPeriodKey = (date) => format(startOfMonth(date), 'MMM');

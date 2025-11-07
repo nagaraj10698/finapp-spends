@@ -136,19 +136,21 @@ export function getBudgets(
 
     const range = dateRange?.from && dateRange.to 
         ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) }
-        : { start: startOfMonth(new Date()), end: endOfMonth(new Date()) };
+        : undefined;
 
     const safeTransactions = allTransactions || [];
 
     return budgets.map(budget => {
         if (!budget || !budget.categoryId) return budget;
+        
+        const budgetInterval = range ?? { start: startOfMonth(new Date()), end: endOfMonth(new Date()) };
 
         if (budget.type === 'Expense') {
             const spent = safeTransactions
                 .filter(t => 
                     t.type === 'expense' && 
                     t.categoryId === budget.categoryId && 
-                    isWithinInterval(toDate(t.date), range)
+                    isWithinInterval(toDate(t.date), budgetInterval)
                 )
                 .reduce((sum, t) => sum + Math.abs(t.amount), 0);
             
@@ -161,7 +163,7 @@ export function getBudgets(
                 .filter(t => 
                     t.type === 'income' && 
                     t.categoryId === budget.categoryId && 
-                    isWithinInterval(toDate(t.date), range)
+                    isWithinInterval(toDate(t.date), budgetInterval)
                 )
                 .reduce((sum, t) => sum + Math.abs(t.amount), 0);
             
@@ -238,36 +240,14 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
         (t) => t.isRecurring && t.type === 'expense' && t.frequency
     );
 
-    const allDues: Owed[] = [];
+    const upcomingDues: Owed[] = [];
     const today = startOfDay(new Date());
-    // Look 2 years into the future for upcoming dues.
-    const futureLimit = addYears(today, 2);
 
     recurringExpenses.forEach((t) => {
-        const startDate = toDate(t.date);
-        let nextDueDate = startDate;
-        
-        // The original transaction represents the first payment. If it's in the future and unpaid, add it.
-        // And check against already-paid transactions to avoid duplication.
-        const originalTransactionExists = transactions.some(trans => 
-            trans.categoryId === t.categoryId &&
-            trans.description === t.description &&
-            isSameDay(toDate(trans.date), startDate) &&
-            !trans.isRecurring // It's an actual transaction, not the template
-        );
+        let nextDueDate = toDate(t.date);
 
-        if (!originalTransactionExists && isAfter(startDate, subDays(today, 90))) { // only show original if it's recent
-             if (!t.recurrenceEndDate || isBefore(startDate, toDate(t.recurrenceEndDate)) || isSameDay(startDate, toDate(t.recurrenceEndDate))) {
-                allDues.push({
-                    ...t,
-                    instanceDate: startDate,
-                });
-            }
-        }
-
-
-        // Generate future instances
-        while (isBefore(nextDueDate, futureLimit)) {
+        // Fast-forward to the first due date that is on or after today
+        while (isBefore(nextDueDate, today)) {
             switch (t.frequency) {
                 case 'weekly':
                     nextDueDate = addWeeks(nextDueDate, 1);
@@ -282,41 +262,84 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
                     nextDueDate = addYears(nextDueDate, 1);
                     break;
                 default:
-                     // Should not happen, exit loop
-                    return;
+                    return; // Should not happen
+            }
+        }
+        
+        // Check if this calculated next due date is valid
+        const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
+        if (endDate && isAfter(nextDueDate, endDate)) {
+            return; // This recurring expense has ended
+        }
+
+        // Check if a payment for this specific instance has already been made
+        const isPaid = transactions.some(p => 
+            !p.isRecurring && // it's an actual transaction
+            p.description === t.description &&
+            p.categoryId === t.categoryId &&
+            isSameDay(toDate(p.date), nextDueDate)
+        );
+
+        if (!isPaid) {
+            upcomingDues.push({
+                ...t,
+                instanceDate: nextDueDate,
+            });
+        }
+
+        // Add overdue payments
+        let potentialOverdueDate = nextDueDate;
+        // Move backwards from the next due date to find any missed payments
+        while(true) {
+             switch (t.frequency) {
+                case 'weekly':
+                    potentialOverdueDate = subWeeks(potentialOverdueDate, 1);
+                    break;
+                case 'monthly':
+                    potentialOverdueDate = subMonths(potentialOverdueDate, 1);
+                    break;
+                case 'quarterly':
+                    potentialOverdueDate = subQuarters(potentialOverdueDate, 1);
+                    break;
+                case 'yearly':
+                    potentialOverdueDate = subYears(potentialOverdueDate, 1);
+                    break;
             }
             
-            const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
-            if (endDate && isAfter(nextDueDate, endDate)) {
-                break; // Stop if we've passed the recurrence end date
+            // Stop if we go past the original start date
+            if (isBefore(potentialOverdueDate, toDate(t.date))) {
+                break;
             }
 
-            // Check if a transaction for this due date already exists
-            const transactionExists = transactions.some(trans => 
-                trans.categoryId === t.categoryId &&
-                trans.description === t.description &&
-                isSameDay(toDate(trans.date), nextDueDate) &&
-                !trans.isRecurring // Make sure it's not the template itself
+            const isOverduePaid = transactions.some(p => 
+                !p.isRecurring &&
+                p.description === t.description &&
+                p.categoryId === t.categoryId &&
+                isSameDay(toDate(p.date), potentialOverdueDate)
             );
 
-            if (!transactionExists) {
-                allDues.push({
+            if (!isOverduePaid) {
+                 upcomingDues.push({
                     ...t,
-                    instanceDate: nextDueDate,
+                    instanceDate: potentialOverdueDate,
                 });
             }
         }
-    });
 
+
+    });
+    
     // Remove duplicates by creating a unique key for each due instance
     const uniqueDues = Array.from(
         new Map(
-            allDues.map(due => [`${due.id}-${due.instanceDate.toISOString()}`, due])
+            upcomingDues.map(due => [`${due.id}-${due.instanceDate.toISOString()}`, due])
         ).values()
     );
 
+
     return uniqueDues;
 }
+
 
 
 export function getNotifications(
@@ -357,3 +380,4 @@ export function getNotifications(
     return 0;
   });
 }
+

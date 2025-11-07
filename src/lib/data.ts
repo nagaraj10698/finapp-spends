@@ -21,7 +21,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Notification, Owed } from './types';
-import { addDays, addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfDay, isSameDay, isAfter, subDays, startOfWeek, endOfWeek, subWeeks, subMonths, startOfYear, endOfYear, startOfQuarter, endOfQuarter, eachYearOfInterval, getYear } from 'date-fns';
+import { addDays, addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfDay, isSameDay, isAfter, subDays, startOfWeek, endOfWeek, subWeeks, startOfQuarter, endOfQuarter, eachYearOfInterval, getYear } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
@@ -134,20 +134,17 @@ export function getBudgets(
 ): Budget[] {
     if (!budgets) return [];
 
-    const range = dateRange?.from && dateRange.to 
-        ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) }
-        : undefined;
+    let relevantTransactions = allTransactions || [];
 
-    const safeTransactions = allTransactions || [];
+    // If a date range is provided, filter transactions by it.
+    if (dateRange?.from && dateRange.to) {
+        const range = { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) };
+        relevantTransactions = relevantTransactions.filter(t => isWithinInterval(toDate(t.date), range));
+    }
 
     return budgets.map(budget => {
         if (!budget || !budget.categoryId) return budget;
         
-        let relevantTransactions = safeTransactions;
-        if (range) {
-            relevantTransactions = safeTransactions.filter(t => isWithinInterval(toDate(t.date), range));
-        }
-
         if (budget.type === 'Expense') {
             const spent = relevantTransactions
                 .filter(t => t.type === 'expense' && t.categoryId === budget.categoryId)
@@ -177,13 +174,11 @@ export function getMoneyFlow(
 ) {
   if (!transactions || transactions.length === 0) return [];
   
-  const today = startOfDay(new Date());
-
   // Determine the range. If no dateRange is provided (e.g., for 'All Time'), find the min and max dates from transactions.
   const range = dateRange?.from && dateRange.to 
     ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) } 
     : (() => {
-        if (transactions.length === 0) return { start: new Date(), end: new Date() };
+        if (transactions.length === 0) return { start: startOfMonth(new Date()), end: endOfMonth(new Date()) };
         const dates = transactions.map(t => toDate(t.date));
         const start = new Date(Math.min(...dates.map(d => d.getTime())));
         const end = new Date(Math.max(...dates.map(d => d.getTime())));
@@ -239,30 +234,33 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
     const today = startOfDay(new Date());
     const owedInstances: Owed[] = [];
 
-    recurringExpenses.forEach((t) => {
-        let nextDueDate = toDate(t.date);
-        const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
-        
-        while(isBefore(nextDueDate, today)) {
-             switch (t.frequency) {
-                case 'weekly':
-                    nextDueDate = addWeeks(nextDueDate, 1);
-                    break;
-                case 'monthly':
-                    nextDueDate = addMonths(nextDueDate, 1);
-                    break;
-                case 'quarterly':
-                    nextDueDate = addQuarters(nextDueDate, 1);
-                    break;
-                case 'yearly':
-                    nextDueDate = addYears(nextDueDate, 1);
-                    break;
-            }
+    const addPeriod = (date: Date, frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly') => {
+        switch (frequency) {
+            case 'weekly': return addWeeks(date, 1);
+            case 'monthly': return addMonths(date, 1);
+            case 'quarterly': return addQuarters(date, 1);
+            case 'yearly': return addYears(date, 1);
         }
+    };
+
+    recurringExpenses.forEach((t) => {
+        if (!t.frequency) return;
+
+        let nextDueDate = toDate(t.date);
+        
+        // Immediately find the first occurrence *after* the start date
+        nextDueDate = addPeriod(nextDueDate, t.frequency);
+
+        // Fast-forward to the first due date that is on or after today
+        while (isBefore(nextDueDate, today)) {
+            nextDueDate = addPeriod(nextDueDate, t.frequency);
+        }
+        
+        const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
         
         // Check if this upcoming due date is valid
         if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
-            // Check if this specific instance has already been paid
+             // Check if this specific instance has already been paid
             const isPaid = transactions.some(p => 
                 !p.isRecurring &&
                 p.categoryId === t.categoryId &&
@@ -271,15 +269,19 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
             );
 
             if (!isPaid) {
-                owedInstances.push({
+                 owedInstances.push({
                     ...t,
                     instanceDate: nextDueDate,
                 });
             }
         }
-        
-        // Also check for any overdue payments that haven't been paid
+    });
+
+    // Handle overdue items separately
+     recurringExpenses.forEach((t) => {
+        if (!t.frequency) return;
         let pastDueDate = toDate(t.date);
+        
         while(isBefore(pastDueDate, today)) {
             const isPastPaid = transactions.some(p => 
                 !p.isRecurring &&
@@ -288,25 +290,15 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
                 isSameDay(toDate(p.date), pastDueDate)
             );
             if (!isPastPaid) {
-                owedInstances.push({
-                    ...t,
-                    instanceDate: pastDueDate
-                });
+                const alreadyInOwed = owedInstances.some(o => isSameDay(o.instanceDate, pastDueDate) && o.id === t.id);
+                if (!alreadyInOwed) {
+                    owedInstances.push({
+                        ...t,
+                        instanceDate: pastDueDate
+                    });
+                }
             }
-             switch (t.frequency) {
-                case 'weekly':
-                    pastDueDate = addWeeks(pastDueDate, 1);
-                    break;
-                case 'monthly':
-                    pastDueDate = addMonths(pastDueDate, 1);
-                    break;
-                case 'quarterly':
-                    pastDueDate = addQuarters(pastDueDate, 1);
-                    break;
-                case 'yearly':
-                    pastDueDate = addYears(pastDueDate, 1);
-                    break;
-            }
+            pastDueDate = addPeriod(pastDueDate, t.frequency);
         }
     });
 
@@ -332,8 +324,10 @@ export function getNotifications(
 
   // Budget alerts
   if (allBudgets && allTransactions) {
-    // We pass no date range to getBudgets so it defaults to the current month
-    const budgetsWithSpent = getBudgets(allBudgets, allTransactions); 
+    const monthStart = startOfMonth(today);
+    const monthEnd = endOfMonth(today);
+    // We pass the current month date range to getBudgets 
+    const budgetsWithSpent = getBudgets(allBudgets, allTransactions, {from: monthStart, to: monthEnd}); 
     budgetsWithSpent.forEach(budget => {
       if (!budget || budget.type === 'Income') return; // Only alert for expense budgets
       const spent = budget.spent ?? 0;

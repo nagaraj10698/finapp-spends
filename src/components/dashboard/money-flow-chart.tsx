@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts';
@@ -30,7 +31,7 @@ export default function MoneyFlowChart({ data }: MoneyFlowChartProps) {
   return (
     <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
       <ResponsiveContainer width="100%" height={250}>
-        <BarChart accessibilityLayer data={data} margin={{ top: 20, right: 0, left: -20, bottom: 5 }}>
+        <BarChart accessibilityLayer data={data} margin={{ top: 20, right: 0, left: -20, bottom: 5 }} barCategoryGap="20%">
           <XAxis
             dataKey="name"
             tickLine={false}
@@ -50,8 +51,8 @@ export default function MoneyFlowChart({ data }: MoneyFlowChartProps) {
                 />
             }
           />
-          <Bar dataKey="income" fill="var(--color-income)" radius={4} />
-          <Bar dataKey="expense" fill="var(--color-expense)" radius={4} />
+          <Bar dataKey="income" fill="var(--color-income)" />
+          <Bar dataKey="expense" fill="var(--color-expense)" />
         </BarChart>
       </ResponsiveContainer>
     </ChartContainer>

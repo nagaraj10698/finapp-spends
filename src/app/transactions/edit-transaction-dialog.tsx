@@ -30,7 +30,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
-import { format, toDate as convertToDate } from 'date-fns';
+import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
@@ -97,6 +97,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
   }, [transaction, form]);
 
   useEffect(() => {
+    // When type changes, we should reset the category if it's not a new transaction load
     if (transaction.type !== transactionType) {
         form.resetField('category', { defaultValue: '' });
     }
@@ -120,7 +121,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
         const amount = values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
         const selectedCategory = categories?.find(c => c.name === values.category);
 
-        const updatedTransaction: Partial<Transaction> & { frequency?: any, recurrenceEndDate?: any } = {
+        const updatedTransaction: Partial<Omit<Transaction, 'id'>> & { [key: string]: any } = {
             description: values.description,
             amount: amount,
             category: values.category,
@@ -134,6 +135,7 @@ export default function EditTransactionDialog({ isOpen, onClose, transaction }: 
             updatedTransaction.frequency = values.frequency;
             updatedTransaction.recurrenceEndDate = values.recurrenceEndDate || deleteField();
         } else {
+            updatedTransaction.isRecurring = deleteField();
             updatedTransaction.frequency = deleteField();
             updatedTransaction.recurrenceEndDate = deleteField();
         }

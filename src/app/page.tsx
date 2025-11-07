@@ -25,8 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, MinusCircle, PlusCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
-import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
+import AddTransactionDialog from '@/app/transactions/add-transaction-dialog';
 import RecentTransactions from '@/components/dashboard/recent-transactions';
 import { toDate } from '@/lib/data';
 import MoneyFlowChart from '@/components/dashboard/money-flow-chart';
@@ -135,18 +134,18 @@ export default function DashboardPage() {
         <h1 className="font-headline text-2xl font-semibold">Dashboard</h1>
         <div className='flex flex-col md:flex-row items-center gap-2'>
             <div className="flex w-full md:w-auto gap-2">
-              <AddIncomeDialog>
+              <AddTransactionDialog type="income">
                   <Button className="w-full">
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Add Income
                   </Button>
-              </AddIncomeDialog>
-              <AddExpenseDialog>
+              </AddTransactionDialog>
+              <AddTransactionDialog type="expense">
                   <Button variant="secondary" className="w-full">
                       <MinusCircle className="mr-2 h-4 w-4" />
                       Add Expense
                   </Button>
-              </AddExpenseDialog>
+              </AddTransactionDialog>
             </div>
             <Popover open={isDatePopoverOpen} onOpenChange={setDatePopoverOpen}>
                 <PopoverTrigger asChild>

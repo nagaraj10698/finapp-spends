@@ -35,8 +35,8 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState, useEffect } from 'react';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
-import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, updateDoc, deleteField, addDoc } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
@@ -61,7 +61,12 @@ const formSchema = z.object({
     path: ['frequency'],
 });
 
-export default function AddTransactionDialog({children}: {children: ReactNode}) {
+interface AddTransactionDialogProps {
+    children: ReactNode;
+    type?: 'income' | 'expense';
+}
+
+export default function AddTransactionDialog({children, type = 'expense'}: AddTransactionDialogProps) {
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
@@ -73,9 +78,9 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: 'expense',
+      type: type,
       description: '',
-      amount: 0,
+      amount: undefined,
       category: '',
       date: new Date(),
       isRecurring: false,
@@ -84,6 +89,22 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
   
   const transactionType = form.watch('type');
   const isRecurring = form.watch('isRecurring');
+
+  // When the dialog opens, reset the form with the correct type.
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        type: type,
+        description: '',
+        amount: undefined,
+        category: '',
+        date: new Date(),
+        isRecurring: false,
+        frequency: undefined,
+        recurrenceEndDate: undefined,
+      });
+    }
+  }, [open, type, form]);
 
   useEffect(() => {
     form.resetField('category', { defaultValue: '' });
@@ -107,7 +128,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
         const amount = values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
         const selectedCategory = categories?.find(c => c.name === values.category);
 
-        const newTransaction: Omit<Transaction, 'id' | 'userId'> = {
+        const newTransaction: Omit<Transaction, 'id'> = {
             description: values.description,
             amount: amount,
             category: values.category,
@@ -115,6 +136,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
             date: values.date,
             type: values.type,
             isRecurring: values.isRecurring,
+            userId: user.uid,
         };
 
         if (values.isRecurring) {
@@ -124,7 +146,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
             }
         }
         
-        await addDocumentNonBlocking(transactionCollection, newTransaction);
+        await addDoc(transactionCollection, newTransaction);
 
         toast({
           title: 'Transaction Added',
@@ -174,7 +196,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                       className="flex space-x-4"
                     >
                       <FormItem className="flex items-center space-x-2 space-y-0">
@@ -217,7 +239,7 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
                   <FormControl>
                     <div className="relative">
                       <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="number" placeholder="0.00" {...field} className="pl-12" />
+                      <Input type="number" placeholder="0.00" {...field} className="pl-12" value={field.value ?? ''} />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -374,5 +396,3 @@ export default function AddTransactionDialog({children}: {children: ReactNode}) 
     </Dialog>
   );
 }
-
-    

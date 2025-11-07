@@ -28,7 +28,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import AddIncomeDialog from '@/components/dashboard/add-income-dialog';
 import AddExpenseDialog from '@/app/expenses/add-expense-dialog';
-import UpcomingBillsTimeline from '@/components/dashboard/upcoming-bills-timeline';
 import RecentTransactions from '@/components/dashboard/recent-transactions';
 import { toDate } from '@/lib/data';
 import MoneyFlowChart from '@/components/dashboard/money-flow-chart';
@@ -118,7 +117,6 @@ export default function DashboardPage() {
 
 
     const totals = useMemo(() => getTotals(filteredTransactions), [filteredTransactions]);
-    const upcomingBills = useMemo(() => generateDueInstances(allDues), [allDues]);
     const recentTransactions = useMemo(() => getRecentTransactions(allTransactions, 5), [allTransactions]);
     const moneyFlowData = useMemo(() => getMoneyFlow(filteredTransactions, period, dateRange), [filteredTransactions, period, dateRange]);
 
@@ -128,26 +126,6 @@ export default function DashboardPage() {
             .filter(b => b.type === 'Expense' && b.budgetAmount > 0)
             .map(b => ({ name: b.name, total: b.budgetAmount }));
     }, [allBudgets]);
-
-    const overdueCount = useMemo(() => {
-        const today = startOfDay(new Date());
-        return upcomingBills.filter(bill => {
-            const instanceDate = toDate(bill.instanceDate || bill.dueDate);
-            const instanceDateStr = instanceDate.toISOString().split('T')[0];
-            const isPaid = bill.isPaid || (bill.isRecurring && bill.paidInstances?.[instanceDateStr]);
-            return !isPaid && isBefore(instanceDate, today);
-        }).length;
-    }, [upcomingBills]);
-
-    const upcomingCount = useMemo(() => {
-        const today = startOfDay(new Date());
-        return upcomingBills.filter(bill => {
-            const instanceDate = toDate(bill.instanceDate || bill.dueDate);
-            const instanceDateStr = instanceDate.toISOString().split('T')[0];
-            const isPaid = bill.isPaid || (bill.isRecurring && bill.paidInstances?.[instanceDateStr]);
-            return !isPaid && !isBefore(instanceDate, today);
-        }).length;
-    }, [upcomingBills]);
 
 
     if (transactionsLoading || categoriesLoading || duesLoading || budgetsLoading) {
@@ -260,23 +238,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-         <Card className="lg:col-span-3 h-full flex flex-col">
-          <CardHeader>
-            <CardTitle className="font-headline">Upcoming Bills</CardTitle>
-             <CardDescription className='flex items-center gap-4'>
-                <span>Your upcoming recurring payments.</span>
-                <div className='flex items-center gap-4 text-xs'>
-                  <span className='flex items-center gap-1.5'><span className='h-2 w-2 rounded-full bg-primary' />Upcoming ({upcomingCount})</span>
-                  <span className='flex items-center gap-1.5'><span className='h-2 w-2 rounded-full bg-destructive' />Overdue ({overdueCount})</span>
-                </div>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow">
-            <UpcomingBillsTimeline bills={upcomingBills} categories={categories ?? []} />
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-4">
+       <div className="grid gap-4">
+        <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Recent Transactions</CardTitle>
                 <CardDescription>Your most recent transactions.</CardDescription>

@@ -156,8 +156,9 @@ export async function saveDue(userId: string, dueData: Partial<Due>) {
     const isEditing = !!dueData.id;
 
     if (isEditing) {
-        const dueRef = doc(firestore, 'users', userId, 'dues', dueData.id!);
+        const dueRef = doc(firestore, 'users', userId, dueData.id!);
         const dataToUpdate: { [key: string]: any } = {
+            userId: userId,
             dueName: dueData.dueName,
             dueAmount: dueData.dueAmount,
             dueDate: dueData.dueDate,
@@ -200,6 +201,6 @@ export async function saveDue(userId: string, dueData: Partial<Due>) {
             delete (dataToCreate as Partial<Due>).isPaid; 
         }
         
-        await addDoc(duesCollection, dataToCreate);
+        await addDoc(duesCollection, { ...dataToCreate, userId });
     }
 }

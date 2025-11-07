@@ -5,11 +5,11 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Owed, Transaction, Category } from '@/lib/types';
 import OwedCard from './owed-card';
-import { getOwedExpenses } from '@/lib/data';
+import { getOwedExpenses, toDate } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { processOwedPayment } from '../actions';
-import { isBefore, startOfToday } from 'date-fns';
+import { isBefore, startOfToday, isSameDay, endOfDay } from 'date-fns';
 import { AlertTriangle } from 'lucide-react';
 import EditTransactionDialog from '@/app/transactions/edit-transaction-dialog';
 
@@ -33,17 +33,6 @@ export default function OwedPage() {
     const future: Owed[] = [];
 
     allDues.forEach(due => {
-      // Check if a payment for this specific instance has already been made
-      const isPaid = allTransactions?.some(t => 
-        !t.isRecurring &&
-        t.description === due.description &&
-        t.categoryId === due.categoryId &&
-        isBefore(startOfToday(t.date as Date), startOfToday(due.instanceDate)) &&
-        isBefore(startOfToday(due.instanceDate), endOfDay(t.date as Date))
-      );
-
-      if (isPaid) return; // Don't show paid dues
-
       if (isBefore(due.instanceDate, today)) {
         overdue.push(due);
       } else {

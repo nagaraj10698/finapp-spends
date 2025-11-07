@@ -136,14 +136,14 @@ export function getBudgets(
 
     const range = dateRange?.from && dateRange.to 
         ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) }
-        : undefined;
+        : { start: startOfMonth(new Date()), end: endOfMonth(new Date()) };
 
     const safeTransactions = allTransactions || [];
 
     return budgets.map(budget => {
         if (!budget || !budget.categoryId) return budget;
         
-        const budgetInterval = range ?? { start: startOfMonth(new Date()), end: endOfMonth(new Date()) };
+        const budgetInterval = range;
 
         if (budget.type === 'Expense') {
             const spent = safeTransactions
@@ -245,8 +245,21 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
     recurringExpenses.forEach((t) => {
         let nextDueDate = toDate(t.date);
         
-        // Find the very next due date that is on or after today
         while (isBefore(nextDueDate, today)) {
+            const isPaid = transactions.some(p => 
+                !p.isRecurring &&
+                p.categoryId === t.categoryId &&
+                p.description === t.description &&
+                isSameDay(toDate(p.date), nextDueDate)
+            );
+
+            if (!isPaid) {
+                 owedInstances.push({
+                    ...t,
+                    instanceDate: nextDueDate,
+                });
+            }
+
             switch (t.frequency) {
                 case 'weekly':
                     nextDueDate = addWeeks(nextDueDate, 1);
@@ -260,55 +273,16 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
                 case 'yearly':
                     nextDueDate = addYears(nextDueDate, 1);
                     break;
-                default:
-                    return; // Should not happen
             }
         }
         
+        // At this point, nextDueDate is on or after today. This is the next upcoming one.
         const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
-        if (endDate && isAfter(nextDueDate, endDate)) {
-            // This entire recurring expense has ended, so there's no next due date.
-            // But we still need to check for past, unpaid dues.
-        } else {
-            // We found a valid next due date. Add it.
+        if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
             owedInstances.push({
                 ...t,
                 instanceDate: nextDueDate,
             });
-        }
-
-        // Now, separately check for any overdue payments before the next calculated due date
-        let potentialOverdueDate = toDate(t.date);
-        while(isBefore(potentialOverdueDate, today)) {
-             const isOverduePaid = transactions.some(p => 
-                !p.isRecurring &&
-                p.description === t.description &&
-                p.categoryId === t.categoryId &&
-                isSameDay(toDate(p.date), potentialOverdueDate)
-            );
-            
-            if (!isOverduePaid) {
-                owedInstances.push({
-                    ...t,
-                    instanceDate: potentialOverdueDate,
-                });
-            }
-
-            // Move to the next potential date
-            switch (t.frequency) {
-                case 'weekly':
-                    potentialOverdueDate = addWeeks(potentialOverdueDate, 1);
-                    break;
-                case 'monthly':
-                    potentialOverdueDate = addMonths(potentialOverdueDate, 1);
-                    break;
-                case 'quarterly':
-                    potentialOverdueDate = addQuarters(potentialOverdueDate, 1);
-                    break;
-                case 'yearly':
-                    potentialOverdueDate = addYears(potentialOverdueDate, 1);
-                    break;
-            }
         }
     });
 
@@ -334,15 +308,25 @@ export function getNotifications(
 
   // Budget alerts
   if (allBudgets && allTransactions) {
-    const budgetsWithSpent = getBudgets(allBudgets, allTransactions);
+    // We pass no date range to getBudgets so it defaults to the current month
+    const budgetsWithSpent = getBudgets(allBudgets, allTransactions); 
     budgetsWithSpent.forEach(budget => {
       if (!budget || budget.type === 'Income') return; // Only alert for expense budgets
       const spent = budget.spent ?? 0;
       const limit = budget.budgetAmount ?? 0;
       const usage = limit > 0 ? (spent / limit) * 100 : 0;
-      if (usage >= 80) {
+
+      if (usage >= 100) {
         notifications.push({
-          id: `budget-${budget.id}`,
+          id: `budget-over-${budget.id}`,
+          type: 'budget',
+          title: 'Budget Exceeded',
+          description: `You are over budget for '${budget.name}' this month.`,
+          href: '/budgets',
+        });
+      } else if (usage >= 80) {
+        notifications.push({
+          id: `budget-alert-${budget.id}`,
           type: 'budget',
           title: 'Budget Alert',
           description: `You've used ${usage.toFixed(0)}% of your '${budget.name}' budget.`,
@@ -352,7 +336,22 @@ export function getNotifications(
     });
   }
   
-  // Sort notifications: overdue first, then upcoming
+  // Overdue alerts
+  if(allTransactions) {
+    const owed = getOwedExpenses(allTransactions);
+    owed.forEach(item => {
+        if(isBefore(item.instanceDate, today)) {
+             notifications.push({
+                id: `overdue-${item.id}-${item.instanceDate.toISOString()}`,
+                type: 'overdue',
+                title: 'Overdue Payment',
+                description: `'${item.description}' was due on ${format(item.instanceDate, 'MMM d')}.`,
+                href: '/owed',
+            });
+        }
+    });
+  }
+
   const uniqueNotifications = Array.from(new Map(notifications.map(n => [n.id, n])).values());
   
   return uniqueNotifications.sort((a, b) => {
@@ -361,4 +360,3 @@ export function getNotifications(
     return 0;
   });
 }
-

@@ -40,6 +40,10 @@ export default function OwedPage() {
       }
     });
 
+    // Sort both arrays by date
+    overdue.sort((a, b) => a.instanceDate.getTime() - b.instanceDate.getTime());
+    future.sort((a, b) => a.instanceDate.getTime() - b.instanceDate.getTime());
+    
     return { overdueDues: overdue, futureDues: future };
   }, [allTransactions]);
 
@@ -65,8 +69,11 @@ export default function OwedPage() {
 
   const handleEditRequest = (owed: Owed) => {
     // The 'owed' object is the original transaction, so we can cast it.
-    setTransactionToEdit(owed as Transaction);
-    setEditOpen(true);
+    const sourceTransaction = allTransactions?.find(t => t.id === owed.id);
+    if (sourceTransaction) {
+        setTransactionToEdit(sourceTransaction);
+        setEditOpen(true);
+    }
   };
 
 

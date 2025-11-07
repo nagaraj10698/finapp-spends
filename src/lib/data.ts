@@ -244,8 +244,8 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
     recurringExpenses.forEach((t) => {
         const startDate = toDate(t.date);
         let nextDueDate = startDate;
-
-        // Loop forward from the start date until we find the first date that is on or after today
+        
+        // Loop forward from the start date until the date is on or after today
         while (isBefore(nextDueDate, today)) {
             switch (t.frequency) {
                 case 'weekly':
@@ -261,12 +261,13 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
                     nextDueDate = addYears(nextDueDate, 1);
                     break;
                 default:
-                    // Should not happen due to filter, but good for safety
-                    return; 
+                    return; // Should not happen
             }
         }
         
         const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
+
+        // Only add the due if it's within the recurrence end date
         if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
              upcomingDues.push({
                 ...t,
@@ -275,7 +276,7 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
         }
     });
 
-    return upcomingDues.sort((a, b) => a.instanceDate.getTime() - b.instanceDate.getTime());
+    return upcomingDues;
 }
 
 

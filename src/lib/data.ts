@@ -239,14 +239,13 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
     const recurringExpenses = transactions.filter(
         (t) => t.isRecurring && t.type === 'expense' && t.frequency
     );
-
-    const upcomingDues: Owed[] = [];
     const today = startOfDay(new Date());
+    const owedInstances: Owed[] = [];
 
     recurringExpenses.forEach((t) => {
         let nextDueDate = toDate(t.date);
-
-        // Fast-forward to the first due date that is on or after today
+        
+        // Find the very next due date that is on or after today
         while (isBefore(nextDueDate, today)) {
             switch (t.frequency) {
                 case 'weekly':
@@ -266,76 +265,58 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
             }
         }
         
-        // Check if this calculated next due date is valid
         const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
         if (endDate && isAfter(nextDueDate, endDate)) {
-            return; // This recurring expense has ended
-        }
-
-        // Check if a payment for this specific instance has already been made
-        const isPaid = transactions.some(p => 
-            !p.isRecurring && // it's an actual transaction
-            p.description === t.description &&
-            p.categoryId === t.categoryId &&
-            isSameDay(toDate(p.date), nextDueDate)
-        );
-
-        if (!isPaid) {
-            upcomingDues.push({
+            // This entire recurring expense has ended, so there's no next due date.
+            // But we still need to check for past, unpaid dues.
+        } else {
+            // We found a valid next due date. Add it.
+            owedInstances.push({
                 ...t,
                 instanceDate: nextDueDate,
             });
         }
 
-        // Add overdue payments
-        let potentialOverdueDate = nextDueDate;
-        // Move backwards from the next due date to find any missed payments
-        while(true) {
-             switch (t.frequency) {
-                case 'weekly':
-                    potentialOverdueDate = subWeeks(potentialOverdueDate, 1);
-                    break;
-                case 'monthly':
-                    potentialOverdueDate = subMonths(potentialOverdueDate, 1);
-                    break;
-                case 'quarterly':
-                    potentialOverdueDate = subQuarters(potentialOverdueDate, 1);
-                    break;
-                case 'yearly':
-                    potentialOverdueDate = subYears(potentialOverdueDate, 1);
-                    break;
-            }
-            
-            // Stop if we go past the original start date
-            if (isBefore(potentialOverdueDate, toDate(t.date))) {
-                break;
-            }
-
-            const isOverduePaid = transactions.some(p => 
+        // Now, separately check for any overdue payments before the next calculated due date
+        let potentialOverdueDate = toDate(t.date);
+        while(isBefore(potentialOverdueDate, today)) {
+             const isOverduePaid = transactions.some(p => 
                 !p.isRecurring &&
                 p.description === t.description &&
                 p.categoryId === t.categoryId &&
                 isSameDay(toDate(p.date), potentialOverdueDate)
             );
-
+            
             if (!isOverduePaid) {
-                 upcomingDues.push({
+                owedInstances.push({
                     ...t,
                     instanceDate: potentialOverdueDate,
                 });
             }
+
+            // Move to the next potential date
+            switch (t.frequency) {
+                case 'weekly':
+                    potentialOverdueDate = addWeeks(potentialOverdueDate, 1);
+                    break;
+                case 'monthly':
+                    potentialOverdueDate = addMonths(potentialOverdueDate, 1);
+                    break;
+                case 'quarterly':
+                    potentialOverdueDate = addQuarters(potentialOverdueDate, 1);
+                    break;
+                case 'yearly':
+                    potentialOverdueDate = addYears(potentialOverdueDate, 1);
+                    break;
+            }
         }
-
-
     });
-    
-    // Remove duplicates by creating a unique key for each due instance
+
     const uniqueDues = Array.from(
         new Map(
-            upcomingDues.map(due => [`${due.id}-${due.instanceDate.toISOString()}`, due])
+            owedInstances.map(due => [`${due.id}-${due.instanceDate.toISOString()}`, due])
         ).values()
     );
-
 
     return uniqueDues;
 }

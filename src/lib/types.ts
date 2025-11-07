@@ -79,4 +79,3 @@ export type Reminder = {
     reminderDate: Date | Timestamp;
     isPaid: boolean;
 };
-

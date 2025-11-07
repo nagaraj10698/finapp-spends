@@ -233,7 +233,7 @@ export default function DashboardPage() {
               A breakdown of your budgeted expenses.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex items-center justify-center">
+          <CardContent>
             <BudgetSummaryChart data={expenseBudgetsChartData} categories={categories ?? []} />
           </CardContent>
         </Card>

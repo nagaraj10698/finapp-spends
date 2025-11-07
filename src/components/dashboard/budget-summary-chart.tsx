@@ -8,6 +8,8 @@ import {
 } from '@/components/ui/chart';
 import { DhiramSymbol } from '@/components/ui/dhiram-symbol';
 import type { Category } from '@/lib/types';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 
 interface BudgetSummaryChartProps {
@@ -35,7 +37,7 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
   return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central">
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" className="text-xs font-bold">
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
@@ -75,7 +77,7 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
   }
 
   return (
-    <div className="flex items-center w-full">
+    <div className="flex flex-col items-center w-full">
       <ChartContainer
         config={chartConfig}
         className="mx-auto aspect-square min-h-[250px] w-full max-w-[300px] relative"
@@ -109,18 +111,22 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
               <span className="text-xs text-muted-foreground">Total</span>
               <div className="flex items-baseline font-bold">
                 <DhiramSymbol className="text-lg" />
-                <span className="text-2xl">{totalBudgeted.toFixed(2)}</span>
+                <span className="text-2xl">{totalBudgeted.toFixed(0)}</span>
               </div>
         </div>
       </ChartContainer>
-      <div className="flex flex-col gap-2 text-sm">
-        {chartData.map((item) => (
-            <div key={item.name} className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{backgroundColor: item.fill}} />
-                <span>{item.name}</span>
-            </div>
-        ))}
-      </div>
+      <ScrollArea className="w-full whitespace-nowrap">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm mt-4">
+            {chartData.map((item) => (
+                <div key={item.name} className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full" style={{backgroundColor: item.fill}} />
+                    <span className="text-muted-foreground">{item.name}</span>
+                    <span className="font-semibold flex items-center gap-0.5"><DhiramSymbol className="text-xs"/>{item.total.toFixed(0)}</span>
+                </div>
+            ))}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
     </div>
   );
 }

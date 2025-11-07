@@ -35,6 +35,7 @@ import { defaultCategories } from '@/lib/data';
 import { getCurrencyByCountry } from '@/lib/currencies';
 import { useEffect, useState } from 'react';
 import { countries } from '@/lib/countries';
+import type { Category } from '@/lib/types';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
@@ -89,26 +90,47 @@ export default function SignupPage() {
     },
   });
 
-  const handleNewUserSetup = async (user: User) => {
+  const handleNewUserSetup = async (user: User, values?: z.infer<typeof formSchema>) => {
+    if (!firestore) return;
     const userDocRef = doc(firestore, 'users', user.uid);
     const userDoc = await getDoc(userDocRef);
+
     if (userDoc.exists()) {
       return; // User already exists, no setup needed.
     }
 
+    const batch = writeBatch(firestore);
+
+    // 1. Create User Profile
     const [firstName, ...lastNameParts] = (user.displayName || '').split(' ');
     const lastName = lastNameParts.join(' ');
     
-    await setDoc(userDocRef, {
+    batch.set(userDocRef, {
       id: user.uid,
       email: user.email,
-      firstName: firstName,
-      lastName: lastName,
+      firstName: values?.firstName || firstName,
+      lastName: values?.lastName || lastName,
       photoURL: user.photoURL,
       currency: defaultCurrency,
       countryCode: defaultCountryCode,
       phone: '',
     });
+
+    // 2. Create Default Categories
+    const categoriesRef = collection(firestore, `users/${user.uid}/categories`);
+    defaultCategories.forEach(category => {
+        const categoryDoc = doc(categoriesRef);
+        const newCat: Omit<Category, 'id'> = {
+            name: category.name,
+            icon: category.icon,
+            color: category.color,
+            type: category.type,
+            userId: user.uid,
+        }
+        batch.set(categoryDoc, newCat);
+    });
+
+    await batch.commit();
   };
 
   const handleAuthError = (error: any, title: string) => {
@@ -170,26 +192,14 @@ export default function SignupPage() {
         values.password
       );
       const user = userCredential.user;
-
-      await sendEmailVerification(user);
-
+      
       await updateProfile(user, {
         displayName: `${values.firstName} ${values.lastName}`,
       });
-      
-      const userRef = doc(firestore, 'users', user.uid);
-      await setDoc(userRef, {
-          id: user.uid,
-          email: user.email,
-          firstName: values.firstName,
-          lastName: values.lastName,
-          photoURL: user.photoURL,
-          currency: defaultCurrency,
-          countryCode: defaultCountryCode,
-          phone: '',
-      });
 
-      // Default categories are now created by the mock data generator if needed.
+      await handleNewUserSetup(user, values);
+      
+      await sendEmailVerification(user);
 
       toast({
         title: 'Signup Successful',

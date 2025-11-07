@@ -25,6 +25,7 @@ export function DynamicCurrency({ amount, className, type = 'full' }: DynamicCur
 
 export function CurrencySymbol({ className }: { className?: string }) {
     const { currency } = useCurrency();
-    return <span className={cn("text-muted-foreground", className)}>{currency.symbol}</span>
+    return <span className={cn("text-muted-foreground", className)}>{currency.code}</span>
 }
+
 

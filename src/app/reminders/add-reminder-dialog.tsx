@@ -25,8 +25,8 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { ReactNode, useState } from 'react';
 import { CurrencySymbol } from '@/components/ui/dynamic-currency';
-import { useFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 import type { Reminder } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -44,6 +44,7 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
   const [open, setOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,7 +66,7 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
     }
     
     const reminderCollection = collection(firestore, 'users', user.uid, 'reminders');
-    const newReminder: Omit<Reminder, 'id' | 'userId'> = {
+    const newReminder: Omit<Reminder, 'id'| 'userId'> = {
         reminderName: values.reminderName,
         reminderAmount: values.reminderAmount,
         reminderDate: values.reminderDate,
@@ -135,7 +136,7 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Reminder Date</FormLabel>
-                  <Popover>
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -151,7 +152,15 @@ export default function AddReminderDialog({children}: {children: ReactNode}) {
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                      <Calendar 
+                        mode="single" 
+                        selected={field.value} 
+                        onSelect={(date) => {
+                            field.onChange(date);
+                            setDatePickerOpen(false);
+                        }} 
+                        initialFocus 
+                      />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />

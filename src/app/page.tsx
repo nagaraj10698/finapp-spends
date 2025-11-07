@@ -94,6 +94,8 @@ export default function DashboardPage() {
     const handlePresetClick = (label: string, getRange?: () => DateRange | undefined) => {
         if (getRange) {
             setDateRange(getRange());
+        } else {
+            setDateRange(undefined);
         }
         setActivePreset(label);
     }

@@ -28,6 +28,7 @@ export async function createBudgets(userId: string, budgetsToCreate: { categoryI
     budgetsToCreate.forEach(budget => {
         const newBudgetRef = doc(budgetsCollectionRef);
         const newBudget: Omit<Budget, 'id'> = {
+            userId: userId,
             name: budget.name,
             budgetAmount: budget.amount,
             type: 'Expense',

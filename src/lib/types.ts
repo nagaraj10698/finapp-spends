@@ -19,10 +19,12 @@ export interface Transaction {
   category: string;
   categoryId?: string | null;
   type: 'income' | 'expense';
+  userId: string;
 }
 
 export interface Budget {
   id: string;
+  userId: string;
   name: string;
   budgetAmount: number;
   type: 'Expense';

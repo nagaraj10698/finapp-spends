@@ -32,6 +32,8 @@ import Logo from '@/components/logo';
 import { collection, doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { defaultCategories } from '@/lib/data';
+import { getCurrencyByCountry } from '@/lib/currencies';
+import { useEffect, useState } from 'react';
 
 
 const formSchema = z.object({
@@ -46,6 +48,21 @@ export default function SignupPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const [defaultCurrency, setDefaultCurrency] = useState('AED');
+
+  useEffect(() => {
+    // This runs on the client and will not cause a hydration mismatch.
+    const userLocale = navigator.language;
+    if (userLocale) {
+        const countryCode = userLocale.split('-')[1];
+        if (countryCode) {
+            const currency = getCurrencyByCountry(countryCode);
+            if (currency) {
+                setDefaultCurrency(currency.code);
+            }
+        }
+    }
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -85,7 +102,7 @@ export default function SignupPage() {
           firstName: values.firstName,
           lastName: values.lastName,
           photoURL: user.photoURL,
-          currency: 'AED',
+          currency: defaultCurrency,
       });
 
       // Default categories are now created by the mock data generator if needed.

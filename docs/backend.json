@@ -170,87 +170,6 @@
         "category",
         "categoryId"
       ]
-    },
-    "Due": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Due",
-      "type": "object",
-      "description": "Represents a due for bills or subscriptions.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Due entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Due)"
-        },
-        "dueName": {
-          "type": "string",
-          "description": "Name of the due."
-        },
-        "dueDate": {
-          "type": "string",
-          "description": "Start date of the due.",
-          "format": "date-time"
-        },
-        "dueAmount": {
-          "type": "number",
-          "description": "Amount due for the due."
-        },
-        "isPaid": {
-          "type": "boolean",
-          "description": "Whether the due has been paid."
-        },
-        "paidDate": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The date the due was paid."
-        },
-        "isRecurring": {
-          "type": "boolean",
-          "description": "Whether the due is recurring."
-        },
-        "paidInstances": {
-          "type": "object",
-          "description": "A map of paid recurring instances, with the key being the instance date (YYYY-MM-DD) and value as true."
-        },
-        "frequency": {
-          "type": "string",
-          "description": "Frequency of recurring due.",
-          "enum": [
-            "weekly",
-            "monthly",
-            "quarterly",
-            "yearly"
-          ]
-        },
-        "recurrenceEndDate": {
-          "type": "string",
-          "description": "End date for the recurring due.",
-          "format": "date-time"
-        },
-        "categoryId": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "description": "Reference to Category."
-        },
-        "category": {
-          "type": "string",
-          "description": "Name of the category for the due."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "dueName",
-        "dueDate",
-        "dueAmount",
-        "category",
-        "categoryId"
-      ]
     }
   },
   "auth": {
@@ -335,30 +254,8 @@
             }
           ]
         }
-      },
-      {
-        "path": "/users/{userId}/dues/{dueId}",
-        "definition": {
-          "entityName": "Due",
-          "schema": {
-            "$ref": "#/backend/entities/Due"
-          },
-          "description": "Stores user's dues for bills and subscriptions. Accessible only by the user themselves.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "dueId",
-              "description": "The unique identifier of the due."
-            }
-          ]
-        }
       }
     ],
     "reasoning": "The Firestore structure is designed to ensure data isolation and ownership based on the user. Each user has their own collection of transactions, categories, budgets, and dues. Transactions are stored as a subcollection of accounts, ensuring that transactions are always associated with a specific account owned by the user.\\n\\nThis design ensures Authorization Independence by storing all user-specific data under paths specific to the user's ID.  There are no dependencies on parent documents (no `get()` calls are needed in the rules). The database adheres to the principle that Rules are not Filters (QAPs). Data segregation by path enables secure `list` operations, as rules can simply verify that `request.auth.uid` matches the `userId` in the path. Because data is segregated by user ID, listing accounts, categories, and other entities will only return data for the authenticated user.\\n"
   }
 }
-
-    

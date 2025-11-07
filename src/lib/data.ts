@@ -19,7 +19,7 @@ import {
   Wallet,
   TrendingUp,
 } from 'lucide-react';
-import type { Category, Transaction, Budget, Notification, Due } from './types';
+import type { Category, Transaction, Budget, Notification } from './types';
 import { addDays, addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfDay, isSameDay, isAfter, subDays, startOfWeek, endOfWeek, subWeeks, subMonths, startOfYear, endOfYear, startOfQuarter, endOfQuarter, eachYearOfInterval, getYear } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
@@ -172,62 +172,6 @@ export function getBudgets(
     });
 }
 
-export function generateDueInstances(dues: Due[] | null): Due[] {
-  if (!dues) return [];
-
-  const instances: Due[] = [];
-  const today = startOfDay(new Date());
-  // Generate a wider range to catch overdue and upcoming items for the timeline
-  const rangeStart = subDays(today, 30);
-  const rangeEnd = addDays(today, 60);
-
-  dues.forEach(due => {
-    const startDate = toDate(due.dueDate);
-
-    if (!due.isRecurring) {
-      if (isWithinInterval(startDate, { start: rangeStart, end: rangeEnd })) {
-        instances.push({ ...due, instanceDate: startDate });
-      }
-    } else {
-      const recurrenceEndDate = due.recurrenceEndDate ? toDate(due.recurrenceEndDate) : addYears(today, 10);
-      let nextDate = startDate;
-      let sanityCheck = 0;
-      
-      // Fast-forward to the relevant range
-      while (isBefore(nextDate, rangeStart) && isBefore(nextDate, recurrenceEndDate) && sanityCheck < 500) {
-           switch (due.frequency) {
-            case 'weekly': nextDate = addWeeks(nextDate, 1); break;
-            case 'monthly': nextDate = addMonths(nextDate, 1); break;
-            case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
-            case 'yearly': nextDate = addYears(nextDate, 1); break;
-            default: sanityCheck = 500; break;
-          }
-          sanityCheck++;
-      }
-      
-      sanityCheck=0; // reset sanity check
-
-      while (isBefore(nextDate, recurrenceEndDate) && isBefore(nextDate, rangeEnd) && sanityCheck < 100) {
-        instances.push({
-          ...due,
-          instanceDate: new Date(nextDate),
-        });
-
-        switch (due.frequency) {
-          case 'weekly': nextDate = addWeeks(nextDate, 1); break;
-          case 'monthly': nextDate = addMonths(nextDate, 1); break;
-          case 'quarterly': nextDate = addQuarters(nextDate, 1); break;
-          case 'yearly': nextDate = addYears(nextDate, 1); break;
-          default: sanityCheck = 100; break;
-        }
-        sanityCheck++;
-      }
-    }
-  });
-  return instances.sort((a,b) => (a.instanceDate || toDate(a.dueDate)).getTime() - (b.instanceDate || toDate(b.dueDate)).getTime());
-}
-
-
 export function getMoneyFlow(
   transactions: Transaction[] | null,
   period: 'daily' | 'monthly' | 'yearly',
@@ -289,44 +233,12 @@ export function getMoneyFlow(
 
 export function getNotifications(
   allTransactions: Transaction[] | null,
-  allBudgets: Budget[] | null,
-  allDues: Due[] | null,
+  allBudgets: Budget[] | null
 ): Notification[] {
   const notifications: Notification[] = [];
-  if (!allBudgets && !allDues && !allTransactions) return [];
+  if (!allBudgets && !allTransactions) return [];
 
   const today = startOfDay(new Date());
-
-  // Due alerts
-  if (allDues) {
-    const dueInstances = generateDueInstances(allDues);
-    dueInstances.forEach(due => {
-      const instanceDate = toDate(due.instanceDate || due.dueDate);
-      const instanceDateStr = instanceDate.toISOString().split('T')[0];
-      const isInstancePaid = due.isPaid || !!due.paidInstances?.[instanceDateStr];
-
-      if (!isInstancePaid) {
-        if (isBefore(instanceDate, today)) {
-           notifications.push({
-            id: `due-overdue-${due.id}-${format(instanceDate, 'yyyy-MM-dd')}`,
-            type: 'overdue',
-            title: 'Overdue Due',
-            description: `'${due.dueName}' was due on ${format(instanceDate, 'LLL dd')}.`,
-            href: '/dues',
-          });
-        } else if (differenceInDays(instanceDate, today) <= 7 && isAfter(instanceDate, subDays(today,1))) {
-          notifications.push({
-            id: `due-upcoming-${due.id}-${format(instanceDate, 'yyyy-MM-dd')}`,
-            type: 'upcoming',
-            title: 'Upcoming Due',
-            description: `'${due.dueName}' is due on ${format(instanceDate, 'LLL dd')}.`,
-            href: '/dues',
-          });
-        }
-      }
-    });
-  }
-
 
   // Budget alerts
   if (allBudgets && allTransactions) {

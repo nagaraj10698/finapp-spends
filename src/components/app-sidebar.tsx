@@ -38,7 +38,6 @@ const mainMenuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
   { href: '/budgets', label: 'Budgets', icon: Wallet },
-  { href: '/dues', label: 'Dues', icon: Landmark },
 ];
 
 const bottomMenuItems: any[] = [

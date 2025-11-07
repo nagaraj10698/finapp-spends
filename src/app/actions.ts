@@ -4,7 +4,7 @@
 import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, addDoc, writeBatch, deleteField, Timestamp } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase/index.server";
 import { getAuth, type User } from "firebase/auth";
-import type { Transaction, Budget, Due, Category } from "@/lib/types";
+import type { Transaction, Budget, Category } from "@/lib/types";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { startOfYear, endOfYear, eachDayOfInterval, format } from 'date-fns';
 import { defaultCategories } from "@/lib/data";
@@ -113,95 +113,5 @@ async function generateTransactions(userId: string, categories: Category[], batc
     // Commit any remaining operations in the last batch.
     if (commitCounter > 0) {
         await batch.commit();
-    }
-}
-
-
-export async function processDuePayment(userId: string, due: Due) {
-    const { firestore } = initializeFirebase();
-    const batch = writeBatch(firestore);
-    
-    // Correctly reference the user's dues and transactions collections
-    const dueRef = doc(firestore, 'users', userId, 'dues', due.id);
-    const transactionsCollectionRef = collection(firestore, 'users', userId, 'transactions');
-    
-    const instanceDate = due.instanceDate ? new Date(due.instanceDate) : new Date();
-    const instanceDateStr = instanceDate?.toISOString().split('T')[0];
-
-    // Create a new transaction for the payment
-    const newTransactionDocRef = doc(transactionsCollectionRef); // Use the correct collection ref
-    const newTransaction: Omit<Transaction, 'id'> = {
-      description: due.dueName,
-      amount: -Math.abs(due.dueAmount),
-      date: new Date(),
-      category: due.category,
-      categoryId: due.categoryId,
-      type: 'expense',
-      userId: userId,
-    };
-    batch.set(newTransactionDocRef, newTransaction);
-
-
-    // Update the due's paid status
-    if (due.isRecurring && instanceDateStr) {
-      batch.update(dueRef, { [`paidInstances.${instanceDateStr}`]: true });
-    } else {
-      batch.update(dueRef, { isPaid: true, paidDate: new Date() });
-    }
-
-    await batch.commit();
-}
-
-
-export async function saveDue(userId: string, dueData: Partial<Due>) {
-    const { firestore } = initializeFirebase();
-    const isEditing = !!dueData.id;
-
-    if (isEditing) {
-        const dueRef = doc(firestore, 'users', userId, dueData.id!);
-        const dataToUpdate: { [key: string]: any } = {
-            userId: userId, // Ensure userId is included for security rules
-            dueName: dueData.dueName,
-            dueAmount: dueData.dueAmount,
-            dueDate: dueData.dueDate,
-            category: dueData.category,
-            categoryId: dueData.categoryId,
-            isRecurring: dueData.isRecurring,
-        };
-
-        if (dueData.isRecurring) {
-            dataToUpdate.frequency = dueData.frequency;
-            dataToUpdate.recurrenceEndDate = dueData.recurrenceEndDate || null;
-            dataToUpdate.isPaid = deleteField();
-            dataToUpdate.paidDate = deleteField();
-        } else {
-            dataToUpdate.frequency = deleteField();
-            dataToUpdate.recurrenceEndDate = deleteField();
-            dataToUpdate.paidInstances = deleteField();
-            dataToUpdate.isPaid = dueData.isPaid || false;
-        }
-        await updateDoc(dueRef, dataToUpdate);
-
-    } else {
-        // Creating a new due
-        const duesCollection = collection(firestore, 'users', userId, 'dues');
-        const dataToCreate: Omit<Due, 'id' | 'paidDate' | 'paidInstances'> & {isPaid?: boolean} = {
-            userId: userId, // Ensure userId is included for security rules
-            dueName: dueData.dueName!,
-            dueAmount: dueData.dueAmount!,
-            dueDate: dueData.dueDate!,
-            category: dueData.category!,
-            categoryId: dueData.categoryId!,
-            isRecurring: dueData.isRecurring!,
-        };
-
-        if (dueData.isRecurring) {
-            dataToCreate.frequency = dueData.frequency;
-            dataToCreate.recurrenceEndDate = dueData.recurrenceEndDate || null;
-        } else {
-             dataToCreate.isPaid = false;
-        }
-        
-        await addDoc(duesCollection, dataToCreate);
     }
 }

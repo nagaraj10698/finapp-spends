@@ -13,10 +13,9 @@ import {
   getRecentTransactions,
   getTotals,
   getMoneyFlow,
-  generateDueInstances,
   getBudgets,
 } from '@/lib/data';
-import type { Transaction, Category, Due, Budget } from '@/lib/types';
+import type { Transaction, Category, Budget } from '@/lib/types';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { endOfDay, startOfDay, isBefore, isAfter, subMonths, isSameDay, format, differenceInDays, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addDays } from 'date-fns';
@@ -54,12 +53,10 @@ export default function DashboardPage() {
     const { firestore, user } = useFirebase();
     const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
     const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
-    const duesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'dues') : null, [firestore, user]);
     const budgetsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'budgets') : null, [firestore, user]);
     
     const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
-    const { data: allDues, isLoading: duesLoading } = useCollection<Due>(duesCollection);
     const { data: allBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
 
     const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
@@ -128,7 +125,7 @@ export default function DashboardPage() {
     }, [allBudgets]);
 
 
-    if (transactionsLoading || categoriesLoading || duesLoading || budgetsLoading) {
+    if (transactionsLoading || categoriesLoading || budgetsLoading) {
         return <div>Loading...</div>
     }
 

@@ -303,21 +303,6 @@ export default function ProfileSettings() {
             </form>
             </Form>
         </CardContent>
-         <Separator />
-        <CardHeader>
-            <CardTitle>Developer</CardTitle>
-            <CardDescription>Actions for testing and development.</CardDescription>
-        </CardHeader>
-        <CardContent>
-             <Button variant="secondary" onClick={handleGenerateMockData} disabled={isPending}>
-                {isPending ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
-                    </>
-                ) : "Generate Mock Data"}
-            </Button>
-        </CardContent>
       </Card>
     </>
   );

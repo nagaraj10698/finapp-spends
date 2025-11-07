@@ -27,13 +27,14 @@ export async function createBudgets(userId: string, budgetsToCreate: { categoryI
 
     budgetsToCreate.forEach(budgetInfo => {
         const newBudgetRef = doc(budgetsCollectionRef);
-        // This object MUST match the Budget type in src/lib/types.ts (excluding id)
+        // This object MUST match the Budget type in src/lib/types.ts and the schema in docs/backend.json (excluding id)
         const newBudget: Omit<Budget, 'id'> = {
             userId: userId,
             name: budgetInfo.name,
             budgetAmount: budgetInfo.amount,
             type: 'Expense', // Budgets are always for expenses
             categoryId: budgetInfo.categoryId,
+            category: budgetInfo.name, // Ensure the category name is included
         };
         batch.set(newBudgetRef, newBudget);
     });

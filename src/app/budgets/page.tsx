@@ -213,26 +213,30 @@ export default function BudgetsPage() {
         </div>
         
         {hasBudgets || unbudgetedCategories.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
-            {budgetsWithSpent.map(budget => {
-                const category = categories?.find(c => c.id === budget.categoryId);
-                return (
-                    <BudgetCard 
-                    key={budget.id} 
-                    budget={budget} 
-                    category={category} 
-                    onEdit={() => handleEditRequest(budget)}
-                    onDelete={() => handleDeleteRequest(budget)}
-                    />
-                )
-            })}
-
-            {unbudgetedCategories.length > 0 && (
-                <div className="xl:col-span-2">
-                     <SetAllBudgetsCard categories={unbudgetedCategories} />
-                </div>
-            )}
-          </div>
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+             {unbudgetedCategories.length > 0 && (
+               <div className="lg:col-span-1">
+                 <SetAllBudgetsCard categories={unbudgetedCategories} />
+               </div>
+             )}
+             <div className={cn(
+                "grid grid-cols-1 md:grid-cols-2 gap-6",
+                unbudgetedCategories.length > 0 ? "lg:col-span-2" : "lg:col-span-3 xl:grid-cols-3"
+             )}>
+               {budgetsWithSpent.map(budget => {
+                 const category = categories?.find(c => c.id === budget.categoryId);
+                 return (
+                   <BudgetCard
+                     key={budget.id}
+                     budget={budget}
+                     category={category}
+                     onEdit={() => handleEditRequest(budget)}
+                     onDelete={() => handleDeleteRequest(budget)}
+                   />
+                 )
+               })}
+             </div>
+           </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
               <h3 className="text-lg font-semibold text-muted-foreground">No budgets created yet</h3>

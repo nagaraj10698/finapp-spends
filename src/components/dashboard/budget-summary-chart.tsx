@@ -40,7 +40,7 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
     }));
   }, [data]);
   
-  const totalSpent = useMemo(() => {
+  const totalBudgeted = useMemo(() => {
     return data.reduce((acc, curr) => acc + curr.total, 0);
   }, [data]);
 
@@ -64,7 +64,7 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
   if (chartData.length === 0) {
     return (
       <div className="flex h-full min-h-[250px] w-full items-center justify-center rounded-lg border-2 border-dashed p-4 text-center">
-        <p className="text-sm text-muted-foreground">No expenses recorded for this period.</p>
+        <p className="text-sm text-muted-foreground">No expense budgets set.</p>
       </div>
     )
   }
@@ -85,7 +85,7 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
                     <div className='flex items-center gap-2'>
                         <div className="flex flex-col">
                             <span className='font-bold'>{item.payload.name}</span>
-                            <span className='text-muted-foreground'>{totalSpent > 0 ? ((item.payload.total / totalSpent) * 100).toFixed(0) : 0}%</span>
+                            <span className='text-muted-foreground'>{totalBudgeted > 0 ? ((item.payload.total / totalBudgeted) * 100).toFixed(0) : 0}%</span>
                         </div>
                         <div className="ml-auto flex items-center gap-1 font-bold">
                            <DhiramSymbol /> {item.payload.total.toFixed(2)}
@@ -118,10 +118,10 @@ export default function BudgetSummaryChart({ data, categories }: BudgetSummaryCh
         </PieChart>
       </ResponsiveContainer>
        <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center pointer-events-none">
-            <span className="text-xs text-muted-foreground">Total Spent</span>
+            <span className="text-xs text-muted-foreground">Total Budgeted</span>
             <div className="flex items-baseline font-bold">
               <DhiramSymbol className="text-lg" />
-              <span className="text-2xl">{totalSpent.toFixed(2)}</span>
+              <span className="text-2xl">{totalBudgeted.toFixed(2)}</span>
             </div>
       </div>
     </ChartContainer>

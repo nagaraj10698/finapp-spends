@@ -122,15 +122,12 @@ export default function DashboardPage() {
     const recentTransactions = useMemo(() => getRecentTransactions(allTransactions, 5), [allTransactions]);
     const moneyFlowData = useMemo(() => getMoneyFlow(filteredTransactions, period, dateRange), [filteredTransactions, period, dateRange]);
 
-    const budgetsWithCalculations = useMemo(() => {
-        return getBudgets(allBudgets, filteredTransactions);
-    }, [allBudgets, filteredTransactions]);
-
     const expenseBudgetsChartData = useMemo(() => {
-        return budgetsWithCalculations
-            .filter(b => b.type === 'Expense' && (b.spent ?? 0) > 0)
-            .map(b => ({ name: b.name, total: b.spent ?? 0 }));
-    }, [budgetsWithCalculations]);
+        if (!allBudgets) return [];
+        return allBudgets
+            .filter(b => b.type === 'Expense' && b.budgetAmount > 0)
+            .map(b => ({ name: b.name, total: b.budgetAmount }));
+    }, [allBudgets]);
 
     const overdueCount = useMemo(() => {
         const today = startOfDay(new Date());
@@ -253,9 +250,9 @@ export default function DashboardPage() {
         </Card>
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle className="font-headline">Spending by Category</CardTitle>
+            <CardTitle className="font-headline">Budgeted Spending</CardTitle>
              <CardDescription>
-              A breakdown of your expenses for the period.
+              A breakdown of your budgeted expenses.
             </CardDescription>
           </CardHeader>
           <CardContent>

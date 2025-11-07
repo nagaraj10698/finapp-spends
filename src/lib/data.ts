@@ -240,35 +240,32 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
 
   const upcomingDues: Owed[] = [];
   const today = startOfDay(new Date());
-  const aYearFromNow = addYears(today, 1);
 
   recurringExpenses.forEach((t) => {
     let nextDueDate = toDate(t.date);
-    const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : aYearFromNow;
 
+    // If the start date is in the past, calculate the next occurrence
+    // that is on or after today.
     while (isBefore(nextDueDate, today)) {
         switch (t.frequency) {
           case 'weekly': nextDueDate = addWeeks(nextDueDate, 1); break;
           case 'monthly': nextDueDate = addMonths(nextDueDate, 1); break;
           case 'quarterly': nextDueDate = addQuarters(nextDueDate, 1); break;
           case 'yearly': nextDueDate = addYears(nextDueDate, 1); break;
-          default: nextDueDate = addYears(nextDueDate, 100); break; // Stop loop
+          default: 
+            // If frequency is somehow undefined, break the loop to avoid infinite loops
+            nextDueDate = addYears(today, 100); 
+            break;
         }
     }
 
-    while (isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
+    // Check if the calculated next due date is within the recurrence end date
+    const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
+    if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
       upcomingDues.push({
         ...t,
         instanceDate: nextDueDate,
       });
-
-      switch (t.frequency) {
-        case 'weekly': nextDueDate = addWeeks(nextDueDate, 1); break;
-        case 'monthly': nextDueDate = addMonths(nextDueDate, 1); break;
-        case 'quarterly': nextDueDate = addQuarters(nextDueDate, 1); break;
-        case 'yearly': nextDueDate = addYears(nextDueDate, 1); break;
-        default: break;
-      }
     }
   });
 

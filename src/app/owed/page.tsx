@@ -11,11 +11,14 @@ import { useToast } from '@/hooks/use-toast';
 import { processOwedPayment } from '../actions';
 import { isBefore, startOfToday } from 'date-fns';
 import { AlertTriangle } from 'lucide-react';
+import EditTransactionDialog from '@/app/transactions/edit-transaction-dialog';
 
 export default function OwedPage() {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isEditOpen, setEditOpen] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
 
   const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
   const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
@@ -60,6 +63,12 @@ export default function OwedPage() {
     }
   }
 
+  const handleEditRequest = (owed: Owed) => {
+    // The 'owed' object is the original transaction, so we can cast it.
+    setTransactionToEdit(owed as Transaction);
+    setEditOpen(true);
+  };
+
 
   if (transactionsLoading || categoriesLoading) {
     return <div>Loading owed expenses...</div>;
@@ -93,6 +102,7 @@ export default function OwedPage() {
                                     owed={owed}
                                     category={category}
                                     onPay={handlePayOwed}
+                                    onEdit={() => handleEditRequest(owed)}
                                     isProcessing={processingId === owedInstanceId}
                                 />
                             )
@@ -113,6 +123,7 @@ export default function OwedPage() {
                                     owed={owed}
                                     category={category}
                                     onPay={handlePayOwed}
+                                    onEdit={() => handleEditRequest(owed)}
                                     isProcessing={processingId === owedInstanceId}
                                 />
                             )
@@ -128,6 +139,17 @@ export default function OwedPage() {
           </div>
         )}
       </div>
+
+       {transactionToEdit && (
+        <EditTransactionDialog
+          isOpen={isEditOpen}
+          onClose={() => {
+            setEditOpen(false);
+            setTransactionToEdit(null);
+          }}
+          transaction={transactionToEdit}
+        />
+      )}
     </>
   );
 }

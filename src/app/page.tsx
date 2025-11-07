@@ -116,7 +116,7 @@ export default function DashboardPage() {
 
 
     const totals = useMemo(() => getTotals(filteredTransactions), [filteredTransactions]);
-    const spendingByCategory = useMemo(() => getSpendingByCategory(filteredTransactions), [filteredTransactions]);
+    const spendingByCategory = useMemo(() => getSpendingByCategory(filteredTransactions.filter(t => t.type === 'expense')), [filteredTransactions]);
     const upcomingBills = useMemo(() => generateDueInstances(allDues), [allDues]);
     const recentTransactions = useMemo(() => getRecentTransactions(allTransactions, 5), [allTransactions]);
     const moneyFlowData = useMemo(() => getMoneyFlow(filteredTransactions, period, dateRange), [filteredTransactions, period, dateRange]);
@@ -242,9 +242,9 @@ export default function DashboardPage() {
         </Card>
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle className="font-headline">Budget</CardTitle>
+            <CardTitle className="font-headline">Spending by Category</CardTitle>
              <CardDescription>
-              Your spending vs. your budget for the period.
+              A breakdown of your expenses for the period.
             </CardDescription>
           </CardHeader>
           <CardContent>

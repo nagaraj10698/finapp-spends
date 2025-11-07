@@ -52,20 +52,23 @@ export async function generateMockTransactionsForYear(userId: string) {
         const categoriesRef = collection(firestore, `users/${userId}/categories`);
         defaultCategories.forEach(category => {
             const categoryDoc = doc(categoriesRef);
-            batch.set(categoryDoc, {
-                ...category,
-                userId: userId,
-            });
+            const newCat: Omit<Category, 'id'> = {
+                name: category.name,
+                icon: category.icon,
+                color: category.color,
+                type: category.type,
+                // userId: userId, // userId is not part of the Category type in types.ts
+            }
+            batch.set(categoryDoc, newCat);
         });
         // We need to commit the categories first and then refetch them.
         await batch.commit(); 
         // After committing, we need a new batch for transactions.
         batch = writeBatch(firestore);
         categories = await getCollectionData<Category>(userId, 'categories');
-        await generateTransactions(userId, categories, batch); // Pass new batch
-    } else {
-        await generateTransactions(userId, categories, batch); // Pass original batch
     }
+    
+    await generateTransactions(userId, categories, batch);
 }
 
 
@@ -77,14 +80,16 @@ async function generateTransactions(userId: string, categories: Category[], batc
     const incomeCategory = categories.find(c => c.name === 'Salary');
 
     if (expenseCategories.length === 0) {
-        throw new Error("No expense categories found for user.");
+        console.error("No expense categories found for user. Cannot generate mock expenses.");
+        // We can still try to generate income
     }
 
     const today = new Date();
     const start = startOfYear(today);
     const days = eachDayOfInterval({ start, end: today });
 
-    days.forEach(day => {
+    let commitCounter = 0;
+    for (const day of days) {
         // Add monthly salary
         if (day.getDate() === 1 && incomeCategory) {
             const salaryDocRef = doc(transactionsRef);
@@ -97,28 +102,42 @@ async function generateTransactions(userId: string, categories: Category[], batc
                 categoryId: incomeCategory.id,
                 type: 'income',
             });
+            commitCounter++;
         }
 
         // Add random expenses
-        const numExpenses = Math.floor(Math.random() * 6); // 0 to 5 expenses per day
-        for (let i = 0; i < numExpenses; i++) {
-            const randomCategory = expenseCategories[Math.floor(Math.random() * expenseCategories.length)];
-            const amount = Math.random() * 200 + 5; // 5 to 205
-            
-            const newTransactionDocRef = doc(transactionsRef);
-            batch.set(newTransactionDocRef, {
-                userId,
-                description: `${randomCategory.name} purchase`,
-                amount: -amount,
-                date: Timestamp.fromDate(day),
-                category: randomCategory.name,
-                categoryId: randomCategory.id,
-                type: 'expense',
-            });
+        if (expenseCategories.length > 0) {
+            const numExpenses = Math.floor(Math.random() * 6); // 0 to 5 expenses per day
+            for (let i = 0; i < numExpenses; i++) {
+                const randomCategory = expenseCategories[Math.floor(Math.random() * expenseCategories.length)];
+                const amount = Math.random() * 200 + 5; // 5 to 205
+                
+                const newTransactionDocRef = doc(transactionsRef);
+                batch.set(newTransactionDocRef, {
+                    userId,
+                    description: `${randomCategory.name} purchase`,
+                    amount: -amount, // Expenses are negative
+                    date: Timestamp.fromDate(day),
+                    category: randomCategory.name,
+                    categoryId: randomCategory.id,
+                    type: 'expense',
+                });
+                commitCounter++;
+            }
         }
-    });
-
-    await batch.commit();
+        
+        // Firestore batch has a limit of 500 operations.
+        if (commitCounter >= 450) {
+            await batch.commit();
+            batch = writeBatch(firestore); // Start a new batch
+            commitCounter = 0;
+        }
+    }
+    
+    // Commit any remaining operations in the last batch.
+    if (commitCounter > 0) {
+        await batch.commit();
+    }
 }
 
 
@@ -127,19 +146,20 @@ export async function processDuePayment(userId: string, due: Due) {
     const batch = writeBatch(firestore);
     const dueRef = doc(firestore, 'users', userId, 'dues', due.id);
 
-    const instanceDate = due.instanceDate ? new Date(due.instanceDate) : null;
+    const instanceDate = due.instanceDate ? new Date(due.instanceDate) : new Date();
     const instanceDateStr = instanceDate?.toISOString().split('T')[0];
 
     // Create a new transaction for the payment
     const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
     const newTransactionDocRef = doc(transactionsCollection); // Create a new doc ref for the transaction
-    const newTransaction: Omit<Transaction, 'id'|'userId'> = {
+    const newTransaction: Omit<Transaction, 'id'> = {
       description: due.dueName,
       amount: -Math.abs(due.dueAmount),
       date: new Date(),
       category: due.category,
       categoryId: due.categoryId,
       type: 'expense',
+      userId: userId,
     };
     batch.set(newTransactionDocRef, newTransaction);
 

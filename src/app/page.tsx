@@ -58,10 +58,10 @@ export default function DashboardPage() {
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesCollection);
     const { data: allBudgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
 
-    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-    const [activePreset, setActivePreset] = useState<string | null>('All Time');
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
+    const [activePreset, setActivePreset] = useState<string | null>('This Month');
     const [isDatePopoverOpen, setDatePopoverOpen] = useState(false);
-    const [period, setPeriod] = useState<'daily' | 'monthly' | 'yearly'>('yearly');
+    const [period, setPeriod] = useState<'daily' | 'monthly' | 'yearly'>('daily');
 
     useEffect(() => {
         if (dateRange?.from && dateRange.to) {

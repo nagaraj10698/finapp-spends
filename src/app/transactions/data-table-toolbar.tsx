@@ -44,8 +44,8 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   if (!table) return null;
   
-  const [date, setDate] = React.useState<DateRange | undefined>(undefined);
-  const [activePreset, setActivePreset] = React.useState<string | null>('All Time');
+  const [date, setDate] = React.useState<DateRange | undefined>({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
+  const [activePreset, setActivePreset] = React.useState<string | null>('This Month');
   const [isDatePopoverOpen, setDatePopoverOpen] = React.useState(false);
 
 

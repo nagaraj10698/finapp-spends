@@ -28,6 +28,10 @@
           "type": "string",
           "description": "URL of the user's profile picture.",
           "format": "uri"
+        },
+        "currency": {
+            "type": "string",
+            "description": "The user's preferred currency code (e.g., 'USD', 'AED')."
         }
       },
       "required": [
@@ -72,6 +76,20 @@
         "type": {
           "type": "string",
           "description": "Type of transaction (e.g., income, expense)."
+        },
+        "isRecurring": {
+          "type": "boolean",
+          "description": "Indicates if the transaction is recurring."
+        },
+        "frequency": {
+          "type": "string",
+          "enum": ["weekly", "monthly", "quarterly", "yearly"],
+          "description": "Frequency of the recurring transaction."
+        },
+        "recurrenceEndDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The end date for the recurring transaction."
         }
       },
       "required": [
@@ -153,7 +171,8 @@
           "type": "string",
           "description": "Type of budget, always 'Expense' for now.",
           "enum": [
-            "Expense"
+            "Expense",
+            "Income"
           ]
         },
         "category": {
@@ -174,7 +193,8 @@
   },
   "auth": {
     "providers": [
-      "password"
+      "password",
+      "google.com"
     ]
   },
   "firestore": {

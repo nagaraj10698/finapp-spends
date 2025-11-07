@@ -120,12 +120,11 @@ export default function SignupPage() {
     const categoriesRef = collection(firestore, `users/${user.uid}/categories`);
     defaultCategories.forEach(category => {
         const categoryDoc = doc(categoriesRef);
-        const newCat: Omit<Category, 'id'> = {
+        const newCat: Omit<Category, 'id' | 'userId'> = {
             name: category.name,
             icon: category.icon,
             color: category.color,
             type: category.type,
-            userId: user.uid,
         }
         batch.set(categoryDoc, newCat);
     });
@@ -316,3 +315,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    

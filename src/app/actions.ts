@@ -182,22 +182,24 @@ export async function saveDue(userId: string, dueData: Partial<Due>) {
     } else {
         // Creating a new due
         const duesCollection = collection(firestore, 'users', userId, 'dues');
-        const dataToCreate: { [key: string]: any } = {
-            dueName: dueData.dueName,
-            dueAmount: dueData.dueAmount,
-            dueDate: dueData.dueDate,
-            category: dueData.category,
-            categoryId: dueData.categoryId,
-            isRecurring: dueData.isRecurring,
+        const dataToCreate: Omit<Due, 'id'> = {
             userId: userId,
+            dueName: dueData.dueName!,
+            dueAmount: dueData.dueAmount!,
+            dueDate: dueData.dueDate!,
+            category: dueData.category!,
+            categoryId: dueData.categoryId!,
+            isRecurring: dueData.isRecurring!,
+            isPaid: false, // Default for new non-recurring dues
         };
 
         if (dueData.isRecurring) {
             dataToCreate.frequency = dueData.frequency;
             dataToCreate.recurrenceEndDate = dueData.recurrenceEndDate || null;
-        } else {
-            dataToCreate.isPaid = false;
+            // for new recurring dues, isPaid is not relevant at the top level
+            delete (dataToCreate as Partial<Due>).isPaid; 
         }
+        
         await addDoc(duesCollection, dataToCreate);
     }
 }

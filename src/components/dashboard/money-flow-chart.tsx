@@ -19,7 +19,7 @@ interface MoneyFlowChartProps {
 const chartConfig = {
   income: {
     label: "Income",
-    color: "hsl(var(--chart-4))",
+    color: "hsl(var(--chart-1))",
   },
   expense: {
     label: "Expense",

@@ -30,6 +30,7 @@ export interface Budget {
   budgetAmount: number;
   type: 'Expense' | 'Income';
   categoryId: string;
+  category: string;
   // These are calculated fields, not in Firestore
   spent?: number;
   received?: number;

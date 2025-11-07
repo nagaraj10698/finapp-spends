@@ -89,7 +89,10 @@ export default function BudgetCard({ budget, category, onEdit, onDelete }: Budge
                     </span>
                 </span>
             </div>
-            <Progress value={progress} className={cn(isExpense && progress > 100 && "[&>div]:bg-destructive")} />
+            <Progress value={progress} className={cn(
+                isExpense && progress > 100 && "[&>div]:bg-destructive",
+                !isExpense && progress >= 100 && "[&>div]:bg-green-500"
+            )} />
             <div className="flex items-baseline gap-1">
               <div className="text-lg font-bold flex items-baseline gap-1">
                 <CurrencySymbol className="text-base" />

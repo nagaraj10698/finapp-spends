@@ -171,6 +171,9 @@ export async function saveDue(userId: string, dueData: Partial<Due>) {
             dataToUpdate.frequency = dueData.frequency;
             // Ensure recurrenceEndDate is either a valid date or null
             dataToUpdate.recurrenceEndDate = dueData.recurrenceEndDate || null;
+            // Clear fields that are for non-recurring dues
+            dataToUpdate.isPaid = deleteField();
+            dataToUpdate.paidDate = deleteField();
         } else {
             // Use deleteField for fields that should be removed when not recurring
             dataToUpdate.frequency = deleteField();

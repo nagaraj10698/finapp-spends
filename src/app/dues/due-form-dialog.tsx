@@ -108,6 +108,7 @@ export default function DueFormDialog({ isOpen, onClose, due, categories }: DueF
 
         const dueData: Partial<Due> = {
             id: due?.id,
+            userId: user.uid, // Ensure userId is always included
             dueName: values.dueName,
             dueAmount: values.dueAmount,
             dueDate: values.dueDate,
@@ -127,7 +128,7 @@ export default function DueFormDialog({ isOpen, onClose, due, categories }: DueF
         onClose();
     } catch(e) {
         console.error("Failed to save due:", e);
-        toast({ variant: 'destructive', title: 'Save Failed' });
+        toast({ variant: 'destructive', title: 'Save Failed', description: e instanceof Error ? e.message : 'An unknown error occurred.' });
     } finally {
         setIsSubmitting(false);
     }

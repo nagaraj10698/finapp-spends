@@ -45,7 +45,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <UserNav />
                    <SidebarTrigger variant="ghost" size="icon" className="md:hidden">
                         <Menu />
-                        <span className="sr-only">Toggle Sidebar</span>
                     </SidebarTrigger>
                 </div>
               </header>

@@ -263,9 +263,8 @@ Sidebar.displayName = "Sidebar"
 const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
->(({ className, onClick, children, ...props }, ref) => {
-  const { toggleSidebar, state } = useSidebar()
-  const isExpanded = state === "expanded"
+>(({ className, onClick, ...props }, ref) => {
+  const { toggleSidebar } = useSidebar()
 
   return (
     <Button
@@ -277,9 +276,7 @@ const SidebarTrigger = React.forwardRef<
         toggleSidebar()
       }}
       {...props}
-    >
-      {isExpanded ? (children as any)?.props.expanded ?? children : (children as any)?.props.collapsed ?? children}
-    </Button>
+    />
   )
 })
 SidebarTrigger.displayName = "SidebarTrigger"

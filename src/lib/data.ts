@@ -20,7 +20,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Category, Transaction, Budget, Notification, Due } from './types';
-import { addDays, addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfDay, isSameDay, isAfter, subDays, startOfWeek, endOfWeek, subWeeks, subMonths, startOfYear, endOfYear, startOfQuarter, endOfQuarter } from 'date-fns';
+import { addDays, addWeeks, addMonths, addQuarters, addYears, format, startOfMonth, endOfMonth, isWithinInterval, eachMonthOfInterval, eachDayOfInterval, isBefore, differenceInDays, startOfDay, endOfDay, isSameDay, isAfter, subDays, startOfWeek, endOfWeek, subWeeks, subMonths, startOfYear, endOfYear, startOfQuarter, endOfQuarter, eachYearOfInterval, getYear } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 import { DateRange } from 'react-day-picker';
 
@@ -214,30 +214,36 @@ export function generateDueInstances(dues: Due[] | null): Due[] {
 
 export function getMoneyFlow(
   transactions: Transaction[] | null,
-  period: 'daily' | 'monthly',
+  period: 'daily' | 'monthly' | 'yearly',
   dateRange?: DateRange
 ) {
-  if (!transactions) return [];
+  if (!transactions || transactions.length === 0) return [];
   
   const today = startOfDay(new Date());
 
+  // Determine the range. If no dateRange is provided (e.g., for 'All Time'), find the min and max dates from transactions.
   const range = dateRange?.from && dateRange.to 
     ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) } 
-    : { start: startOfMonth(today), end: endOfMonth(today) };
+    : (() => {
+        const dates = transactions.map(t => toDate(t.date));
+        const start = new Date(Math.min(...dates.map(d => d.getTime())));
+        const end = new Date(Math.max(...dates.map(d => d.getTime())));
+        return { start, end };
+    })();
   
   const flowMap = new Map<string, { income: number; expense: number }>();
   let periods: Date[];
-  let formatString: string;
   let getPeriodKey: (date: Date) => string;
 
   if (period === 'daily') {
       periods = eachDayOfInterval(range);
-      formatString = 'dd MMM';
-      getPeriodKey = (date) => format(date, formatString);
-  } else { // monthly
+      getPeriodKey = (date) => format(date, 'dd MMM');
+  } else if (period === 'monthly') {
       periods = eachMonthOfInterval(range);
-      formatString = 'MMM';
-      getPeriodKey = (date) => format(startOfMonth(date), formatString);
+      getPeriodKey = (date) => format(startOfMonth(date), 'MMM');
+  } else { // yearly
+      periods = eachYearOfInterval(range);
+      getPeriodKey = (date) => format(date, 'yyyy');
   }
 
   periods.forEach(p => {

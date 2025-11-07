@@ -41,7 +41,7 @@ export default function MoneyFlowChart({ data }: MoneyFlowChartProps) {
             tickFormatter={(value) => value.slice(0, 3)}
           />
           <YAxis 
-             tickFormatter={(value) => `AED ${Number(value) / 1000}k`}
+             tickFormatter={(value) => `AED ${value}`}
              tickLine={false}
              axisLine={false}
           />

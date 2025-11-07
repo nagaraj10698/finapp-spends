@@ -66,7 +66,7 @@ export default function DashboardPage() {
     });
     const [activePreset, setActivePreset] = useState<string | null>('This Month');
     const [isDatePopoverOpen, setDatePopoverOpen] = useState(false);
-    const [period, setPeriod] = useState<'daily' | 'monthly'>('monthly');
+    const [period, setPeriod] = useState<'daily' | 'monthly' | 'yearly'>('monthly');
 
     useEffect(() => {
         if (dateRange?.from && dateRange.to) {
@@ -78,11 +78,18 @@ export default function DashboardPage() {
           setActivePreset(matchedPreset ? matchedPreset.label : 'Custom');
           
           const diff = differenceInDays(dateRange.to, dateRange.from);
-          setPeriod(diff > 62 ? 'monthly' : 'daily');
+          if (diff > 730) {
+            setPeriod('yearly');
+          } else if (diff > 62) {
+            setPeriod('monthly');
+          } else {
+            setPeriod('daily');
+          }
         } else {
              const allTimePreset = PRESET_RANGES.find(p => p.label === 'All Time');
             if (!dateRange && allTimePreset) {
                 setActivePreset(allTimePreset.label);
+                setPeriod('yearly');
             } else {
                 setActivePreset(null);
             }

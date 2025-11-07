@@ -207,56 +207,17 @@ export default function BudgetsPage() {
         </div>
         
         {hasBudgets || unbudgetedCategories.length > 0 ? (
-          <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             {unbudgetedCategories.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <div className="lg:col-span-1">
-                  <SetAllBudgetsCard categories={unbudgetedCategories} />
-                </div>
-                <div className={cn("lg:col-span-2 space-y-8")}>
-                  <div>
-                    <h2 className="font-headline text-xl font-semibold mb-4">Expense Budgets</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {expenseBudgets.map(budget => {
-                        const category = categories?.find(c => c.id === budget.categoryId);
-                        return (
-                          <BudgetCard
-                            key={budget.id}
-                            budget={budget}
-                            category={category}
-                            onEdit={() => handleEditRequest(budget)}
-                            onDelete={() => handleDeleteRequest(budget)}
-                          />
-                        )
-                      })}
-                    </div>
-                    {expenseBudgets.length === 0 && <p className="text-muted-foreground text-sm mt-4">No expense budgets set for this period.</p>}
-                  </div>
-                  <div>
-                    <h2 className="font-headline text-xl font-semibold mb-4">Income Budgets</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {incomeBudgets.map(budget => {
-                        const category = categories?.find(c => c.id === budget.categoryId);
-                        return (
-                          <BudgetCard
-                            key={budget.id}
-                            budget={budget}
-                            category={category}
-                            onEdit={() => handleEditRequest(budget)}
-                            onDelete={() => handleDeleteRequest(budget)}
-                          />
-                        )
-                      })}
-                    </div>
-                    {incomeBudgets.length === 0 && <p className="text-muted-foreground text-sm mt-4">No income budgets set for this period.</p>}
-                  </div>
-                </div>
+              <div className="lg:col-span-1">
+                <SetAllBudgetsCard categories={unbudgetedCategories} />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            ) : <div className="lg:col-span-1" />
+            }
+            <div className={cn("lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 items-start")}>
                 <div>
                   <h2 className="font-headline text-xl font-semibold mb-4">Income Budgets</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {incomeBudgets.map(budget => {
                       const category = categories?.find(c => c.id === budget.categoryId);
                       return (
@@ -274,7 +235,7 @@ export default function BudgetsPage() {
                 </div>
                 <div>
                   <h2 className="font-headline text-xl font-semibold mb-4">Expense Budgets</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {expenseBudgets.map(budget => {
                       const category = categories?.find(c => c.id === budget.categoryId);
                       return (
@@ -290,9 +251,8 @@ export default function BudgetsPage() {
                   </div>
                   {expenseBudgets.length === 0 && <p className="text-muted-foreground text-sm mt-4">No expense budgets set for this period.</p>}
                 </div>
-              </div>
-            )}
-          </>
+            </div>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
               <h3 className="text-lg font-semibold text-muted-foreground">No budgets created yet</h3>

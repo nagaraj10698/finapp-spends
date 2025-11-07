@@ -82,6 +82,7 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
                 name: category.name,
                 type: category.type === 'expense' ? 'Expense' : 'Income',
                 amount: amount!,
+                category: category.name,
             };
         }).filter(Boolean);
         
@@ -108,6 +109,7 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
                 budgetAmount: budgetInfo.amount,
                 type: budgetInfo.type as 'Expense' | 'Income',
                 categoryId: budgetInfo.categoryId,
+                category: budgetInfo.category,
             };
             batch.set(newBudgetRef, newBudget);
         });
@@ -145,51 +147,6 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 h-full flex flex-col">
                     <ScrollArea className='flex-grow pr-4 -mr-4'>
                         <div className='space-y-6'>
-                          {expenseCategories.length > 0 && (
-                            <div className='space-y-2'>
-                              <h4 className='font-medium text-sm text-muted-foreground'>Expense Categories</h4>
-                              <div className='space-y-4'>
-                                {expenseCategories.map((cat) => {
-                                    const Icon = getIconByName(cat.icon);
-                                    return (
-                                    <FormField
-                                        key={cat.id}
-                                        control={form.control}
-                                        name={`budgets.${cat.id}`}
-                                        render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className='sr-only'>{cat.name}</FormLabel>
-                                            <div className='flex items-center gap-4'>
-                                                <div className='flex items-center gap-2 w-40'>
-                                                    <Icon className={cn('h-5 w-5', cat.color)} />
-                                                    <span>{cat.name}</span>
-                                                </div>
-                                                <FormControl>
-                                                    <div className="relative flex-1">
-                                                        <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                                                        <Input 
-                                                            type="number" 
-                                                            placeholder="0.00" 
-                                                            {...field}
-                                                            value={field.value ?? ''} // Ensure empty string if undefined
-                                                            className="pl-12 font-medium"
-                                                            onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                                                        />
-                                                    </div>
-                                                </FormControl>
-                                            </div>
-                                            <FormMessage />
-                                        </FormItem>
-                                        )}
-                                    />
-                                    )
-                                })}
-                              </div>
-                            </div>
-                          )}
-
-                          {incomeCategories.length > 0 && expenseCategories.length > 0 && <Separator />}
-
                           {incomeCategories.length > 0 && (
                             <div className='space-y-2'>
                               <h4 className='font-medium text-sm text-muted-foreground'>Income Categories</h4>
@@ -229,6 +186,51 @@ export default function SetAllBudgetsCard({ categories }: SetAllBudgetsCardProps
                                   />
                                   )
                               })}
+                              </div>
+                            </div>
+                          )}
+
+                          {incomeCategories.length > 0 && expenseCategories.length > 0 && <Separator />}
+
+                          {expenseCategories.length > 0 && (
+                            <div className='space-y-2'>
+                              <h4 className='font-medium text-sm text-muted-foreground'>Expense Categories</h4>
+                              <div className='space-y-4'>
+                                {expenseCategories.map((cat) => {
+                                    const Icon = getIconByName(cat.icon);
+                                    return (
+                                    <FormField
+                                        key={cat.id}
+                                        control={form.control}
+                                        name={`budgets.${cat.id}`}
+                                        render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className='sr-only'>{cat.name}</FormLabel>
+                                            <div className='flex items-center gap-4'>
+                                                <div className='flex items-center gap-2 w-40'>
+                                                    <Icon className={cn('h-5 w-5', cat.color)} />
+                                                    <span>{cat.name}</span>
+                                                </div>
+                                                <FormControl>
+                                                    <div className="relative flex-1">
+                                                        <DhiramSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                                        <Input 
+                                                            type="number" 
+                                                            placeholder="0.00" 
+                                                            {...field}
+                                                            value={field.value ?? ''} // Ensure empty string if undefined
+                                                            className="pl-12 font-medium"
+                                                            onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                                                        />
+                                                    </div>
+                                                </FormControl>
+                                            </div>
+                                            <FormMessage />
+                                        </FormItem>
+                                        )}
+                                    />
+                                    )
+                                })}
                               </div>
                             </div>
                           )}

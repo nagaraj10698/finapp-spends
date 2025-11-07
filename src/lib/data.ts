@@ -28,25 +28,25 @@ import { DateRange } from 'react-day-picker';
 
 export const defaultCategories: Omit<Category, 'id' | 'userId'>[] = [
     // Expenses
-    { name: 'Housing', icon: 'Home', color: 'text-cyan-500', type: 'expense' },
-    { name: 'Utilities', icon: 'Lightbulb', color: 'text-yellow-500', type: 'expense' },
-    { name: 'Food', icon: 'Utensils', color: 'text-orange-500', type: 'expense' },
-    { name: 'Groceries', icon: 'ShoppingBag', color: 'text-emerald-500', type: 'expense' },
-    { name: 'Transport', icon: 'Car', color: 'text-blue-500', type: 'expense' },
-    { name: 'Health & Fitness', icon: 'HeartPulse', color: 'text-red-500', type: 'expense' },
-    { name: 'Family Support', icon: 'HeartPulse', color: 'text-rose-500', type: 'expense' },
-    { name: 'Medical & Wellness', icon: 'Stethoscope', color: 'text-red-600', type: 'expense' },
-    { name: 'Entertainment', icon: 'Film', color: 'text-purple-500', type: 'expense' },
-    { name: 'Shopping', icon: 'Shirt', color: 'text-pink-500', type: 'expense' },
-    { name: 'Subscription', icon: 'Wallet', color: 'text-indigo-500', type: 'expense' },
-    { name: 'Loan/EMI', icon: 'Landmark', color: 'text-violet-500', type: 'expense' },
-    { name: 'Investment', icon: 'TrendingUp', color: 'text-sky-500', type: 'expense' },
-    { name: 'Miscellaneous', icon: 'Shapes', color: 'text-gray-500', type: 'expense' },
+    { name: 'Housing', icon: 'Home', color: 'text-cyan-500', type: 'expense', userId: '' },
+    { name: 'Utilities', icon: 'Lightbulb', color: 'text-yellow-500', type: 'expense', userId: '' },
+    { name: 'Food', icon: 'Utensils', color: 'text-orange-500', type: 'expense', userId: '' },
+    { name: 'Groceries', icon: 'ShoppingBag', color: 'text-emerald-500', type: 'expense', userId: '' },
+    { name: 'Transport', icon: 'Car', color: 'text-blue-500', type: 'expense', userId: '' },
+    { name: 'Health & Fitness', icon: 'HeartPulse', color: 'text-red-500', type: 'expense', userId: '' },
+    { name: 'Family Support', icon: 'HeartPulse', color: 'text-rose-500', type: 'expense', userId: '' },
+    { name: 'Medical & Wellness', icon: 'Stethoscope', color: 'text-red-600', type: 'expense', userId: '' },
+    { name: 'Entertainment', icon: 'Film', color: 'text-purple-500', type: 'expense', userId: '' },
+    { name: 'Shopping', icon: 'Shirt', color: 'text-pink-500', type: 'expense', userId: '' },
+    { name: 'Subscription', icon: 'Wallet', color: 'text-indigo-500', type: 'expense', userId: '' },
+    { name: 'Loan/EMI', icon: 'Landmark', color: 'text-violet-500', type: 'expense', userId: '' },
+    { name: 'Investment', icon: 'TrendingUp', color: 'text-sky-500', type: 'expense', userId: '' },
+    { name: 'Miscellaneous', icon: 'Shapes', color: 'text-gray-500', type: 'expense', userId: '' },
     // Income
-    { name: 'Salary', icon: 'Wallet', color: 'text-green-500', type: 'income' },
-    { name: 'Business / Side Hustle', icon: 'Briefcase', color: 'text-green-600', type: 'income' },
-    { name: 'Investments', icon: 'LineChart', color: 'text-green-700', type: 'income' },
-    { name: 'Other Income', icon: 'Gift', color: 'text-green-800', type: 'income' },
+    { name: 'Salary', icon: 'Wallet', color: 'text-green-500', type: 'income', userId: '' },
+    { name: 'Business / Side Hustle', icon: 'Briefcase', color: 'text-green-600', type: 'income', userId: '' },
+    { name: 'Investments', icon: 'LineChart', color: 'text-green-700', type: 'income', userId: '' },
+    { name: 'Other Income', icon: 'Gift', color: 'text-green-800', type: 'income', userId: '' },
 ];
 
 export const ICONS: Record<string, LucideIcon> = {
@@ -188,6 +188,7 @@ export function getMoneyFlow(
   const range = dateRange?.from && dateRange.to 
     ? { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) } 
     : (() => {
+        if (transactions.length === 0) return { start: new Date(), end: new Date() };
         const dates = transactions.map(t => toDate(t.date));
         const start = new Date(Math.min(...dates.map(d => d.getTime())));
         const end = new Date(Math.max(...dates.map(d => d.getTime())));
@@ -203,7 +204,7 @@ export function getMoneyFlow(
       getPeriodKey = (date) => format(date, 'd MMM');
   } else if (period === 'monthly') {
       periods = eachMonthOfInterval(range);
-      getPeriodKey = (date) => format(startOfMonth(date), 'MMM');
+      getPeriodKey = (date) => format(startOfMonth(date), 'MMM yyyy');
   } else { // yearly
       periods = eachYearOfInterval(range);
       getPeriodKey = (date) => format(date, 'yyyy');
@@ -233,6 +234,7 @@ export function getMoneyFlow(
   return Array.from(flowMap.entries()).map(([name, values]) => ({ name, ...values }));
 }
 
+
 export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
     if (!transactions) return [];
 
@@ -244,23 +246,11 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
 
     recurringExpenses.forEach((t) => {
         let nextDueDate = toDate(t.date);
+        const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
         
-        while (isBefore(nextDueDate, today)) {
-            const isPaid = transactions.some(p => 
-                !p.isRecurring &&
-                p.categoryId === t.categoryId &&
-                p.description === t.description &&
-                isSameDay(toDate(p.date), nextDueDate)
-            );
-
-            if (!isPaid) {
-                 owedInstances.push({
-                    ...t,
-                    instanceDate: nextDueDate,
-                });
-            }
-
-            switch (t.frequency) {
+        // Fast-forward to the first due date that is on or after today
+        while(isBefore(nextDueDate, today)) {
+             switch (t.frequency) {
                 case 'weekly':
                     nextDueDate = addWeeks(nextDueDate, 1);
                     break;
@@ -276,13 +266,53 @@ export function getOwedExpenses(transactions: Transaction[] | null): Owed[] {
             }
         }
         
-        // At this point, nextDueDate is on or after today. This is the next upcoming one.
-        const endDate = t.recurrenceEndDate ? toDate(t.recurrenceEndDate) : null;
+        // Check if this upcoming due date is valid
         if (!endDate || isBefore(nextDueDate, endDate) || isSameDay(nextDueDate, endDate)) {
-            owedInstances.push({
-                ...t,
-                instanceDate: nextDueDate,
-            });
+            // Check if this specific instance has already been paid
+            const isPaid = transactions.some(p => 
+                !p.isRecurring &&
+                p.categoryId === t.categoryId &&
+                p.description === t.description &&
+                isSameDay(toDate(p.date), nextDueDate)
+            );
+
+            if (!isPaid) {
+                owedInstances.push({
+                    ...t,
+                    instanceDate: nextDueDate,
+                });
+            }
+        }
+        
+        // Also check for any overdue payments that haven't been paid
+        let pastDueDate = toDate(t.date);
+        while(isBefore(pastDueDate, today)) {
+            const isPastPaid = transactions.some(p => 
+                !p.isRecurring &&
+                p.categoryId === t.categoryId &&
+                p.description === t.description &&
+                isSameDay(toDate(p.date), pastDueDate)
+            );
+            if (!isPastPaid) {
+                owedInstances.push({
+                    ...t,
+                    instanceDate: pastDueDate
+                });
+            }
+             switch (t.frequency) {
+                case 'weekly':
+                    pastDueDate = addWeeks(pastDueDate, 1);
+                    break;
+                case 'monthly':
+                    pastDueDate = addMonths(pastDueDate, 1);
+                    break;
+                case 'quarterly':
+                    pastDueDate = addQuarters(pastDueDate, 1);
+                    break;
+                case 'yearly':
+                    pastDueDate = addYears(pastDueDate, 1);
+                    break;
+            }
         }
     });
 

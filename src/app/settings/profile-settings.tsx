@@ -41,7 +41,16 @@ const formSchema = z.object({
   currency: z.string().min(1, "Currency is required."),
   countryCode: z.string().optional(),
   phone: z.string().optional(),
+}).refine(data => {
+    if (!data.phone) return true; // Don't validate if phone is empty
+    const country = getCountry(data.countryCode);
+    if (!country || !country.phoneRegex) return true; // Don't validate if no regex
+    return country.phoneRegex.test(data.phone);
+}, {
+    message: "Invalid phone number for the selected country.",
+    path: ['phone'],
 });
+
 
 export default function ProfileSettings() {
   const { toast } = useToast();

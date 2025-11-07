@@ -3,11 +3,14 @@ export interface Country {
     name: string;
     code: string; // ISO 3166-1 alpha-2
     phone: string;
+    phoneRegex?: RegExp;
 }
 
 export const countries: Country[] = [
-    { name: "United States", code: "US", phone: "+1" },
-    { name: "United Kingdom", code: "GB", phone: "+44" },
+    { name: "United States", code: "US", phone: "+1", phoneRegex: /^\d{10}$/ },
+    { name: "United Kingdom", code: "GB", phone: "+44", phoneRegex: /^\d{10}$/ },
+    { name: "United Arab Emirates", code: "AE", phone: "+971", phoneRegex: /^\d{9}$/ },
+    { name: "India", code: "IN", phone: "+91", phoneRegex: /^\d{10}$/ },
     { name: "Afghanistan", code: "AF", phone: "+93" },
     { name: "Albania", code: "AL", phone: "+355" },
     { name: "Algeria", code: "DZ", phone: "+213" },
@@ -35,11 +38,11 @@ export const countries: Country[] = [
     { name: "Burkina Faso", code: "BF", phone: "+226" },
     { name: "Cambodia", code: "KH", phone: "+855" },
     { name: "Cameroon", code: "CM", phone: "+237" },
-    { name: "Canada", code: "CA", phone: "+1" },
+    { name: "Canada", code: "CA", phone: "+1", phoneRegex: /^\d{10}$/ },
     { name: "Central African Republic", code: "CF", phone: "+236" },
     { name: "Chad", code: "TD", phone: "+235" },
     { name: "Chile", code: "CL", phone: "+56" },
-    { name: "China", code: "CN", phone: "+86" },
+    { name: "China", code: "CN", phone: "+86", phoneRegex: /^\d{11}$/ },
     { name: "Colombia", code: "CO", phone: "+57" },
     { name: "Congo, Democratic Republic", code: "CD", phone: "+243" },
     { name: "Congo, Republic of the", code: "CG", phone: "+242" },
@@ -68,7 +71,6 @@ export const countries: Country[] = [
     { name: "Hong Kong", code: "HK", phone: "+852" },
     { name: "Hungary", code: "HU", phone: "+36" },
     { name: "Iceland", code: "IS", phone: "+354" },
-    { name: "India", code: "IN", phone: "+91" },
     { name: "Indonesia", code: "ID", phone: "+62" },
     { name: "Iran", code: "IR", phone: "+98" },
     { name: "Iraq", code: "IQ", phone: "+964" },
@@ -135,7 +137,6 @@ export const countries: Country[] = [
     { name: "Turkey", code: "TR", phone: "+90" },
     { name: "Uganda", code: "UG", phone: "+256" },
     { name: "Ukraine", code: "UA", phone: "+380" },
-    { name: "United Arab Emirates", code: "AE", phone: "+971" },
     { name: "Uruguay", code: "UY", phone: "+598" },
     { name: "Uzbekistan", code: "UZ", phone: "+998" },
     { name: "Venezuela", code: "VE", phone: "+58" },
